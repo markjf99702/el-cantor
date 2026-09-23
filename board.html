@@ -156,7 +156,7 @@ a{color:var(--teal);font-weight:700}
     <h1>Lotería <small id="who"></small></h1>
     <button class="chip" id="patBtn" type="button">Línea</button>
     <button class="chip" id="tablasBtn" type="button">Tablas</button>
-    <button class="chip ic" id="clearBtn" type="button" aria-label="Clear the round" title="Clear the round">↺</button>
+    <button class="chip ic" id="clearBtn" type="button" aria-label="New round" title="New round">↺</button>
     <button class="chip ic" id="setBtn" type="button" aria-label="Settings" title="Settings">⋯</button>
   </div>
   <div class="called">
@@ -289,7 +289,7 @@ a{color:var(--teal);font-weight:700}
     if (i >= 0) G.called.splice(i, 1); else G.called.push(n);
     tick(); evaluate(i < 0); render();
   }
-  function clearRound() { if (!G.called.length) return; G.called = []; G.announced = {}; saveG(); render(); patternSheet('New round — what are we playing?'); }
+  function clearRound() { G.called = []; G.announced = {}; saveG(); render(); patternSheet('New round — what are we playing?'); }
 
   // ---------- win ----------
   function showWin(wins) {
@@ -477,8 +477,7 @@ a{color:var(--teal);font-weight:700}
   $('patBtn').addEventListener('click', function () { patternSheet(); });
   $('tablasBtn').addEventListener('click', tablasSheet);
   $('setBtn').addEventListener('click', settingsSheet);
-  $('clearBtn').addEventListener('click', function () {
-    if (!G.called.length) return;
+  $('clearBtn').addEventListener('click', function () { // always starts a new round, even with nothing called yet
     if (G.called.length < 3) { clearRound(); return; }
     openSheet('<div class="hd"><h2>Clear the round?</h2></div><div class="bd stack"><p class="note">Takes the beans off all ' + G.called.length + ' called cards so you can start the next round.</p><div class="row"><button class="btn red" type="button" id="clOk">Clear for a new round</button><button class="btn sec" type="button" id="clNo">Keep playing</button></div></div>');
     $('clOk').addEventListener('click', function () { closeSheet(); clearRound(); });
