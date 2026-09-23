@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en" class="notranslate" translate="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-title" content="Tablas">
+<meta name="theme-color" content="#F3E7CF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1D1714" media="(prefers-color-scheme: dark)">
+<title>Lotería · Make tablas</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bree+Serif&family=Nunito+Sans:ital,opsz,wght@0,6..12,400;0,6..12,600;0,6..12,700;0,6..12,800;1,6..12,400&display=swap">
+<style id="pagesize">@page{size:letter portrait;margin:0.4in}</style>
+<style>
+:root{
+  --bg:#F3E7CF;--paper:#FBF4E4;--paper2:#EFE1C5;--ink:#2B221C;--ink2:#6A5A4C;--ink3:#9A8A78;--line:#DCCBA9;--line2:#C4AE84;
+  --red:#B7332F;--red-ink:#FFF7EA;--red-soft:#F3D3CB;--teal:#1F6F6D;--teal-soft:#CFE4E0;--gold:#D99A2B;--gold-soft:#F6E3B4;--green:#3E7D4A;
+  --disp:"Bree Serif",Georgia,serif;--body:"Nunito Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --shadow:0 1px 0 rgba(43,34,28,.05),0 10px 24px -14px rgba(43,34,28,.35);
+  --sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#1D1714;--paper:#27201B;--paper2:#322922;--ink:#F3E9DA;--ink2:#C9B9A4;--ink3:#8D7E6C;--line:#3F332B;--line2:#5A4B3F;
+  --red:#E2554F;--red-ink:#1D1714;--red-soft:#4A2521;--teal:#5FB3AE;--teal-soft:#1D3835;--gold:#E8B24A;--gold-soft:#4A3712;--green:#6DBB7C;
+  --shadow:0 1px 0 rgba(0,0,0,.4),0 12px 28px -14px rgba(0,0,0,.85);
+}}
+:root[data-theme="dark"]{
+  --bg:#1D1714;--paper:#27201B;--paper2:#322922;--ink:#F3E9DA;--ink2:#C9B9A4;--ink3:#8D7E6C;--line:#3F332B;--line2:#5A4B3F;
+  --red:#E2554F;--red-ink:#1D1714;--red-soft:#4A2521;--teal:#5FB3AE;--teal-soft:#1D3835;--gold:#E8B24A;--gold-soft:#4A3712;--green:#6DBB7C;
+  --shadow:0 1px 0 rgba(0,0,0,.4),0 12px 28px -14px rgba(0,0,0,.85);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.4 var(--body);-webkit-font-smoothing:antialiased;overflow:hidden;user-select:none;-webkit-user-select:none}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+button:disabled{cursor:default;opacity:.4}
+input{background:var(--paper);border:1px solid var(--line2);border-radius:10px;padding:8px 11px;min-width:0;font-size:16px;user-select:text;-webkit-user-select:text}
+input:focus-visible,button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
+a{color:var(--teal);font-weight:700}
+.app{height:100vh;height:100dvh;display:flex;flex-direction:column;padding-top:var(--sat)}
+/* header */
+.top{display:flex;align-items:center;gap:6px;padding:8px 12px 8px;flex:none;border-bottom:1px solid var(--line)}
+.top h1{margin:0;font:400 20px/1 var(--disp);letter-spacing:.01em;color:var(--red);flex:1;display:flex;align-items:baseline;gap:8px;min-width:0;white-space:nowrap;overflow:hidden}
+.top h1 small{font:600 11px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip{background:var(--paper);border:1px solid var(--line2);border-radius:999px;padding:6px 11px;font:600 12.5px var(--body);color:var(--ink2);white-space:nowrap;display:inline-flex;align-items:center;gap:5px;text-decoration:none}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip.gold{background:var(--gold-soft);border-color:var(--gold);color:var(--ink)}
+.chip.ic{width:34px;height:34px;padding:0;justify-content:center;font-size:16px}
+.chip.home svg{width:17px;height:17px;display:block}
+.btn{background:var(--ink);color:var(--bg);border:1px solid var(--ink);border-radius:10px;padding:9px 14px;font:700 14px var(--body);text-decoration:none;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn.sec{background:var(--paper);color:var(--ink);border-color:var(--line2)}
+.btn.red{background:var(--red);border-color:var(--red);color:var(--red-ink)}
+.btn.sm{padding:6px 11px;font-size:13px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.note{color:var(--ink2);font-size:13.5px;margin:0}
+.eyebrow{font:600 11px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--ink3)}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:var(--shadow)}
+.stack{display:flex;flex-direction:column;gap:12px}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:999px;overflow:hidden;background:var(--paper)}
+.seg button{background:none;border:0;padding:6px 12px;font:600 13px var(--body);color:var(--ink2)}
+.seg button.on{background:var(--ink);color:var(--bg)}
+/* workspace */
+.work{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,min(36%,420px))}
+.tablas{overflow:auto;-webkit-overflow-scrolling:touch;padding:12px 14px calc(24px + var(--sab));min-height:0;overscroll-behavior:contain}
+.hint{margin:0 0 12px;color:var(--ink2);font-size:13.5px;max-width:70ch}
+.hint b{color:var(--ink)}
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px;align-items:start}
+.tb{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:10px;box-shadow:var(--shadow);min-width:0}
+.tb.on{border-color:var(--teal);box-shadow:0 0 0 2px var(--teal),var(--shadow)}
+.tbh{display:flex;gap:6px;align-items:center;margin-bottom:8px}
+.tbh input{flex:1;width:100%;font:400 16px var(--disp);padding:5px 8px;background:transparent;border-color:transparent}
+.tbh input:hover,.tbh input:focus{border-color:var(--line2);background:var(--bg)}
+.tbh .cnt{flex:none;font:700 11px var(--body);letter-spacing:.06em;color:var(--ink3);white-space:nowrap}
+.tbh .cnt.ok{color:var(--green)}
+.eg{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;background:var(--line2);border:3px solid var(--red);border-radius:8px;overflow:hidden}
+.sq{position:relative;aspect-ratio:200/327;background:var(--paper2);cursor:pointer;touch-action:manipulation;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
+.sq.has{background:#fff;cursor:grab}
+.sq img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.sq .e{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--ink3);font:400 22px var(--body);opacity:.55;pointer-events:none}
+.sq .two{position:absolute;right:3px;bottom:3px;z-index:2;background:var(--gold);color:#2B221C;font:800 10px/1.3 var(--body);border-radius:999px;padding:1px 5px;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.35)}
+.sq.sel{outline:3px solid var(--teal);outline-offset:-3px;z-index:3}
+.sq.sel .e{color:var(--teal);opacity:1}
+.sq.over{outline:3px solid var(--gold);outline-offset:-3px;z-index:4}
+.sq.over::after{content:"";position:absolute;inset:0;background:color-mix(in srgb,var(--gold) 28%,transparent);z-index:3}
+.sq.over.bad{outline-color:var(--red)}
+.sq.over.bad::after{background:color-mix(in srgb,var(--red) 35%,transparent)}
+.sq.lift img{opacity:.25}
+@keyframes pop{0%{transform:scale(.7);opacity:.2}70%{transform:scale(1.05)}100%{transform:scale(1);opacity:1}}
+.sq.pop img{animation:pop .28s cubic-bezier(.2,.8,.3,1.1)}
+.tbn{font-size:12.5px;color:var(--ink2);margin-top:7px;min-height:17px}
+.tbn b{font-weight:700;color:var(--ink)}
+.tbn.warn,.tbn.warn b{color:var(--red)}
+.tba{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.tba button{background:var(--bg);border:1px solid var(--line2);border-radius:999px;padding:4px 10px;font:600 12px var(--body);color:var(--ink2)}
+.tba button[data-a="del"]{color:var(--red)}
+.addt{border:2px dashed var(--line2);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px;align-items:stretch;justify-content:center;min-height:180px}
+.addt .row{gap:6px}
+.foot{margin-top:22px;padding-top:14px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+/* deck */
+.deck{border-left:1px solid var(--line2);background:var(--paper2);display:flex;flex-direction:column;min-height:0;transition:background-color .15s}
+.deck.drop{background:var(--red-soft)}
+.dh{padding:10px 12px 8px;flex:none;display:flex;flex-direction:column;gap:6px}
+.dh input{width:100%}
+.dnote{font-size:12.5px;color:var(--ink2);min-height:18px;line-height:1.35}
+.dnote b{color:var(--ink)}
+.dg{flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:2px 12px calc(14px + var(--sab));display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:8px;align-content:start}
+.dk{position:relative;background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:4px 4px 5px;text-align:center;cursor:grab;touch-action:manipulation;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
+.dk img{width:100%;aspect-ratio:200/327;object-fit:cover;border-radius:4px;display:block;background:#fff;pointer-events:none}
+.dk .n{font:400 11.5px/1.15 var(--disp);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dk .x{position:absolute;top:1px;right:1px;min-width:20px;height:18px;padding:0 5px;border-radius:999px;font:800 10.5px/18px var(--body);text-align:center;box-shadow:0 1px 3px rgba(0,0,0,.3);pointer-events:none}
+.dk.has .x{background:var(--teal);color:#fff}
+.dk.two .x{background:var(--gold);color:#2B221C}
+.dk.full{opacity:.42}
+.dk.lift{opacity:.3}
+.dempty{grid-column:1/-1;color:var(--ink3);font-size:13px;padding:10px 2px}
+/* drag ghost */
+.ghost{position:fixed;left:0;top:0;z-index:90;pointer-events:none;width:var(--gw,64px);aspect-ratio:200/327;border-radius:6px;background:#fff;box-shadow:0 16px 30px -8px rgba(0,0,0,.55),0 0 0 2px #fff;will-change:transform}
+.ghost img{width:100%;height:100%;object-fit:cover;display:block;border-radius:6px}
+.ghost .gt{position:absolute;left:50%;bottom:100%;margin-bottom:8px;transform:translateX(-50%);background:var(--ink);color:var(--bg);font:700 11px var(--body);border-radius:999px;padding:3px 9px;white-space:nowrap}
+.ghost.del img{opacity:.45;filter:grayscale(1)}
+.ghost.bad .gt{background:var(--red);color:#fff}
+body.dragging,body.dragging *{cursor:grabbing!important}
+/* sheets */
+.sheetbg{position:fixed;inset:0;background:rgba(30,20,14,.5);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:min(640px,100%);max-height:calc(100% - 20px - var(--sat));display:flex;flex-direction:column;border-radius:18px 18px 0 0;border-top:3px solid var(--red);padding-bottom:var(--sab)}
+.sheet .hd{display:flex;gap:8px;align-items:center;padding:12px 14px 8px;flex:none}
+.sheet .hd h2{margin:0;font:400 20px/1 var(--disp);flex:1}
+.sheet .bd{overflow:auto;padding:4px 14px 18px;flex:1;min-height:0;-webkit-overflow-scrolling:touch}
+.pers{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.per{display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 6px 8px;text-align:center}
+.per.on{border-color:var(--teal);background:var(--teal-soft)}
+.per b{font:400 15px var(--disp)}
+.per small{font-size:11.5px;color:var(--ink2);line-height:1.25}
+.tchips .chip{cursor:pointer}
+.pwarn{color:var(--red);font-size:13px;font-weight:600;margin:0}
+.toast{position:fixed;left:50%;bottom:calc(20px + var(--sab));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:10px;font:600 13px var(--body);opacity:0;transition:.2s;pointer-events:none;z-index:95;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%)}
+@media (max-width:760px){
+  .top h1 small{display:none}
+  .work{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) minmax(170px,40%)}
+  .deck{border-left:0;border-top:1px solid var(--line2);box-shadow:0 -8px 20px -14px rgba(0,0,0,.4)}
+  .tablas{padding:10px 10px 18px}
+  .tgrid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+  .tb{padding:7px;border-radius:12px}
+  .tbh input{padding:4px 6px}
+  .tba button{padding:3px 8px;font-size:11.5px}
+  .dh{padding:8px 10px 6px}
+  .dg{grid-template-columns:repeat(auto-fill,minmax(54px,1fr));gap:6px;padding:2px 10px 10px}
+  .dk .n{font-size:10px}
+}
+@media (prefers-reduced-motion:reduce){.sq.pop img{animation:none}.toast,.deck{transition:none}}
+/* ---------- printing ---------- */
+.printout{display:none}
+@media print{
+  html,body{height:auto;overflow:visible;background:#fff!important}
+  .app,#dlg,.toast,.ghost{display:none!important}
+  .printout{display:block}
+  .page{width:var(--pw);height:var(--ph);display:grid;grid-template-columns:repeat(var(--cols),1fr);grid-template-rows:repeat(var(--rows),1fr);gap:var(--gut);overflow:hidden;break-after:page;page-break-after:always}
+  .page:last-child{break-after:auto;page-break-after:auto}
+  .slot{position:relative;display:flex;align-items:center;justify-content:center;min-width:0;min-height:0}
+}
+.pt{flex:none;width:var(--tw);height:var(--th);border:var(--bw) solid #B7332F;border-radius:.09in;padding:var(--pad);background:#fff;display:flex;flex-direction:column;gap:var(--hg);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.pt.rot{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-90deg)}
+.pt .ph{flex:none;height:var(--hh);display:flex;align-items:center;justify-content:space-between;gap:.12in;font-family:"Bree Serif",Georgia,serif;font-size:calc(var(--hh) * .8);line-height:1;color:#B7332F;white-space:nowrap}
+.pt .ph span{color:#2B221C;font-size:.68em;overflow:hidden;text-overflow:ellipsis}
+.pt .pg{display:grid;grid-template-columns:repeat(4,var(--cw));grid-auto-rows:var(--ch);gap:var(--gap)}
+.pt .pc{position:relative;overflow:hidden;border-radius:.03in;border:.01in solid #999}
+.pt .pc img{width:100%;height:100%;object-fit:cover;display:block}
+.pt .pc.blank{border:.012in dashed #999}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <a class="chip ic home" href="./" aria-label="Home — all the Lotería tools" title="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5"/><path d="M6.5 10v9h11v-9"/></svg></a>
+    <h1>Lotería <small>Tablas to print</small></h1>
+    <button class="chip" id="dblBtn" type="button"></button>
+    <button class="chip ic" id="undoBtn" type="button" aria-label="Undo" title="Undo (Ctrl+Z)">↶</button>
+    <button class="btn red sm" id="printBtn" type="button">Print…</button>
+  </div>
+  <div class="work">
+    <div class="tablas" id="tablas">
+      <p class="hint"><b>Drag</b> cards from the deck onto a square (on a phone or iPad, press and hold a card first). Drag a square to move it around the tabla, onto another tabla to copy it there, or back to the deck to take it off. Or <b>tap</b> a square, then tap cards to fill in order.</p>
+      <div class="tgrid" id="tg"></div>
+      <div class="foot">
+        <p class="note">Saved on this device as you go.</p>
+        <button class="btn sec sm" type="button" id="appBtn">Play these in the app…</button>
+      </div>
+    </div>
+    <div class="deck" id="deck">
+      <div class="dh">
+        <input id="q" type="search" placeholder="Find a card — “luna” or 23" autocomplete="off" aria-label="Find a card">
+        <div class="dnote" id="dnote"></div>
+      </div>
+      <div class="dg" id="dg"></div>
+    </div>
+  </div>
+</div>
+<div class="printout" id="printout"></div>
+<div id="dlg" hidden></div>
+<div class="ghost" id="ghost" hidden></div>
+<div class="toast" id="toast" role="status"></div>
+<script src="deck.js" data-cards="cards/"></script>
+<script>(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var L = window.Loteria, CARDS = L.CARDS, card = L.card, src = L.src, fold = L.fold;
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function uid() { return Math.random().toString(36).slice(2, 8); }
+  function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function deckNums() { return CARDS.map(function (c) { return c.n; }); }
+
+  // Mark's four — the family's own tablas, each with one card twice, side by side.
+  var MARK = L.originals().map(function (cards, i) { return { name: 'Tabla ' + (i + 1), cards: cards }; });
+
+  // ---------- state ----------
+  var LSP = 'loteria.print', LSA = 'loteria.v1';
+  function blank(name) { return { id: uid(), name: name, cards: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }; }
+  function okCards(c) { return Array.isArray(c) && c.length === 16 && c.every(function (n) { return n === (n | 0) && n >= 0 && n <= 54; }); }
+  var P = { tablas: [blank('Tabla 1')], set: { doubles: true, per: 2, paper: 'letter', names: true, who: '' } };
+  try {
+    var raw = localStorage.getItem(LSP);
+    if (raw) { var o = JSON.parse(raw); if (o && Array.isArray(o.tablas)) { P.tablas = o.tablas.filter(function (t) { return t && okCards(t.cards); }).map(function (t) { return { id: t.id || uid(), name: String(t.name || 'Tabla'), cards: t.cards.slice() }; }); P.set = Object.assign(P.set, o.set || {}); } }
+  } catch (e) { }
+  var UI = { active: P.tablas.length ? P.tablas[0].id : null, sel: null, q: '', flash: null, skip: {} };
+  var H = []; // undo snapshots of P.tablas
+  function save() { try { localStorage.setItem(LSP, JSON.stringify(P)); } catch (e) { } }
+  function tab(id) { return P.tablas.filter(function (t) { return t.id === id; })[0]; }
+  function active() { var t = tab(UI.active); if (!t && P.tablas.length) { t = P.tablas[0]; UI.active = t.id; UI.sel = null; } return t; }
+  function counts(tb) { var c = {}; tb.cards.forEach(function (n) { if (n) c[n] = (c[n] || 0) + 1; }); return c; }
+  function filled(tb) { return tb.cards.filter(Boolean).length; }
+  function nextName() { var hi = 0; P.tablas.forEach(function (t) { var m = /^Tabla (\d+)$/.exec(t.name); if (m) hi = Math.max(hi, +m[1]); }); return 'Tabla ' + Math.max(hi + 1, P.tablas.length + 1); }
+  function snap() { H.push(JSON.stringify(P.tablas)); if (H.length > 100) H.shift(); }
+  function edit(fn) { snap(); fn(); save(); render(); }
+  function undo() {
+    if (!H.length) { toast('Nothing to undo'); return; }
+    P.tablas = JSON.parse(H.pop()); UI.sel = null; save(); render(); toast('Undone');
+  }
+
+  var toastT; function toast(m) { var t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove('show'); }, 2600); }
+
+  // ---------- the doubles rule ----------
+  // Family rule: a card may go on a tabla twice (never three times). With doubles off, each card once.
+  function limit() { return P.set.doubles ? 2 : 1; }
+  // Can card n go into square i of tb? {ok, same, move: index of the copy to swap out, msg}
+  function rule(tb, n, i) {
+    if (tb.cards[i] === n) return { ok: true, same: true };
+    var at = []; tb.cards.forEach(function (x, k) { if (x === n && k !== i) at.push(k); });
+    if (at.length < limit()) return { ok: true };
+    if (!P.set.doubles) return { ok: true, move: at[0] };
+    return { ok: false, msg: card(n).name + ' is already on ' + tb.name + ' twice' };
+  }
+  function place(tb, n, i, r) { if (r.move != null) tb.cards[r.move] = tb.cards[i]; tb.cards[i] = n; }
+  function familyCards() { // 15 different cards, one of them twice side by side in the middle, like Mark's four
+    var d = shuffle(deckNums()).slice(0, 15), at = Math.random() < 0.5 ? 5 : 9, out = [], k = 1;
+    for (var i = 0; i < 16; i++) out.push(i === at || i === at + 1 ? d[0] : d[k++]);
+    return out;
+  }
+  function fillTabla(tb) {
+    if (!filled(tb) && P.set.doubles) { tb.cards = familyCards(); return; }
+    var pool = shuffle(deckNums().filter(function (n) { return tb.cards.indexOf(n) < 0; }));
+    tb.cards = tb.cards.map(function (n) { return n || pool.pop(); });
+  }
+  function randomTabla(name) { var t = blank(name); fillTabla(t); return t; }
+
+  // ---------- render ----------
+  function render() { active(); renderTop(); renderTablas(); paintDeck(); renderPrint(); }
+  function renderTop() {
+    var b = $('dblBtn');
+    b.textContent = P.set.doubles ? 'Doubles ✓' : 'No doubles';
+    b.className = 'chip' + (P.set.doubles ? ' gold' : '');
+    b.title = P.set.doubles ? 'Family rule: a card can go on a tabla twice. Tap to turn off.' : 'Each card only once per tabla. Tap to allow doubles.';
+    $('undoBtn').disabled = !H.length;
+  }
+  function renderTablas() {
+    var host = $('tg'), fl = UI.flash, keep = $('tablas').scrollTop; UI.flash = null;
+    host.innerHTML = '';
+    P.tablas.forEach(function (tb) {
+      var on = tb.id === UI.active, c = counts(tb), f = filled(tb), empty = 16 - f;
+      var dups = Object.keys(c).filter(function (n) { return c[n] > 1; }).map(function (n) { return card(+n).name; });
+      var sq = tb.cards.map(function (n, i) {
+        var cls = 'sq' + (n ? ' has' : '') + (on && UI.sel === i ? ' sel' : '') + (fl && fl.t === tb.id && fl.i === i ? ' pop' : '');
+        return '<div class="' + cls + '" data-t="' + tb.id + '" data-i="' + i + '"' + (n ? ' data-n="' + n + '"' : '') + ' role="button" tabindex="0" aria-label="' + (n ? esc(card(n).name) : 'Empty square') + '">' +
+          (n ? '<img src="' + src(n) + '" alt="" draggable="false">' + (c[n] > 1 ? '<span class="two">×2</span>' : '') : '<span class="e">+</span>') + '</div>';
+      }).join('');
+      var note = dups.length ? '<div class="tbn' + (P.set.doubles ? '' : ' warn') + '">Twice: <b>' + dups.join(', ') + '</b>' + (P.set.doubles ? '' : ' — doubles are off') + '</div>' : '<div class="tbn"></div>';
+      var w = document.createElement('div'); w.className = 'tb' + (on ? ' on' : ''); w.dataset.t = tb.id;
+      w.innerHTML = '<div class="tbh"><input class="nm" value="' + esc(tb.name) + '" aria-label="Tabla name" maxlength="40" autocomplete="off"><span class="cnt' + (empty ? '' : ' ok') + '">' + (empty ? f + '/16' : '✓ 16') + '</span></div><div class="eg">' + sq + '</div>' + note +
+        '<div class="tba">' + (empty ? '<button type="button" data-a="fill">' + (f ? 'Fill the rest' : 'Random') + '</button>' : '') + (f ? '<button type="button" data-a="clear">Clear</button>' : '') + '<button type="button" data-a="dup">Copy</button><button type="button" data-a="del">Remove</button></div>';
+      var inp = w.querySelector('input'), before;
+      inp.addEventListener('focus', function () { before = JSON.stringify(P.tablas); });
+      inp.addEventListener('change', function () { var v = inp.value.trim(); if (!v) { inp.value = tb.name; return; } if (v === tb.name) return; H.push(before); tb.name = v; save(); renderTop(); paintDeck(); renderPrint(); });
+      inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') inp.blur(); });
+      host.appendChild(w);
+    });
+    var add = document.createElement('div'); add.className = 'addt';
+    var presets = presetList();
+    add.innerHTML = '<button class="btn" type="button" data-a="new">+ Blank tabla</button><button class="btn sec" type="button" data-a="rnd">+ Random tabla</button>' +
+      '<div class="eyebrow" style="margin-top:4px">Or copy in</div><div class="row">' + presets.map(function (p, k) { return '<button class="chip" type="button" data-a="preset" data-k="' + k + '">' + esc(p.label) + '</button>'; }).join('') + '</div>' +
+      '<p class="note" style="margin-top:4px">Need a numbered set that El Cantor can check by number? <a href="cantor.html#print">Print a juego</a>.</p>';
+    host.appendChild(add);
+    $('tablas').scrollTop = keep;
+  }
+  function paintSel() {
+    document.querySelectorAll('#tg .tb').forEach(function (w) { w.classList.toggle('on', w.dataset.t === UI.active); });
+    document.querySelectorAll('#tg .sq').forEach(function (s) { s.classList.toggle('sel', s.dataset.t === UI.active && +s.dataset.i === UI.sel); });
+    paintDeck();
+  }
+
+  // ---------- deck ----------
+  function buildDeck() {
+    var g = $('dg');
+    g.innerHTML = CARDS.map(function (c) { return '<div class="dk" data-n="' + c.n + '" role="button" tabindex="0" aria-label="' + esc(c.name) + '"><img src="' + src(c.n) + '" alt="" draggable="false"><div class="n">' + c.name + '</div><span class="x" hidden></span></div>'; }).join('') + '<div class="dempty" hidden></div>';
+  }
+  function filterDeck() {
+    var f = fold(UI.q.trim()), num = parseInt(f, 10), shown = 0;
+    document.querySelectorAll('#dg .dk').forEach(function (d) { var c = card(+d.dataset.n), on = !f || c.key.indexOf(f) >= 0 || (num && c.n === num); d.hidden = !on; if (on) shown++; });
+    var e = document.querySelector('#dg .dempty'); e.hidden = shown > 0; e.textContent = 'No card matches “' + UI.q + '”.';
+  }
+  function paintDeck() {
+    var tb = active(), c = tb ? counts(tb) : {}, lim = limit();
+    document.querySelectorAll('#dg .dk').forEach(function (d) {
+      var k = c[d.dataset.n] || 0, x = d.querySelector('.x');
+      d.classList.toggle('has', k === 1); d.classList.toggle('two', k > 1); d.classList.toggle('full', k >= lim && P.set.doubles);
+      x.hidden = !k; x.textContent = '×' + k;
+    });
+    var n = $('dnote');
+    if (!tb) { n.innerHTML = 'Add a tabla to start.'; return; }
+    var i = UI.sel != null ? UI.sel : tb.cards.indexOf(0);
+    n.innerHTML = i < 0 ? '<b>' + esc(tb.name) + '</b> is full — tap a square to change it, or drag.' : 'Tap a card to put it on <b>' + esc(tb.name) + '</b>, square ' + (i + 1) + ' — or drag it anywhere.';
+  }
+
+  // ---------- taps ----------
+  function tapSquare(t, i) {
+    if (UI.active === t && UI.sel === i) UI.sel = null; else { UI.active = t; UI.sel = i; }
+    paintSel();
+  }
+  function nextEmpty(tb, from) { for (var k = 1; k <= 16; k++) { var j = (from + k) % 16; if (!tb.cards[j]) return j; } return null; }
+  function tapCard(n) {
+    var tb = active();
+    if (!tb) { tb = blank(nextName()); P.tablas.push(tb); UI.active = tb.id; }
+    var i = UI.sel != null ? UI.sel : tb.cards.indexOf(0);
+    if (i < 0) { toast(tb.name + ' is full — tap a square to change it'); return; }
+    var r = rule(tb, n, i);
+    if (!r.ok) { toast(r.msg); return; }
+    if (r.same) { UI.sel = nextEmpty(tb, i); paintSel(); return; }
+    edit(function () { place(tb, n, i, r); if (UI.sel != null) UI.sel = nextEmpty(tb, i); UI.flash = { t: tb.id, i: i }; });
+  }
+  function presetList() {
+    var out = [{ label: 'Mark’s four', boards: MARK }];
+    try {
+      var a = JSON.parse(localStorage.getItem(LSA) || 'null'), same = JSON.stringify(MARK.map(function (b) { return b.cards; }));
+      (a && a.players || []).forEach(function (p) {
+        var bs = (p.boards || []).filter(function (b) { return okCards(b.cards) && b.cards.every(Boolean); });
+        if (!bs.length || JSON.stringify(bs.map(function (b) { return b.cards; })) === same) return;
+        out.push({ label: p.name + '’s tablas (' + bs.length + ')', boards: bs });
+      });
+    } catch (e) { }
+    return out;
+  }
+  $('tg').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-a]');
+    if (b) {
+      var a = b.dataset.a, w = b.closest('.tb'), tb = w && tab(w.dataset.t);
+      if (a === 'new' || a === 'rnd') { var t = a === 'new' ? blank(nextName()) : randomTabla(nextName()); edit(function () { P.tablas.push(t); UI.active = t.id; UI.sel = a === 'new' ? 0 : null; }); scrollToTabla(t.id); }
+      else if (a === 'preset') {
+        var pr = presetList()[+b.dataset.k], added = []; if (!pr) return;
+        edit(function () {
+          P.tablas = P.tablas.filter(filled); // drop untouched blank tablas
+          pr.boards.forEach(function (x) { var t = { id: uid(), name: x.name, cards: x.cards.slice() }; if (P.tablas.some(function (y) { return y.name === t.name; })) t.name = nextName(); P.tablas.push(t); added.push(t); });
+          UI.active = added[0].id; UI.sel = null;
+        }); toast('Added ' + added.length + ' tabla' + (added.length === 1 ? '' : 's')); scrollToTabla(added[0].id); }
+      else if (!tb) return;
+      else if (a === 'fill') edit(function () { fillTabla(tb); UI.active = tb.id; UI.sel = null; });
+      else if (a === 'clear') edit(function () { tb.cards = blank('').cards; UI.active = tb.id; UI.sel = 0; });
+      else if (a === 'dup') { var cp = { id: uid(), name: tb.name + ' (copy)', cards: tb.cards.slice() }; edit(function () { P.tablas.splice(P.tablas.indexOf(tb) + 1, 0, cp); UI.active = cp.id; UI.sel = null; }); }
+      else if (a === 'del') { edit(function () { P.tablas.splice(P.tablas.indexOf(tb), 1); if (UI.active === tb.id) { UI.active = null; UI.sel = null; } }); toast('Removed ' + tb.name + ' — ↶ brings it back'); }
+      return;
+    }
+    if (e.target.closest('input')) return;
+    var sq = e.target.closest('.sq'); if (sq) { tapSquare(sq.dataset.t, +sq.dataset.i); return; }
+    var w2 = e.target.closest('.tb'); if (w2 && w2.dataset.t !== UI.active) { UI.active = w2.dataset.t; UI.sel = null; paintSel(); }
+  });
+  function scrollToTabla(id) { var el = document.querySelector('#tg .tb[data-t="' + id + '"]'); if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+  $('dg').addEventListener('click', function (e) { var d = e.target.closest('.dk'); if (d) tapCard(+d.dataset.n); });
+  $('q').addEventListener('input', function () { UI.q = $('q').value; filterDeck(); });
+  $('q').addEventListener('keydown', function (e) { if (e.key !== 'Enter') return; var v = [].filter.call(document.querySelectorAll('#dg .dk'), function (d) { return !d.hidden; }); if (v.length === 1) { tapCard(+v[0].dataset.n); $('q').select(); } });
+
+  // ---------- drag and drop (mouse, touch and pen through pointer events) ----------
+  var D = null, noClickUntil = 0, ghost = $('ghost'), overEl = null;
+  function source(el) {
+    var sq = el.closest('.sq'); if (sq) return sq.dataset.n ? { el: sq, n: +sq.dataset.n, t: sq.dataset.t, i: +sq.dataset.i } : null;
+    var dk = el.closest('.dk'); return dk ? { el: dk, n: +dk.dataset.n } : null;
+  }
+  document.addEventListener('pointerdown', function (e) {
+    noClickUntil = 0; // a new press is a new click; only the click trailing a drag gets swallowed
+    if (D || !e.isPrimary || (e.pointerType === 'mouse' && e.button !== 0) || e.target.closest('input,button,a')) return;
+    var s = source(e.target); if (!s) return;
+    D = { s: s, id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, touch: e.pointerType !== 'mouse', on: false, moved: false };
+    if (D.touch) D.timer = setTimeout(begin, 220); // press and hold, so plain swipes still scroll
+  });
+  document.addEventListener('pointermove', function (e) {
+    if (!D || e.pointerId !== D.id) return;
+    D.x = e.clientX; D.y = e.clientY;
+    var dist = Math.hypot(D.x - D.x0, D.y - D.y0);
+    if (!D.on) { if (D.touch) { if (dist > 10) end(false); } else if (dist > 5) begin(); return; }
+    if (dist > 10) D.moved = true;
+    e.preventDefault(); track();
+  });
+  document.addEventListener('pointerup', function (e) { if (D && e.pointerId === D.id) end(true); });
+  document.addEventListener('pointercancel', function (e) { if (D && e.pointerId === D.id) end(false); });
+  document.addEventListener('touchmove', function (e) { if (D && D.on) e.preventDefault(); }, { passive: false });
+  document.addEventListener('click', function (e) { if (Date.now() < noClickUntil) { noClickUntil = 0; e.stopPropagation(); e.preventDefault(); } }, true);
+  document.addEventListener('contextmenu', function (e) { if (D || source(e.target)) e.preventDefault(); });
+  document.addEventListener('dragstart', function (e) { if (source(e.target)) e.preventDefault(); });
+  window.addEventListener('blur', function () { if (D) end(false); });
+
+  function begin() {
+    if (!D || D.on) return;
+    clearTimeout(D.timer); D.on = true;
+    var r = D.s.el.getBoundingClientRect(); D.gw = Math.max(58, Math.min(92, r.width)); D.gh = D.gw * 327 / 200;
+    ghost.style.setProperty('--gw', D.gw + 'px'); ghost.className = 'ghost'; ghost.innerHTML = '<img src="' + src(D.s.n) + '" alt=""><span class="gt" hidden></span>'; ghost.hidden = false;
+    D.s.el.classList.add('lift'); document.body.classList.add('dragging');
+    try { D.s.el.setPointerCapture(D.id); } catch (e) { }
+    if (D.touch && navigator.vibrate) try { navigator.vibrate(12); } catch (e) { }
+    track(); D.raf = requestAnimationFrame(autoscroll);
+  }
+  function target(x, y) {
+    var el = document.elementFromPoint(x, y); if (!el) return null;
+    var sq = el.closest('#tg .sq'); if (sq) return { el: sq, t: sq.dataset.t, i: +sq.dataset.i };
+    if (el.closest('#deck')) return { deck: true };
+    return null;
+  }
+  // What dropping the dragged card on tgt would do: null = nothing; {ok, apply, tag, msg, del}
+  function plan(s, tgt) {
+    if (!tgt) return null;
+    if (tgt.deck) { if (s.t == null) return null; return { ok: true, del: true, tag: '✕ take it off', apply: function (tb) { tb.cards[s.i] = 0; }, tb: tab(s.t) }; }
+    var tb = tab(tgt.t); if (!tb) return null;
+    if (s.t === tgt.t) { if (s.i === tgt.i) return null; return { ok: true, tb: tb, apply: function () { var a = tb.cards[s.i]; tb.cards[s.i] = tb.cards[tgt.i]; tb.cards[tgt.i] = a; } }; }
+    var r = rule(tb, s.n, tgt.i);
+    if (!r.ok) return { ok: false, msg: r.msg, tag: 'already twice' };
+    if (r.same) return null;
+    return { ok: true, tb: tb, tag: s.t != null ? '+ copy' : r.move != null ? 'moves here' : '', apply: function () { place(tb, s.n, tgt.i, r); } };
+  }
+  function track() {
+    var gx = D.x - D.gw / 2, gy = D.y - (D.touch ? D.gh + 18 : D.gh / 2); // keep the card visible above a finger
+    ghost.style.transform = 'translate(' + gx + 'px,' + gy + 'px) rotate(-4deg) scale(1.04)';
+    D.tgt = target(D.x, D.y); D.plan = plan(D.s, D.tgt);
+    var el = D.tgt && D.tgt.el;
+    if (overEl !== el) { if (overEl) overEl.classList.remove('over', 'bad'); overEl = el; if (el) el.classList.add('over'); }
+    if (el) el.classList.toggle('bad', !!(D.plan && !D.plan.ok));
+    $('deck').classList.toggle('drop', !!(D.plan && D.plan.del));
+    ghost.classList.toggle('del', !!(D.plan && D.plan.del)); ghost.classList.toggle('bad', !!(D.plan && !D.plan.ok));
+    var gt = ghost.querySelector('.gt'), tag = D.plan && D.plan.tag; gt.hidden = !tag; gt.textContent = tag || '';
+  }
+  function autoscroll(ts) {
+    if (!D || !D.on) return;
+    var moved = false;
+    [$('tablas'), $('dg')].forEach(function (p) {
+      var r = p.getBoundingClientRect(), edge = 44, v = 0;
+      if (D.x < r.left || D.x > r.right || D.y < r.top || D.y > r.bottom) { p._edge = 0; return; }
+      if (D.y < r.top + edge) v = -(r.top + edge - D.y); else if (D.y > r.bottom - edge) v = D.y - (r.bottom - edge);
+      if (!v) { p._edge = 0; return; }
+      if (!p._edge) p._edge = ts; // wait a beat, so just passing over an edge doesn't scroll
+      if (ts - p._edge < 250) return;
+      var before = p.scrollTop; p.scrollTop += Math.round(v / 3); if (p.scrollTop !== before) moved = true;
+    });
+    if (moved) track();
+    D.raf = requestAnimationFrame(autoscroll);
+  }
+  function end(drop) {
+    var d = D; D = null; if (!d) return;
+    clearTimeout(d.timer); cancelAnimationFrame(d.raf);
+    if (!d.on) return;
+    noClickUntil = Date.now() + 700;
+    ghost.hidden = true; d.s.el.classList.remove('lift'); document.body.classList.remove('dragging'); $('deck').classList.remove('drop');
+    if (overEl) { overEl.classList.remove('over', 'bad'); overEl = null; }
+    [$('tablas'), $('dg')].forEach(function (p) { p._edge = 0; });
+    if (!drop) return;
+    if (!d.moved && d.s.t != null && d.tgt && d.s.t === d.tgt.t && d.s.i === d.tgt.i) { tapSquare(d.s.t, d.s.i); return; } // a slow tap on a square
+    if (!d.moved && (!d.tgt || d.tgt.deck) && d.s.t == null) { tapCard(d.s.n); return; } // a slow tap on a deck card
+    var p = d.plan;
+    if (!p) return;
+    if (!p.ok) { toast(p.msg); return; }
+    edit(function () {
+      p.apply(p.tb);
+      if (d.tgt.t) { UI.active = d.tgt.t; UI.sel = null; UI.flash = { t: d.tgt.t, i: d.tgt.i }; }
+    });
+  }
+
+  // ---------- keyboard ----------
+  document.addEventListener('keydown', function (e) {
+    var inField = e.target.closest && e.target.closest('input');
+    if (e.key === 'Escape') { if (!$('dlg').hidden) closeDlg(); else if (D) end(false); else { UI.sel = null; paintSel(); } return; }
+    if (inField || !$('dlg').hidden) return;
+    if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === 'z') { e.preventDefault(); undo(); return; }
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.closest && e.target.closest('.sq,.dk')) { e.preventDefault(); e.target.click(); return; }
+    var tb = active(); if (!tb || UI.sel == null) return;
+    var i = UI.sel, mv = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -4, ArrowDown: 4 }[e.key];
+    if (mv != null) { e.preventDefault(); var j = i + mv; if (j >= 0 && j < 16 && !(Math.abs(mv) === 1 && Math.floor(j / 4) !== Math.floor(i / 4))) { UI.sel = j; paintSel(); } }
+    else if ((e.key === 'Backspace' || e.key === 'Delete') && tb.cards[i]) { e.preventDefault(); edit(function () { tb.cards[i] = 0; }); }
+  });
+
+  // ---------- printing ----------
+  var PAPER = { letter: { w: 8.5, h: 11, css: 'letter', unit: 'in' }, a4: { w: 8.27, h: 11.69, css: 'A4', unit: 'cm' } };
+  var LAYOUT = { 1: { cols: 1, rows: 1, rot: false }, 2: { cols: 1, rows: 2, rot: true }, 4: { cols: 2, rows: 2, rot: false } };
+  var MARGIN = 0.4, RATIO = 327 / 200;
+  function geometry(per, paper) {
+    var pp = PAPER[paper] || PAPER.letter, L = LAYOUT[per] || LAYOUT[2], names = P.set.names;
+    var pw = pp.w - 2 * MARGIN, ph = pp.h - 2 * MARGIN - 0.03, gut = L.cols * L.rows > 1 ? 0.35 : 0;
+    var sw = (pw - gut * (L.cols - 1)) / L.cols, sh = (ph - gut * (L.rows - 1)) / L.rows;
+    var aw = (L.rot ? sh : sw) - 0.02, ah = (L.rot ? sw : sh) - 0.02; // two per page: turn each tabla sideways to fill a half page
+    var bw = 0.05, pad = 0.07, gap = 0.045, hr = names ? 0.3 : 0, hg = names ? 0.05 : 0, over = 2 * bw + 2 * pad + 3 * gap;
+    var cw = Math.min((aw - over) / 4, (ah - over - hg) / (4 * RATIO + hr));
+    return { pp: pp, L: L, pw: pw, ph: ph, gut: gut, bw: bw, pad: pad, gap: gap, hg: hg, cw: cw, ch: cw * RATIO, hh: cw * hr, tw: 4 * cw + over, th: 4 * cw * RATIO + cw * hr + hg + over };
+  }
+  function printList() { return P.tablas.filter(function (t) { return filled(t) && !UI.skip[t.id]; }); }
+  function renderPrint() {
+    var g = geometry(P.set.per, P.set.paper), host = $('printout'), list = printList(), per = g.L.cols * g.L.rows;
+    $('pagesize').textContent = '@page{size:' + g.pp.css + ' portrait;margin:' + MARGIN + 'in}';
+    var vars = { pw: g.pw, ph: g.ph, gut: g.gut, bw: g.bw, pad: g.pad, gap: g.gap, hg: g.hg, cw: g.cw, ch: g.ch, hh: g.hh, tw: g.tw, th: g.th };
+    Object.keys(vars).forEach(function (k) { host.style.setProperty('--' + k, vars[k].toFixed(4) + 'in'); });
+    host.style.setProperty('--cols', g.L.cols); host.style.setProperty('--rows', g.L.rows);
+    var html = '';
+    for (var i = 0; i < list.length; i += per) {
+      html += '<div class="page">';
+      for (var k = 0; k < per; k++) {
+        var tb = list[i + k];
+        html += '<div class="slot">' + (tb ? '<div class="pt' + (g.L.rot ? ' rot' : '') + '">' + (P.set.names ? '<div class="ph">Lotería<span>' + esc(tb.name) + '</span></div>' : '') + '<div class="pg">' +
+          tb.cards.map(function (n) { return n ? '<div class="pc"><img src="' + src(n) + '" alt=""></div>' : '<div class="pc blank"></div>'; }).join('') + '</div></div>' : '') + '</div>';
+      }
+      html += '</div>';
+    }
+    host.innerHTML = html;
+    $('printBtn').title = list.length ? list.length + ' tabla' + (list.length === 1 ? '' : 's') + ' on ' + Math.ceil(list.length / per) + ' page' + (Math.ceil(list.length / per) === 1 ? '' : 's') : 'Nothing to print yet';
+  }
+  function sizeText(g) {
+    var u = g.pp.unit, f = u === 'cm' ? 2.54 : 1, d = u === 'cm' ? 1 : 2;
+    return (g.cw * f).toFixed(d) + ' × ' + (g.ch * f).toFixed(d) + ' ' + u;
+  }
+  function pageIcon(per) {
+    var r = per === 1 ? '<rect x="8" y="6" width="18" height="32" rx="1.5"/>'
+      : per === 2 ? '<rect x="5" y="5" width="24" height="15" rx="1.5"/><rect x="5" y="24" width="24" height="15" rx="1.5"/>'
+      : '<rect x="4.5" y="5" width="11.5" height="16" rx="1"/><rect x="18" y="5" width="11.5" height="16" rx="1"/><rect x="4.5" y="23" width="11.5" height="16" rx="1"/><rect x="18" y="23" width="11.5" height="16" rx="1"/>';
+    return '<svg viewBox="0 0 34 44" width="34" height="44" aria-hidden="true"><rect x=".75" y=".75" width="32.5" height="42.5" rx="2" fill="#fff" stroke="var(--line2)" stroke-width="1.5"/><g fill="none" stroke="var(--red)" stroke-width="1.6">' + r + '</g></svg>';
+  }
+  function openDlg(html) { var s = $('dlg'); s.innerHTML = '<div class="sheetbg"><div class="sheet">' + html + '</div></div>'; s.hidden = false; s.querySelector('.sheetbg').addEventListener('click', function (e) { if (e.target === e.currentTarget) closeDlg(); }); }
+  function closeDlg() { $('dlg').hidden = true; $('dlg').innerHTML = ''; }
+  function printDlg() {
+    if (!P.tablas.some(filled)) { toast('Put some cards on a tabla first'); return; }
+    openDlg('<div class="hd"><h2>Print tablas</h2><button class="btn sec sm" type="button" id="pdx">Cancel</button></div><div class="bd stack">' +
+      '<div class="card"><div class="eyebrow">Tablas per page</div><div class="pers" id="pers"></div></div>' +
+      '<div class="card"><div class="row" style="justify-content:space-between"><span class="eyebrow">Paper</span><div class="seg" id="paperSeg"><button type="button" data-v="letter">Letter</button><button type="button" data-v="a4">A4</button></div></div>' +
+      '<div class="row" style="justify-content:space-between;margin-top:10px"><span class="eyebrow">Name strip on each tabla</span><div class="seg" id="nameSeg"><button type="button" data-v="1">On</button><button type="button" data-v="0">Off</button></div></div></div>' +
+      '<div class="card"><div class="eyebrow">Which tablas</div><div class="row tchips" id="tchips" style="margin-top:8px"></div></div>' +
+      '<p class="note" id="psum"></p><p class="pwarn" id="pwarn" hidden></p>' +
+      '<div class="row"><button class="btn red" type="button" id="pdo">Print</button></div>' +
+      '<p class="note">In the print window, keep the scale at 100% (or “Actual size”) and turn off headers and footers.</p></div>');
+    function draw() {
+      $('pers').innerHTML = [1, 2, 4].map(function (n) { var g = geometry(n, P.set.paper); return '<button class="per' + (P.set.per === n ? ' on' : '') + '" type="button" data-v="' + n + '">' + pageIcon(n) + '<b>' + n + ' per page</b><small>' + (n === 1 ? 'Big' : n === 2 ? 'Regular' : 'Mini') + ' · cards ' + sizeText(g) + '</small></button>'; }).join('');
+      $('pers').querySelectorAll('.per').forEach(function (b) { b.addEventListener('click', function () { P.set.per = +b.dataset.v; save(); renderPrint(); draw(); }); });
+      document.querySelectorAll('#paperSeg button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === P.set.paper); });
+      document.querySelectorAll('#nameSeg button').forEach(function (b) { b.classList.toggle('on', (b.dataset.v === '1') === !!P.set.names); });
+      var tc = $('tchips'); tc.innerHTML = '';
+      P.tablas.forEach(function (t) {
+        var f = filled(t), b = document.createElement('button'); b.type = 'button';
+        b.className = 'chip' + (f && !UI.skip[t.id] ? ' on' : ''); b.disabled = !f; b.textContent = (f && !UI.skip[t.id] ? '✓ ' : '') + t.name + (f ? '' : ' (empty)');
+        b.addEventListener('click', function () { if (UI.skip[t.id]) delete UI.skip[t.id]; else UI.skip[t.id] = 1; renderPrint(); draw(); });
+        tc.appendChild(b);
+      });
+      var list = printList(), per = LAYOUT[P.set.per].cols * LAYOUT[P.set.per].rows, pages = Math.ceil(list.length / per);
+      $('psum').textContent = list.length ? list.length + ' tabla' + (list.length === 1 ? '' : 's') + ' on ' + pages + ' page' + (pages === 1 ? '' : 's') + (P.set.per === 1 ? '.' : ' — cut along the gap between them.') : 'Pick at least one tabla.';
+      var gaps = list.filter(function (t) { return filled(t) < 16; }).map(function (t) { return t.name + ' (' + (16 - filled(t)) + ')'; });
+      $('pwarn').hidden = !gaps.length; $('pwarn').textContent = gaps.length ? 'Not full yet, empty squares print blank: ' + gaps.join(', ') : '';
+      $('pdo').disabled = !list.length;
+    }
+    document.querySelectorAll('#paperSeg button').forEach(function (b) { b.addEventListener('click', function () { P.set.paper = b.dataset.v; save(); renderPrint(); draw(); }); });
+    document.querySelectorAll('#nameSeg button').forEach(function (b) { b.addEventListener('click', function () { P.set.names = b.dataset.v === '1'; save(); renderPrint(); draw(); }); });
+    $('pdx').addEventListener('click', closeDlg);
+    $('pdo').addEventListener('click', function () {
+      renderPrint(); closeDlg(); toast('Getting the cards ready…');
+      whenReady().then(function () { window.print(); });
+    });
+    draw();
+  }
+  function whenReady() {
+    var imgs = [].slice.call($('printout').querySelectorAll('img'));
+    var loads = imgs.map(function (im) { return im.complete ? null : new Promise(function (r) { im.addEventListener('load', r); im.addEventListener('error', r); }); });
+    if (document.fonts && document.fonts.ready) loads.push(document.fonts.ready);
+    return Promise.race([Promise.all(loads), new Promise(function (r) { setTimeout(r, 4000); })]);
+  }
+
+  // ---------- hand tablas to the play-along app (same #t= link its Share button makes) ----------
+  function appDlg() {
+    var full = P.tablas.filter(function (t) { return filled(t) === 16; }), rest = P.tablas.length - full.length;
+    if (!full.length) { toast('Fill a tabla all the way first — the app needs all 16 squares'); return; }
+    openDlg('<div class="hd"><h2>Play these in the app</h2><button class="btn sec sm" type="button" id="apx">Done</button></div><div class="bd stack">' +
+      '<p class="note">Makes a link that opens the play-along board with ' + (full.length === 1 ? 'this tabla' : 'these ' + full.length + ' tablas') + ' for whoever you name. Open it here, or send it to the phone or iPad that will play.' + (rest ? ' ' + rest + ' tabla' + (rest === 1 ? ' isn’t' : 's aren’t') + ' full yet and stay' + (rest === 1 ? 's' : '') + ' behind.' : '') + (full.length > 6 ? ' The board is easiest to read with six or fewer per person.' : '') + '</p>' +
+      '<input id="apName" placeholder="Whose tablas are these?" autocomplete="off" value="' + esc(P.set.who || '') + '">' +
+      '<div class="row"><button class="btn red" type="button" id="apOpen">Open in the app</button><button class="btn sec" type="button" id="apCopy">Copy link</button></div>' +
+      '<p class="note">If the app already has someone by that name, it asks before replacing their tablas.</p></div>');
+    function link() {
+      var who = $('apName').value.trim() || 'Family'; P.set.who = $('apName').value.trim(); save();
+      var enc = function (s) { return encodeURIComponent(String(s).replace(/~/g, '-')); };
+      return new URL('board.html', location.href).href + '#t=' + enc(who) + '~' + full.map(function (t) { return enc(t.name) + ':' + t.cards.map(function (n) { return n.toString(36); }).join('.'); }).join('~');
+    }
+    $('apx').addEventListener('click', closeDlg);
+    $('apOpen').addEventListener('click', function () { location.href = link(); });
+    $('apCopy').addEventListener('click', function () {
+      var url = link(), done = function () { toast('Link copied'); }, fail = function () { window.prompt('Copy this link:', url); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, fail); else fail();
+    });
+  }
+
+  // ---------- wiring ----------
+  $('dblBtn').addEventListener('click', function () {
+    P.set.doubles = !P.set.doubles; save(); render();
+    toast(P.set.doubles ? 'Family rule: a card can go on a tabla twice' : 'No doubles — dropping a card that’s already there moves it');
+  });
+  $('undoBtn').addEventListener('click', undo);
+  $('printBtn').addEventListener('click', printDlg);
+  $('appBtn').addEventListener('click', appDlg);
+  buildDeck(); filterDeck(); render();
+})();
+</script>
+</body>
+</html>

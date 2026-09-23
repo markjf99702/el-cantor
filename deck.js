@@ -1,7 +1,7 @@
-/* Lotería deck: the cards, their verses, the winning shapes and the juego generator.
-   The play-along board (markjf99702/loteria-cards) carries the same file; keep the two
-   in step so printed tablas and wins agree. Card images are found beside the page, or
-   wherever the script tag points: <script src="deck.js" data-cards="cards/">. */
+/* Lotería deck: the cards, their verses, the winning shapes, the family's own tablas and
+   the juego generator. El Cantor, the play-along board and the tabla maker all load this
+   one file, so printed tablas and wins agree everywhere. Card images are found beside the
+   page, or wherever the script tag points: <script src="deck.js" data-cards="cards/">. */
 (function () {
   'use strict';
   var me = document.currentScript, DIR = (me && me.getAttribute('data-cards')) || '';
@@ -67,6 +67,15 @@
   var BYFILE = {}; CARDS.forEach(function (c) { BYFILE[c.f] = c.n; });
   function card(n) { return CARDS[n - 1]; }
   function src(n) { return DIR + card(n).f + '.jpg'; }
+
+  // ---------- Mark's four: the family's own tablas, each with one card twice, side by side ----------
+  var ORIGINALS = [
+    ['ElMelon', 'ElCotorro', 'LaCampana', 'LaArana', 'LaBandera', 'LaPalma', 'ElTambor', 'LaMaceta', 'ElNegrito', 'LasJaras', 'LasJaras', 'ElPino', 'LaBota', 'LaGarza', 'ElCantarito', 'ElPescado'],
+    ['ElVenado', 'ElApache', 'ElCatrin', 'ElMusico', 'ElCazo', 'LaCorona', 'LaCorona', 'ElNegrito', 'ElParaguas', 'ElBarril', 'LaEstrella', 'LaSandia', 'ElPajaro', 'ElValiente', 'LaBotella', 'ElMundo'],
+    ['ElGallo', 'ElNopal', 'ElDiablito', 'LaMano', 'LaEstrella', 'LaChalupa', 'LaChalupa', 'ElGorrito', 'LaDama', 'LaMuerte', 'LaLuna', 'ElSoldado', 'ElVioloncello', 'ElApache', 'LaSirena', 'ElCamaron'],
+    ['LaPera', 'ElBorracho', 'ElSoldado', 'ElBandolon', 'ElAlacran', 'LaRosa', 'LaRosa', 'LaEscalera', 'ElSol', 'ElValiente', 'LaCalavera', 'ElArpa', 'LaRana', 'ElArbol', 'ElCorazon', 'ElApache']
+  ].map(function (t) { return t.map(function (f) { return BYFILE[f]; }); });
+  function originals() { return ORIGINALS.map(function (t) { return t.slice(); }); }
 
   // ---------- patterns (squares are numbered 0–15, row by row) ----------
   function rows() { var o = []; for (var r = 0; r < 4; r++) o.push([r * 4, r * 4 + 1, r * 4 + 2, r * 4 + 3]); return o; }
@@ -188,7 +197,7 @@
   function randomJuego(not) { var w; do { w = WORDS[Math.floor(Math.random() * WORDS.length)]; } while (w === not); return w; }
 
   window.Loteria = {
-    CARDS: CARDS, BYFILE: BYFILE, card: card, src: src, fold: fold,
+    CARDS: CARDS, BYFILE: BYFILE, card: card, src: src, fold: fold, originals: originals,
     PATS: PATS, CLASICO: CLASICO, ALL: ALL, pat: pat, isClasico: isClasico, gameName: gameName, check: check, closest: closest,
     juegoName: juegoName, juego: juego, juegoTabla: juegoTabla, randomJuego: randomJuego
   };
