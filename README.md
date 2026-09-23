@@ -37,3 +37,7 @@ To link it from El Cantor's Settings, set `BOARD_URL` near the top of the script
   - One clip per card: the verse, a breath, the name. Plus the opening line and ¡Lotería!
   - `voices.json` lists the voices and where each verse ends, so Adivinanza can stop before the name.
 - `tools/make_voices.py` — renders `audio/` with [Kokoro-82M](https://github.com/hexgrad/kokoro) (Apache-2.0), using espeak-ng's Latin American Spanish for pronunciation. Rerun it after changing a verse in `deck.js`; the usage is at the top of the script.
+
+## License
+
+The code and the recorded voices are MIT — see [LICENSE](LICENSE). The card images in `cards/` are not covered by it.
