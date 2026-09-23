@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en" class="notranslate" translate="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lotería">
+<meta name="theme-color" content="#F3E7CF" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1D1714" media="(prefers-color-scheme: dark)">
+<title>Lotería · Play along</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bree+Serif&family=Nunito+Sans:ital,opsz,wght@0,6..12,400;0,6..12,600;0,6..12,700;1,6..12,400&display=swap">
+<style>
+:root{
+  --bg:#F3E7CF;--paper:#FBF4E4;--paper2:#EFE1C5;--ink:#2B221C;--ink2:#6A5A4C;--ink3:#9A8A78;--line:#DCCBA9;--line2:#C4AE84;
+  --red:#B7332F;--red-ink:#FFF7EA;--red-soft:#F3D3CB;--teal:#1F6F6D;--teal-soft:#CFE4E0;--gold:#D99A2B;--gold-soft:#F6E3B4;--green:#3E7D4A;
+  --disp:"Bree Serif",Georgia,serif;--body:"Nunito Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --shadow:0 1px 0 rgba(43,34,28,.05),0 10px 24px -14px rgba(43,34,28,.35);
+  --sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#1D1714;--paper:#27201B;--paper2:#322922;--ink:#F3E9DA;--ink2:#C9B9A4;--ink3:#8D7E6C;--line:#3F332B;--line2:#5A4B3F;
+  --red:#E2554F;--red-ink:#1D1714;--red-soft:#4A2521;--teal:#5FB3AE;--teal-soft:#1D3835;--gold:#E8B24A;--gold-soft:#4A3712;--green:#6DBB7C;
+  --shadow:0 1px 0 rgba(0,0,0,.4),0 12px 28px -14px rgba(0,0,0,.85);
+}}
+:root[data-theme="dark"]{
+  --bg:#1D1714;--paper:#27201B;--paper2:#322922;--ink:#F3E9DA;--ink2:#C9B9A4;--ink3:#8D7E6C;--line:#3F332B;--line2:#5A4B3F;
+  --red:#E2554F;--red-ink:#1D1714;--red-soft:#4A2521;--teal:#5FB3AE;--teal-soft:#1D3835;--gold:#E8B24A;--gold-soft:#4A3712;--green:#6DBB7C;
+  --shadow:0 1px 0 rgba(0,0,0,.4),0 12px 28px -14px rgba(0,0,0,.85);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.4 var(--body);-webkit-font-smoothing:antialiased;overflow:hidden;position:fixed;inset:0;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+input{background:var(--paper);border:1px solid var(--line2);border-radius:10px;padding:9px 12px;min-width:0;font-size:16px}
+input:focus-visible,button:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
+.app{position:absolute;inset:0;display:flex;flex-direction:column;padding-top:var(--sat);padding-bottom:var(--sab)}
+/* header */
+.top{display:flex;align-items:center;gap:6px;padding:8px 10px 6px;flex:none}
+.top h1{margin:0;font:400 20px/1 var(--disp);letter-spacing:.01em;color:var(--red);flex:1;display:flex;align-items:baseline;gap:8px;min-width:0}
+.top h1 small{font:600 11px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip{background:var(--paper);border:1px solid var(--line2);border-radius:999px;padding:6px 11px;font:600 12.5px var(--body);color:var(--ink2);white-space:nowrap;display:inline-flex;align-items:center;gap:5px;text-decoration:none}
+.chip.home svg{width:17px;height:17px;display:block}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip.red{background:var(--red);color:var(--red-ink);border-color:var(--red)}
+.chip.teal{background:var(--teal);color:#fff;border-color:var(--teal)}
+.chip.ic{width:34px;height:34px;padding:0;justify-content:center;font-size:16px}
+/* called bar */
+.called{display:flex;gap:10px;align-items:stretch;padding:0 10px 8px;flex:none}
+.callbtn{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:104px;background:var(--red);color:var(--red-ink);border:0;border-radius:14px;padding:8px 12px;box-shadow:var(--shadow)}
+.callbtn b{font:400 19px/1.05 var(--disp)}
+.callbtn span{font:600 10.5px var(--body);letter-spacing:.1em;text-transform:uppercase;opacity:.8}
+.last{flex:1;display:flex;gap:10px;align-items:center;min-width:0;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:6px 8px;box-shadow:var(--shadow)}
+.last img{width:36px;aspect-ratio:2/3.26;object-fit:cover;border-radius:4px;background:#fff;flex:none}
+.last .t{min-width:0;flex:1}
+.last .n{font:400 17px/1.15 var(--disp);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.last .n small{font:600 11px var(--body);color:var(--ink3);margin-right:6px}
+.last .v{font-size:12px;color:var(--ink2);font-style:italic;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.last .empty{font-size:13px;color:var(--ink3)}
+.last button.undo{flex:none;background:none;border:1px solid var(--line2);border-radius:999px;width:34px;height:34px;color:var(--ink2);font-size:15px}
+/* boards */
+.stage{flex:1;min-height:0;position:relative;padding:2px 10px 6px}
+.boards{position:absolute;inset:2px 10px 6px;display:grid;justify-content:center;align-content:center;gap:var(--gap,10px)}
+.tabla{width:var(--bw);display:flex;flex-direction:column;gap:3px;min-width:0}
+.tabla .lbl{display:flex;justify-content:space-between;align-items:center;font:600 11px var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);padding:0 2px;height:16px}
+.tabla .lbl button{background:none;border:0;padding:0;color:inherit;font:inherit;letter-spacing:inherit;text-transform:inherit;display:flex;align-items:center;gap:4px}
+.tabla .lbl .k{font-weight:700;color:var(--ink2)}
+.tabla.win .lbl .k{color:var(--green)}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);gap:2px;background:var(--line2);border:2px solid var(--line2);border-radius:8px;overflow:hidden;aspect-ratio:2/3.26;box-shadow:var(--shadow);position:relative}
+.tabla.win .grid{border-color:var(--green);box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 40%,transparent),var(--shadow)}
+.cell{position:relative;background:#fff;overflow:hidden;cursor:pointer}
+.cell img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.cell.dim::before{content:"";position:absolute;inset:0;background:rgba(20,12,8,.62);z-index:2}
+.cell.hit{outline:3px solid var(--gold);outline-offset:-3px;z-index:3}
+.cell.marked img{filter:brightness(.55) saturate(.7)}
+.cell .mk{position:absolute;left:50%;top:50%;z-index:4;pointer-events:none;width:78%;aspect-ratio:1;transform:translate(-50%,-50%) rotate(var(--rot,0deg)) scale(1);filter:drop-shadow(0 2px 4px rgba(0,0,0,.6))}
+.cell .mk svg{width:100%;height:100%;display:block}
+@keyframes drop{0%{transform:translate(-50%,-70%) rotate(var(--rot,0deg)) scale(1.5);opacity:0}70%{transform:translate(-50%,-50%) rotate(var(--rot,0deg)) scale(.94);opacity:1}100%{transform:translate(-50%,-50%) rotate(var(--rot,0deg)) scale(1)}}
+.cell .mk.new{animation:drop .32s cubic-bezier(.2,.8,.3,1.1)}
+@keyframes pulse{0%,100%{box-shadow:inset 0 0 0 3px var(--gold)}50%{box-shadow:inset 0 0 0 6px var(--gold)}}
+.cell.hit::after{content:"";position:absolute;inset:0;z-index:5;animation:pulse 1.2s ease-in-out infinite}
+/* history */
+.hist{flex:none;display:flex;gap:6px;overflow-x:auto;padding:4px 10px 8px;scrollbar-width:none;min-height:38px;align-items:center}
+.hist::-webkit-scrollbar{display:none}
+.hist .h{flex:none;display:flex;align-items:center;gap:5px;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:3px 9px 3px 4px;font:600 12px var(--body);color:var(--ink2)}
+.hist .h img{width:16px;aspect-ratio:2/3.26;object-fit:cover;border-radius:2px}
+.hist .h.miss{border-color:var(--line2);color:var(--ink3);opacity:.7}
+.hist .cnt{flex:none;font:600 11px var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);padding-right:4px}
+/* sheets */
+.sheetbg{position:fixed;inset:0;background:rgba(30,20,14,.5);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:min(760px,100%);max-height:calc(100% - 20px - var(--sat));display:flex;flex-direction:column;border-radius:18px 18px 0 0;border-top:3px solid var(--red);padding-bottom:var(--sab)}
+.sheet .hd{display:flex;gap:8px;align-items:center;padding:12px 14px 8px;flex:none}
+.sheet .hd h2{margin:0;font:400 20px/1 var(--disp);flex:1}
+.sheet .hd input{flex:1}
+.sheet .bd{overflow:auto;padding:4px 14px 16px;flex:1;min-height:0;-webkit-overflow-scrolling:touch}
+.pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px}
+.pk{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:5px 5px 6px;text-align:center;cursor:pointer;position:relative}
+.pk img{width:100%;aspect-ratio:2/3.26;object-fit:cover;border-radius:5px;display:block;background:#fff}
+.pk .n{font:400 12.5px/1.15 var(--disp);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pk .num{position:absolute;top:8px;left:8px;background:var(--ink);color:var(--bg);font:700 10px var(--body);border-radius:999px;padding:1px 6px}
+.pk.called{opacity:.45}
+.pk.called::after{content:"✓";position:absolute;top:6px;right:8px;background:var(--green);color:#fff;border-radius:999px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.pk.used{outline:2px solid var(--teal)}
+.pk.taken{opacity:.35}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{background:var(--ink);color:var(--bg);border:1px solid var(--ink);border-radius:10px;padding:9px 14px;font:700 14px var(--body)}
+.btn.sec{background:var(--paper);color:var(--ink);border-color:var(--line2)}
+.btn.red{background:var(--red);border-color:var(--red);color:var(--red-ink)}
+.btn.sm{padding:6px 10px;font-size:13px}
+a.btn{text-decoration:none;display:inline-block}
+.note{color:var(--ink2);font-size:13.5px}
+a{color:var(--teal);font-weight:700}
+.eyebrow{font:600 11px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--ink3)}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:var(--shadow)}
+.stack{display:flex;flex-direction:column;gap:12px}
+/* patterns */
+.pats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.pat{display:flex;gap:10px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:8px 10px;cursor:pointer;text-align:left}
+.pat.on{border-color:var(--teal);background:var(--teal-soft)}
+.pat .mini{display:grid;grid-template-columns:repeat(4,1fr);gap:1.5px;width:32px;flex:none}
+.pat .mini i{display:block;aspect-ratio:1;background:var(--line);border-radius:1px}
+.pat .mini i.f{background:var(--teal)}
+.pat .mini i.q{background:var(--gold)}
+.pat b{display:block;font:400 15px var(--disp)}
+.pat small{display:block;font-size:11.5px;color:var(--ink2)}
+/* editor */
+.edb{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
+.edb .eg{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:var(--line2);border:2px solid var(--line2);border-radius:8px;overflow:hidden;aspect-ratio:2/3.26}
+
+.edb .eg .cell.sel{outline:3px solid var(--teal);outline-offset:-3px}
+.edb input{width:100%;margin-bottom:6px;font-size:15px;padding:7px 10px}
+.edb .warn{color:var(--red);font-size:12.5px;margin-top:6px;font-weight:600}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:999px;overflow:hidden;background:var(--paper)}
+.seg button{background:none;border:0;padding:6px 12px;font:600 13px var(--body);color:var(--ink2)}
+.seg button.on{background:var(--ink);color:var(--bg)}
+/* win overlay */
+.winbg{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(30,20,14,.55);padding:20px}
+.winc{background:var(--paper);border:3px solid var(--gold);border-radius:22px;padding:26px 28px 22px;text-align:center;max-width:420px;width:100%;box-shadow:0 30px 60px -20px rgba(0,0,0,.6);animation:pop .35s cubic-bezier(.2,.9,.3,1.2)}
+@keyframes pop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+.winc h2{margin:0;font:400 46px/1 var(--disp);color:var(--red);letter-spacing:.01em}
+.winc p{margin:10px 0 0;color:var(--ink2);font-size:15px}
+.winc .row{justify-content:center;margin-top:18px}
+.toast{position:fixed;left:50%;bottom:calc(20px + var(--sab));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:10px;font:600 13px var(--body);opacity:0;transition:.2s;pointer-events:none;z-index:80;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%)}
+@media (max-width:520px){.top h1 small{display:none}.callbtn{min-width:88px;padding:6px 10px}.callbtn b{font-size:17px}.last .v{display:none}}
+@media (prefers-reduced-motion:reduce){.cell .mk.new,.winc,.cell.hit::after{animation:none}.toast{transition:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <a class="chip ic home" href="./" aria-label="Home — all the Lotería tools" title="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5"/><path d="M6.5 10v9h11v-9"/></svg></a>
+    <h1>Lotería <small id="who"></small></h1>
+    <button class="chip" id="patBtn" type="button">Línea</button>
+    <button class="chip" id="tablasBtn" type="button">Tablas</button>
+    <button class="chip ic" id="clearBtn" type="button" aria-label="Clear the round" title="Clear the round">↺</button>
+    <button class="chip ic" id="setBtn" type="button" aria-label="Settings" title="Settings">⋯</button>
+  </div>
+  <div class="called">
+    <button class="callbtn" id="callBtn" type="button"><b>Cantaron…</b><span>they called</span></button>
+    <div class="last" id="last"></div>
+  </div>
+  <div class="stage"><div class="boards" id="boards"></div></div>
+  <div class="hist" id="hist"></div>
+</div>
+<div id="sheet" hidden></div>
+<div id="winbox" hidden></div>
+<div class="toast" id="toast" role="status"></div>
+<script src="deck.js" data-cards="cards/"></script>
+<script>(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var L = window.Loteria, CARDS = L.CARDS, card = L.card, src = L.src, fold = L.fold;
+
+  // ---------- patterns ----------
+  var PATS = L.PATS, ALL = L.ALL, CLASICO = L.CLASICO, pat = L.pat;
+  function isClasico() { return L.isClasico(S.patterns); }
+  function gameName() { return L.gameName(S.patterns); }
+
+  // ---------- state ----------
+  var LS = 'loteria.v1', LSG = 'loteria.game';
+  function uid() { return Math.random().toString(36).slice(2, 8); }
+  function origBoards() { return L.originals().map(function (cards, i) { return { id: uid(), name: 'Tabla ' + (i + 1), cards: cards }; }); }
+  function randomBoard(name) { var d = CARDS.map(function (c) { return c.n; }); for (var i = d.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = d[i]; d[i] = d[j]; d[j] = t; } return { id: uid(), name: name || 'Tabla', cards: d.slice(0, 16) }; }
+  function fresh() { var p = { id: uid(), name: 'Mark', boards: origBoards() }; return { players: [p], current: p.id, patterns: ['linea', 'esquinas', 'cuadro'], settings: { marker: 'bean', sound: true, guide: true } }; }
+  var S = fresh(), G = { called: [], announced: {} }, UI = { focus: null, sheet: null, edit: null };
+  var firstRun = true;
+  try { var raw = localStorage.getItem(LS); if (raw) { var o = JSON.parse(raw); if (o && o.players && o.players.length) { S = Object.assign(fresh(), o); firstRun = false; } } } catch (e) { }
+  try { var rg = localStorage.getItem(LSG); if (rg) { var g = JSON.parse(rg); if (g && g.called) G = Object.assign({ called: [], announced: {} }, g); } } catch (e) { }
+  function save() { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) { } }
+  function saveG() { try { localStorage.setItem(LSG, JSON.stringify(G)); } catch (e) { } }
+  function player() { var p = S.players.filter(function (p) { return p.id === S.current; })[0]; if (!p) { p = S.players[0]; S.current = p.id; } return p; }
+  function isCalled(n) { return G.called.indexOf(n) >= 0; }
+
+  var toastT; function toast(m) { var t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove('show'); }, 2200); }
+
+  // ---------- sound ----------
+  var AC = null;
+  function ac() { if (!S.settings.sound) return null; try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume(); return AC; } catch (e) { return null; } }
+  function tick() { var a = ac(); if (!a) return; var t = a.currentTime, o = a.createOscillator(), g = a.createGain(); o.type = 'triangle'; o.frequency.setValueAtTime(520, t); o.frequency.exponentialRampToValueAtTime(180, t + 0.08); g.gain.setValueAtTime(0.18, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.12); o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + 0.13); }
+  function fanfare() { var a = ac(); if (!a) return; var t = a.currentTime; [523, 659, 784, 1047, 784, 1047].forEach(function (f, i) { var o = a.createOscillator(), g = a.createGain(); o.type = 'square'; o.frequency.value = f; var s = t + i * 0.11; g.gain.setValueAtTime(0.0001, s); g.gain.exponentialRampToValueAtTime(0.12, s + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, s + (i === 5 ? 0.5 : 0.12)); o.connect(g); g.connect(a.destination); o.start(s); o.stop(s + 0.55); }); }
+
+  // ---------- marker ----------
+  var BEAN = '<svg viewBox="0 0 100 100"><defs><radialGradient id="mkb" cx="38%" cy="32%" r="72%"><stop offset="0" stop-color="#D2AB7F"/><stop offset=".55" stop-color="#8E5C38"/><stop offset="1" stop-color="#48290F"/></radialGradient></defs><path d="M20 60C10 36 28 16 52 16c25 0 36 17 31 36-4 14-15 23-31 26C36 81 26 74 20 60z" fill="url(#mkb)" stroke="#FFF4DC" stroke-width="5" paint-order="stroke"/><path d="M40 28c6-5 16-5 24-1" stroke="#4A2A12" stroke-width="3.5" fill="none" opacity=".55" stroke-linecap="round"/><ellipse cx="62" cy="52" rx="7" ry="5" fill="#4A2A12" opacity=".35"/><ellipse cx="38" cy="62" rx="5" ry="3.5" fill="#4A2A12" opacity=".3"/><ellipse cx="50" cy="40" rx="3" ry="2" fill="#4A2A12" opacity=".25"/></svg>';
+  var CHIP = '<svg viewBox="0 0 100 100"><defs><radialGradient id="mkc" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#FF7A6E"/><stop offset=".7" stop-color="#C62A22"/><stop offset="1" stop-color="#7E140F"/></radialGradient></defs><circle cx="50" cy="50" r="42" fill="url(#mkc)" stroke="#FFF4DC" stroke-width="5"/><circle cx="50" cy="50" r="30" fill="none" stroke="#fff" stroke-opacity=".25" stroke-width="3"/></svg>';
+  var COIN = '<svg viewBox="0 0 100 100"><defs><radialGradient id="mkg" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#FFE9A6"/><stop offset=".6" stop-color="#D9A32B"/><stop offset="1" stop-color="#8A5E0E"/></radialGradient></defs><circle cx="50" cy="50" r="42" fill="url(#mkg)" stroke="#FFF4DC" stroke-width="5"/><circle cx="50" cy="50" r="33" fill="none" stroke="#8A5E0E" stroke-opacity=".5" stroke-width="2.5"/><text x="50" y="58" text-anchor="middle" font-family="Georgia,serif" font-size="26" fill="#8A5E0E" opacity=".7">$</text></svg>';
+  function markerSvg() { return S.settings.marker === 'chip' ? CHIP : S.settings.marker === 'coin' ? COIN : BEAN; }
+  function rotFor(b, c) { return ((b * 37 + c * 53) % 70) - 35; }
+
+  // ---------- wins ----------
+  function checkBoard(bd) { return L.check(bd.cards, isCalled, S.patterns); }
+  function guideCells() {
+    var fixed = S.patterns.map(pat).filter(function (p) { return p && !p.min && p.sets.length === 1 && p.id !== 'llena'; });
+    if (!fixed.length || fixed.length !== S.patterns.length) return null;
+    var u = {}; fixed.forEach(function (p) { p.sets[0].forEach(function (c) { u[c] = 1; }); }); return u;
+  }
+  function evaluate(announce) {
+    var p = player(), newWins = [];
+    var live = {};
+    p.boards.forEach(function (bd) {
+      checkBoard(bd).forEach(function (h) { var k = bd.id + ':' + h.pat.id; live[k] = 1; if (!G.announced[k]) { G.announced[k] = 1; newWins.push({ board: bd, hit: h }); } });
+    });
+    Object.keys(G.announced).forEach(function (k) { if (!live[k]) delete G.announced[k]; });
+    saveG();
+    if (announce && newWins.length) showWin(newWins);
+  }
+
+  // ---------- render ----------
+  function render() { renderTop(); renderLast(); renderBoards(); renderHist(); }
+  function renderTop() {
+    var p = player(); $('who').textContent = p.name + (S.players.length > 1 ? ' · ' + p.boards.length + (p.boards.length === 1 ? ' tabla' : ' tablas') : '');
+    $('patBtn').textContent = gameName() + ' ▾';
+    $('patBtn').classList.toggle('teal', S.patterns.length > 0);
+  }
+  function renderLast() {
+    var el = $('last'), n = G.called[G.called.length - 1];
+    if (!n) { el.innerHTML = '<div class="t"><div class="empty">Nothing called yet. Tap <b>Cantaron…</b> when they call a card, or tap the card on a tabla.</div></div>'; return; }
+    var c = card(n), onb = player().boards.some(function (b) { return b.cards.indexOf(n) >= 0; });
+    el.innerHTML = '<img src="' + src(n) + '" alt=""><div class="t"><div class="n"><small>' + c.n + '</small>' + c.name + (onb ? '' : ' <small style="color:var(--red)">not on your tablas</small>') + '</div><div class="v">' + c.verse + '</div></div><button class="undo" type="button" id="undoBtn" aria-label="Undo the last call" title="Undo the last call">↶</button>';
+    $('undoBtn').addEventListener('click', function () { G.called.pop(); tick(); evaluate(false); render(); });
+  }
+  function renderBoards() {
+    var p = player(), host = $('boards'), guide = S.settings.guide ? guideCells() : null;
+    host.innerHTML = '';
+    var list = p.boards.map(function (b, i) { return { b: b, i: i }; }).filter(function (x) { return UI.focus == null || x.b.id === UI.focus; });
+    if (UI.focus != null && !list.length) { UI.focus = null; list = p.boards.map(function (b, i) { return { b: b, i: i }; }); }
+    list.forEach(function (x) {
+      var bd = x.b, hits = checkBoard(bd), hitCells = {}; hits.forEach(function (h) { h.cells.forEach(function (c) { hitCells[c] = 1; }); });
+      var t = document.createElement('div'); t.className = 'tabla' + (hits.length ? ' win' : ''); t.dataset.id = bd.id;
+      var lbl = document.createElement('div'); lbl.className = 'lbl';
+      lbl.innerHTML = '<button type="button" class="k">' + esc(bd.name) + (hits.length ? ' · ¡' + hits[0].pat.name.toLowerCase() + '!' : '') + '</button><button type="button" class="z" aria-label="Enlarge">' + (UI.focus == null ? (p.boards.length > 1 ? '⤢' : '') : '⤡') + '</button>';
+      lbl.querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () { if (p.boards.length < 2) return; UI.focus = UI.focus == null ? bd.id : null; renderBoards(); }); });
+      var g = document.createElement('div'); g.className = 'grid';
+      bd.cards.forEach(function (n, ci) {
+        var cell = document.createElement('div'); cell.className = 'cell' + (guide && !guide[ci] ? ' dim' : '') + (hitCells[ci] ? ' hit' : '');
+        cell.innerHTML = '<img src="' + src(n) + '" alt="' + esc(card(n).name) + '" loading="lazy" draggable="false">';
+        if (isCalled(n)) { cell.classList.add('marked'); var mk = document.createElement('div'); mk.className = 'mk' + (G.called[G.called.length - 1] === n ? ' new' : ''); mk.style.setProperty('--rot', rotFor(x.i, ci) + 'deg'); mk.innerHTML = markerSvg(); cell.appendChild(mk); }
+        cell.addEventListener('click', function () { call(n); });
+        g.appendChild(cell);
+      });
+      t.appendChild(lbl); t.appendChild(g); host.appendChild(t);
+    });
+    layout();
+  }
+  function layout() {
+    var host = $('boards'), n = host.children.length; if (!n) return;
+    var W = host.clientWidth, H = host.clientHeight, gap = 10, best = 0, bc = 1;
+    for (var c = 1; c <= n; c++) { var r = Math.ceil(n / c), cw = (W - gap * (c - 1)) / c, rh = (H - gap * (r - 1)) / r, bw = Math.min(cw, (rh - 20) / 1.63); if (bw > best) { best = bw; bc = c; } }
+    best = Math.max(90, Math.floor(best));
+    host.style.setProperty('--bw', best + 'px'); host.style.gridTemplateColumns = 'repeat(' + bc + ',' + best + 'px)';
+  }
+  function renderHist() {
+    var el = $('hist'), p = player(); el.innerHTML = '';
+    if (!G.called.length) { el.innerHTML = '<span class="cnt">Called cards show up here</span>'; return; }
+    var cnt = document.createElement('span'); cnt.className = 'cnt'; cnt.textContent = G.called.length + ' called'; el.appendChild(cnt);
+    G.called.slice().reverse().forEach(function (n) {
+      var onb = p.boards.some(function (b) { return b.cards.indexOf(n) >= 0; });
+      var h = document.createElement('button'); h.type = 'button'; h.className = 'h' + (onb ? '' : ' miss'); h.innerHTML = '<img src="' + src(n) + '" alt="">' + esc(card(n).name); h.title = 'Tap to un-call';
+      h.addEventListener('click', function () { call(n); }); el.appendChild(h);
+    });
+  }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  function call(n) {
+    var i = G.called.indexOf(n);
+    if (i >= 0) G.called.splice(i, 1); else G.called.push(n);
+    tick(); evaluate(i < 0); render();
+  }
+  function clearRound() { if (!G.called.length) return; G.called = []; G.announced = {}; saveG(); render(); patternSheet('New round — what are we playing?'); }
+
+  // ---------- win ----------
+  function showWin(wins) {
+    fanfare();
+    var w = wins[0], box = $('winbox');
+    var more = wins.length > 1 ? ' — and ' + (wins.length - 1) + ' more' : '';
+    box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p><b>' + esc(w.board.name) + '</b> · ' + esc(w.hit.pat.name) + more + '</p><p class="note">Shout it before somebody else does.</p><div class="row"><button class="btn red" type="button" id="winOk">Keep playing</button><button class="btn sec" type="button" id="winClear">New round</button></div></div></div>';
+    box.hidden = false;
+    $('winOk').addEventListener('click', function () { box.hidden = true; });
+    $('winClear').addEventListener('click', function () { box.hidden = true; clearRound(); });
+    box.querySelector('.winbg').addEventListener('click', function (e) { if (e.target === e.currentTarget) box.hidden = true; });
+  }
+
+  // ---------- sheets ----------
+  function openSheet(html) { var s = $('sheet'); s.innerHTML = '<div class="sheetbg"><div class="sheet">' + html + '</div></div>'; s.hidden = false; s.querySelector('.sheetbg').addEventListener('click', function (e) { if (e.target === e.currentTarget) closeSheet(); }); return s.querySelector('.sheet'); }
+  function closeSheet() { $('sheet').hidden = true; $('sheet').innerHTML = ''; UI.sheet = null; }
+
+  function pickerSheet(mode, onPick, taken) {
+    var sh = openSheet('<div class="hd"><input id="pkq" placeholder="' + (mode === 'call' ? 'Name or number… “luna”, 23' : 'Pick a card for this square') + '" autocomplete="off" inputmode="search"><button class="btn sec sm" type="button" id="pkx">Done</button></div><div class="bd"><div class="pick" id="pk"></div></div>');
+    var q = $('pkq'), grid = $('pk');
+    function draw() {
+      var f = fold(q.value.trim()), num = parseInt(f, 10);
+      grid.innerHTML = '';
+      CARDS.forEach(function (c) {
+        if (f && !(c.key.indexOf(f) >= 0 || (num && c.n === num))) return;
+        var d = document.createElement('div'); d.className = 'pk' + (mode === 'call' && isCalled(c.n) ? ' called' : '') + (taken && taken.indexOf(c.n) >= 0 ? ' taken' : '');
+        d.innerHTML = '<span class="num">' + c.n + '</span><img src="' + src(c.n) + '" alt="" loading="lazy"><div class="n">' + c.name + '</div>';
+        d.addEventListener('click', function () { onPick(c.n); if (mode === 'call') { draw(); q.value = ''; q.focus(); } });
+        grid.appendChild(d);
+      });
+      if (!grid.children.length) grid.innerHTML = '<div class="note">No card matches “' + esc(q.value) + '”.</div>';
+    }
+    q.addEventListener('input', draw);
+    q.addEventListener('keydown', function (e) { if (e.key === 'Enter') { var first = grid.querySelector('.pk'); if (first && grid.querySelectorAll('.pk').length === 1) first.click(); } });
+    $('pkx').addEventListener('click', closeSheet);
+    draw();
+    if (!('ontouchstart' in window)) q.focus();
+    return sh;
+  }
+
+  function patternSheet(title) {
+    openSheet('<div class="hd"><h2>' + (title || 'What are we playing?') + '</h2><button class="btn sec sm" type="button" id="ptx">Done</button></div><div class="bd stack"><p class="note">Tap the game for this round. <b>Clásico</b> is the regular game — a tabla wins on 4 in a row, 4 corners, or 4 in a square. The others are single shapes; hold one for a second to add it on top of what’s selected.</p><div class="pats" id="pats"></div></div>');
+    function draw() {
+      var host = $('pats'); host.innerHTML = '';
+      PATS.forEach(function (p) {
+        var on = p.combo ? isClasico() : (S.patterns.indexOf(p.id) >= 0 && !isClasico()), show = p.show || p.sets[0];
+        var b = document.createElement('button'); b.type = 'button'; b.className = 'pat' + (on ? ' on' : '');
+        b.innerHTML = '<span class="mini">' + ALL.map(function (i) { return '<i class="' + (show.indexOf(i) >= 0 ? (p.combo || p.min || (p.sets && p.sets.length > 1) ? 'q' : 'f') : '') + '"></i>'; }).join('') + '</span><span><b>' + p.name + '</b><small>' + p.sub + '</small></span>';
+        var held = false, t;
+        function pick(add) {
+          if (p.combo) S.patterns = CLASICO.slice();
+          else if (add) { if (isClasico()) S.patterns = [p.id]; else if (S.patterns.indexOf(p.id) < 0) S.patterns.push(p.id); }
+          else S.patterns = [p.id];
+          save(); draw(); G.announced = {}; evaluate(true); render();
+        }
+        b.addEventListener('pointerdown', function () { held = false; t = setTimeout(function () { held = true; pick(true); toast(p.name + ' added'); }, 550); });
+        b.addEventListener('pointerup', function () { clearTimeout(t); if (!held) pick(false); });
+        b.addEventListener('pointerleave', function () { clearTimeout(t); });
+        b.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+        host.appendChild(b);
+      });
+    }
+    $('ptx').addEventListener('click', closeSheet); draw();
+  }
+
+  function settingsSheet() {
+    var st = S.settings;
+    openSheet('<div class="hd"><h2>Settings</h2><button class="btn sec sm" type="button" id="stx">Done</button></div><div class="bd stack">' +
+      '<div class="card"><div class="eyebrow">Marker</div><div class="row" style="margin-top:8px"><div class="seg" id="mkseg"><button type="button" data-v="bean">Frijol</button><button type="button" data-v="chip">Ficha</button><button type="button" data-v="coin">Moneda</button></div></div></div>' +
+      '<div class="card"><div class="row" style="justify-content:space-between"><div><b>Sounds</b><div class="note">A bean drop on each mark, a little fanfare on a win.</div></div><button class="chip" type="button" id="sndBtn"></button></div></div>' +
+      '<div class="card"><div class="row" style="justify-content:space-between"><div><b>Dim squares outside the pattern</b><div class="note">Only for fixed shapes like Esquinas or La Ele.</div></div><button class="chip" type="button" id="gdBtn"></button></div></div>' +
+      '<div class="card"><div class="eyebrow">Who is playing on this device</div><div class="row" id="plist" style="margin-top:8px"></div><div class="row" style="margin-top:10px"><input id="pnew" placeholder="Add a person" style="flex:1"><button class="btn sm" type="button" id="padd">Add</button></div><p class="note" style="margin-top:8px">Each person keeps their own tablas. To send someone your tablas, use <b>Share</b> on the Tablas screen.</p></div>' +
+      '<div class="card"><div class="eyebrow">Calling the game?</div><p class="note" style="margin-top:6px"><a href="cantor.html">El Cantor</a> shuffles a deck and reads each card aloud, prints numbered tablas, and checks a ¡Lotería! by tabla number.</p></div>' +
+      '<div class="card"><div class="eyebrow">About</div><p class="note" style="margin-top:6px">Everything lives on this device — nothing is sent anywhere. Reload-safe: the round survives a refresh.</p></div></div>');
+    function draw() {
+      document.querySelectorAll('#mkseg button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === st.marker); });
+      $('sndBtn').textContent = st.sound ? 'On' : 'Off'; $('sndBtn').classList.toggle('on', st.sound);
+      $('gdBtn').textContent = st.guide ? 'On' : 'Off'; $('gdBtn').classList.toggle('on', st.guide);
+      var pl = $('plist'); pl.innerHTML = '';
+      S.players.forEach(function (p) { var b = document.createElement('button'); b.type = 'button'; b.className = 'chip' + (p.id === S.current ? ' on' : ''); b.textContent = p.name; b.addEventListener('click', function () { S.current = p.id; save(); UI.focus = null; draw(); evaluate(false); render(); }); pl.appendChild(b); });
+    }
+    document.querySelectorAll('#mkseg button').forEach(function (b) { b.addEventListener('click', function () { st.marker = b.dataset.v; save(); draw(); renderBoards(); }); });
+    $('sndBtn').addEventListener('click', function () { st.sound = !st.sound; save(); draw(); if (st.sound) tick(); });
+    $('gdBtn').addEventListener('click', function () { st.guide = !st.guide; save(); draw(); renderBoards(); });
+    $('padd').addEventListener('click', function () { var n = $('pnew').value.trim(); if (!n) return; var p = { id: uid(), name: n, boards: [randomBoard('Tabla 1'), randomBoard('Tabla 2')] }; S.players.push(p); S.current = p.id; save(); $('pnew').value = ''; draw(); render(); toast(n + ' gets two random tablas to start — edit them under Tablas'); });
+    $('stx').addEventListener('click', closeSheet); draw();
+  }
+
+  function tablasSheet() {
+    var p = player();
+    openSheet('<div class="hd"><input id="tbName" value="' + esc(p.name) + '" aria-label="Player name" style="font:400 18px var(--disp);flex:1"><button class="btn sec sm" type="button" id="tbShare">Share</button><button class="btn sm" type="button" id="tbx">Done</button></div><div class="bd stack"><p class="note">Tap any square to change its card. Doubles are fine (house rules) — when that card is called, both squares get a bean. Names are editable.</p><div class="edb" id="edb"></div><div class="row"><button class="btn sec sm" type="button" id="tbAdd">+ Add a tabla</button><button class="btn sec sm" type="button" id="tbPrinted">+ A printed tabla</button><button class="btn sec sm" type="button" id="tbOrig">Restore the original four</button><a class="btn sec sm" href="print.html">Make tablas to print</a><button class="btn sec sm" type="button" id="tbDel" style="color:var(--red)">Remove this person</button></div></div>');
+    function draw() {
+      var host = $('edb'); host.innerHTML = '';
+      p.boards.forEach(function (bd, bi) {
+        var counts = {}; bd.cards.forEach(function (n) { counts[n] = (counts[n] || 0) + 1; });
+        var dups = Object.keys(counts).filter(function (n) { return counts[n] > 1; }).map(function (n) { return card(+n).name; });
+        var w = document.createElement('div');
+        w.innerHTML = '<input value="' + esc(bd.name) + '" aria-label="Tabla name"><div class="eg"></div>' + (dups.length ? '<div class="warn">Twice: ' + dups.join(', ') + '</div>' : '') + '<div class="row" style="margin-top:8px"><button class="btn sec sm" type="button" data-a="rnd">Random tabla</button>' + (p.boards.length > 1 ? '<button class="btn sec sm" type="button" data-a="del">Remove</button>' : '') + '</div>';
+        var inp = w.querySelector('input'); inp.addEventListener('change', function () { bd.name = inp.value.trim() || ('Tabla ' + (bi + 1)); save(); render(); });
+        var eg = w.querySelector('.eg');
+        bd.cards.forEach(function (n, ci) {
+          var cell = document.createElement('div'); cell.className = 'cell'; cell.innerHTML = '<img src="' + src(n) + '" alt="' + esc(card(n).name) + '" draggable="false">';
+          cell.addEventListener('click', function () {
+            pickerSheet('edit', function (pick) { bd.cards[ci] = pick; save(); closeSheet(); tablasSheet(); evaluate(false); render(); }, bd.cards.filter(function (x, k) { return k !== ci; }));
+          });
+          eg.appendChild(cell);
+        });
+        w.querySelector('[data-a="rnd"]').addEventListener('click', function () { var r = randomBoard(bd.name); bd.cards = r.cards; save(); draw(); evaluate(false); render(); });
+        var del = w.querySelector('[data-a="del"]'); if (del) del.addEventListener('click', function () { p.boards.splice(bi, 1); save(); UI.focus = null; draw(); evaluate(false); render(); });
+        host.appendChild(w);
+      });
+    }
+    $('tbPrinted').addEventListener('click', function () { if (p.boards.length >= 6) { toast('Six tablas is plenty'); return; } printedSheet(p); });
+    $('tbAdd').addEventListener('click', function () { if (p.boards.length >= 6) { toast('Six tablas is plenty'); return; } p.boards.push(randomBoard('Tabla ' + (p.boards.length + 1))); save(); draw(); render(); });
+    $('tbOrig').addEventListener('click', function () { p.boards = origBoards(); save(); draw(); evaluate(false); render(); });
+    var delArmed = false;
+    $('tbDel').addEventListener('click', function () { if (S.players.length < 2) { toast('Add someone else first — the app needs one player'); return; } if (!delArmed) { delArmed = true; this.textContent = 'Tap again to remove ' + p.name; return; } S.players = S.players.filter(function (x) { return x.id !== p.id; }); S.current = S.players[0].id; save(); closeSheet(); UI.focus = null; evaluate(false); render(); });
+    $('tbName').addEventListener('change', function () { p.name = $('tbName').value.trim() || p.name; $('tbName').value = p.name; save(); render(); });
+    $('tbShare').addEventListener('click', shareSheet);
+    $('tbx').addEventListener('click', closeSheet); draw();
+  }
+
+  // ---------- printed tablas (from El Cantor) ----------
+  function printedSheet(p) {
+    openSheet('<div class="hd"><h2>Add a printed tabla</h2><button class="btn sec sm" type="button" id="ptx">Cancel</button></div><div class="bd stack"><p class="note">Tablas printed from El Cantor carry a juego name along the bottom and a number at the top. Type both and the same tabla shows up here, square for square — so the caller can still check it by number.</p><div class="row"><input id="ptJ" placeholder="Juego, like CANELA" autocomplete="off" autocapitalize="characters" spellcheck="false" style="flex:1 1 10em;text-transform:uppercase;font-weight:700"><input id="ptN" placeholder="No." inputmode="numeric" autocomplete="off" maxlength="3" aria-label="Tabla number" style="width:5.5em"><button class="btn red" type="button" id="ptAdd" disabled>Add it</button></div><div class="edb"><div id="ptPrev"></div></div></div>');
+    var pick = null;
+    function draw() {
+      var name = L.juegoName($('ptJ').value), k = parseInt($('ptN').value, 10), host = $('ptPrev');
+      pick = name && k >= 1 && k <= 999 ? { name: name + ' ' + k, cards: L.juegoTabla(name, k) } : null;
+      $('ptAdd').disabled = !pick;
+      host.innerHTML = pick ? '<div class="tabla" style="--bw:100%"><div class="lbl"><span class="k">' + esc(pick.name) + '</span></div><div class="eg">' + pick.cards.map(function (n) { return '<div class="cell"><img src="' + src(n) + '" alt="' + esc(card(n).name) + '" draggable="false"></div>'; }).join('') + '</div></div>' : '';
+    }
+    var last = ''; try { var c = JSON.parse(localStorage.getItem('loteria.cantor') || 'null'); last = (c && c.juego) || ''; } catch (e) { }
+    if (last) $('ptJ').value = last; // the juego El Cantor last printed on this device
+    $('ptJ').addEventListener('input', draw);
+    $('ptN').addEventListener('input', function () { this.value = this.value.replace(/\D/g, ''); draw(); });
+    $('ptAdd').addEventListener('click', function () { if (!pick) return; p.boards.push({ id: uid(), name: pick.name, cards: pick.cards }); save(); closeSheet(); evaluate(true); render(); tablasSheet(); toast(pick.name + ' added'); });
+    $('ptx').addEventListener('click', function () { closeSheet(); tablasSheet(); });
+    if (!('ontouchstart' in window)) (last ? $('ptN') : $('ptJ')).focus();
+  }
+
+  // ---------- share / import ----------
+  function encodeShare(p) { return '#t=' + encodeURIComponent(p.name) + '~' + p.boards.map(function (b) { return encodeURIComponent(b.name) + ':' + b.cards.map(function (n) { return n.toString(36); }).join('.'); }).join('~'); }
+  function decodeShare(h) {
+    var m = /#t=(.+)$/.exec(h); if (!m) return null;
+    var parts = m[1].split('~'); if (parts.length < 2) return null;
+    var boards = parts.slice(1).map(function (s) { var i = s.indexOf(':'); var cards = s.slice(i + 1).split('.').map(function (x) { return parseInt(x, 36); }); if (cards.length !== 16 || cards.some(function (n) { return !(n >= 1 && n <= 54); })) return null; return { id: uid(), name: decodeURIComponent(s.slice(0, i)) || 'Tabla', cards: cards }; });
+    if (boards.some(function (b) { return !b; })) return null;
+    return { name: decodeURIComponent(parts[0]) || 'Guest', boards: boards };
+  }
+  function shareUrl(p) { return location.href.split('#')[0] + encodeShare(p); }
+  function shareSheet() {
+    var p = player(), url = shareUrl(p);
+    openSheet('<div class="hd"><h2>Share ' + esc(p.name) + '’s tablas</h2><button class="btn sec sm" type="button" id="shx">Done</button></div><div class="bd stack"><p class="note">Anyone who opens this link gets a copy of these ' + p.boards.length + ' tablas on their own device, under the name “' + esc(p.name) + '”. The link is the whole thing — nothing is stored anywhere else.</p><input id="shUrl" readonly value="' + esc(url) + '"><div class="row"><button class="btn red" type="button" id="shCopy">Copy link</button>' + (navigator.share ? '<button class="btn sec" type="button" id="shNative">Send…</button>' : '') + '</div></div>');
+    $('shx').addEventListener('click', closeSheet);
+    $('shCopy').addEventListener('click', function () { var i = $('shUrl'); i.select(); var ok = false; try { if (navigator.clipboard) { navigator.clipboard.writeText(url); ok = true; } else ok = document.execCommand('copy'); } catch (e) { } toast(ok ? 'Link copied' : 'Select the link and copy it'); });
+    var nb = $('shNative'); if (nb) nb.addEventListener('click', function () { navigator.share({ title: 'Lotería tablas', text: p.name + '’s tablas', url: url }).catch(function () { }); });
+  }
+  function maybeImport() {
+    var imp = decodeShare(location.hash); if (!imp) return;
+    history.replaceState(null, '', location.pathname + location.search);
+    var existing = S.players.filter(function (p) { return p.name.toLowerCase() === imp.name.toLowerCase(); })[0];
+    openSheet('<div class="hd"><h2>Tablas from ' + esc(imp.name) + '</h2></div><div class="bd stack"><p class="note">This link carries ' + imp.boards.length + ' tabla' + (imp.boards.length === 1 ? '' : 's') + ' for “' + esc(imp.name) + '”.' + (existing ? ' You already have a ' + esc(existing.name) + ' on this device — importing replaces their tablas.' : '') + '</p><div class="row"><button class="btn red" type="button" id="imOk">' + (existing ? 'Replace and use' : 'Add and use') + '</button><button class="btn sec" type="button" id="imNo">No thanks</button></div></div>');
+    $('imNo').addEventListener('click', closeSheet);
+    $('imOk').addEventListener('click', function () { if (existing) { existing.boards = imp.boards; S.current = existing.id; } else { var p = { id: uid(), name: imp.name, boards: imp.boards }; S.players.push(p); S.current = p.id; } save(); closeSheet(); UI.focus = null; evaluate(false); render(); toast('Playing as ' + imp.name); });
+  }
+
+  // ---------- first visit ----------
+  function welcomeSheet() {
+    var sh = openSheet('<div class="hd"><h2>Who’s playing on this device?</h2></div><div class="bd stack"><p class="note">Asked once. Tablas are saved on this phone or tablet only, so what you set up here is yours and nobody else’s.</p><input id="wName" placeholder="Your name" autocomplete="off"><div class="card"><div class="eyebrow">Start with</div><div class="row" style="margin-top:8px"><button class="btn red" type="button" id="wRandom">Random tablas I’ll edit</button><button class="btn sec" type="button" id="wMark">Mark’s four tablas</button></div><p class="note" style="margin-top:8px">Either way you can change every square later under <b>Tablas</b>.</p></div></div>');
+    sh.parentElement.replaceWith(sh.parentElement.cloneNode(true)); // drop the tap-outside-to-close handler
+    function go(mark) {
+      var name = $('wName').value.trim() || (mark ? 'Mark' : 'Player');
+      var p = { id: uid(), name: name, boards: mark ? origBoards() : [randomBoard('Tabla 1'), randomBoard('Tabla 2')] };
+      S.players = [p]; S.current = p.id; save(); closeSheet(); render();
+      toast(mark ? 'Playing as ' + name : name + ', tap Tablas to set up your cards');
+    }
+    $('wRandom').addEventListener('click', function () { go(false); });
+    $('wMark').addEventListener('click', function () { go(true); });
+    $('wName').addEventListener('keydown', function (e) { if (e.key === 'Enter') go(false); });
+  }
+
+  // ---------- wiring ----------
+  $('callBtn').addEventListener('click', function () { pickerSheet('call', function (n) { call(n); }); });
+  $('patBtn').addEventListener('click', function () { patternSheet(); });
+  $('tablasBtn').addEventListener('click', tablasSheet);
+  $('setBtn').addEventListener('click', settingsSheet);
+  $('clearBtn').addEventListener('click', function () {
+    if (!G.called.length) return;
+    if (G.called.length < 3) { clearRound(); return; }
+    openSheet('<div class="hd"><h2>Clear the round?</h2></div><div class="bd stack"><p class="note">Takes the beans off all ' + G.called.length + ' called cards so you can start the next round.</p><div class="row"><button class="btn red" type="button" id="clOk">Clear for a new round</button><button class="btn sec" type="button" id="clNo">Keep playing</button></div></div>');
+    $('clOk').addEventListener('click', function () { closeSheet(); clearRound(); });
+    $('clNo').addEventListener('click', closeSheet);
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closeSheet(); $('winbox').hidden = true; } });
+  window.addEventListener('resize', layout);
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', layout);
+  render();
+  if (firstRun && !decodeShare(location.hash)) welcomeSheet(); else { save(); maybeImport(); }
+  window.addEventListener('hashchange', maybeImport);
+})();
+</script>
+</body>
+</html>

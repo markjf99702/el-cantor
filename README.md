@@ -1,8 +1,16 @@
 # El Cantor
 
-A Lotería caller for the phone, tablet or laptop at the head of the table. It replaces the deck and the person reading it. Everything stays on the device: no accounts, nothing sent anywhere.
+Lotería for the family table, in one package. Everything stays on the device: no accounts, nothing sent anywhere.
 
-Open `index.html` from any static host (GitHub Pages works). Put it on the home screen and it runs full screen.
+Open `index.html` from any static host (GitHub Pages works). Put it on the home screen and it runs full screen. The home screen has three choices:
+
+- **El Cantor** (`cantor.html`) calls the game: the phone, tablet or laptop at the head of the table that replaces the deck and the person reading it.
+- **My tablas** (`board.html`) is the play-along board: each player marks their own tablas on their phone as cards are called.
+- **Make tablas** (`print.html`) makes tablas by hand, with drag and drop, and prints them.
+
+Every page has a ⌂ button back to the home screen. They all load the same `deck.js` and card images.
+
+## El Cantor
 
 ## What it does
 
@@ -20,18 +28,31 @@ Open `index.html` from any static host (GitHub Pages works). Put it on the home 
 
 Keyboard: Space starts or pauses · → next card · ← puts the last card back · L checks a ¡Lotería!
 
-## Playing along on phones
+## My tablas — playing along
 
-The play-along board lives in [markjf99702/loteria-cards](https://github.com/markjf99702/loteria-cards). Each player marks their own tablas on their phone as cards are called. The board can also load a tabla printed here, by its juego name and number.
+Someone calls the cards; you tap **Cantaron…**, pick the card, and it marks itself on every tabla where it appears.
 
-To link it from El Cantor's Settings, set `BOARD_URL` near the top of the script in `index.html` to the board's address.
+- Pick the game each round: Clásico, or a single shape, the same list El Cantor uses.
+- Edit tablas square by square. Doubles are fine (family rule): when that card is called, both squares get a bean. Up to six tablas per person.
+- **+ A printed tabla** adds a tabla from El Cantor's printed juegos by its name and number. It starts with the juego El Cantor last printed on this device.
+- Several people on one device, each with their own tablas. **Share** makes a link that carries a set of tablas to another phone.
+
+## Make tablas — by hand, to print
+
+- Drag cards from the deck onto a tabla. On a phone or iPad, press and hold a card before you drag it. Drag a square to move it, onto another tabla to copy it, or back to the deck to take it off. You can also tap a square and then tap cards.
+- **Doubles ✓** is the family rule: a card can go on a tabla twice, but not three times. **Random** makes a tabla like Mark's four, with 15 cards and one of them twice, side by side in the middle. Turn it off to allow each card only once.
+- **Print…** fits 1, 2 or 4 tablas on a Letter or A4 page. With 2 per page the tablas print sideways.
+- Copy in Mark's four, or anyone's tablas from My tablas on this device. **Play these in the app…** sends full tablas to My tablas, on this phone or another.
+- Hand-made tablas aren't numbered, so El Cantor checks them card by card. For a set it checks by number, use El Cantor's **Print tablas**.
 
 ## Files
 
-- `index.html` — El Cantor.
-- `deck.js` — the cards, their verses, the winning shapes, and the juego generator.
+- `index.html` — the home screen.
+- `cantor.html` — El Cantor.
+- `board.html` — My tablas, the play-along board.
+- `print.html` — Make tablas.
+- `deck.js` — the cards, their verses, the winning shapes, Mark's four tablas, and the juego generator. Every page loads it.
   - The generator is frozen: changing it would change every tabla already printed.
-  - The board carries the same file; keep the two copies in step.
 - `cards/` — the 54 card images.
 - `audio/` — the recorded voices.
   - One clip per card: the verse, a breath, the name. Plus the opening line and ¡Lotería!
