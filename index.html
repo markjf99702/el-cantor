@@ -124,6 +124,8 @@ a{color:var(--teal);font-weight:700}
 .stat{flex:1;min-width:0;font:700 13px var(--body);color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
 .lotb{flex:none;height:54px;border-radius:14px;border:0;background:var(--red);color:var(--red-ink);font:400 24px/1 var(--disp);padding:0 22px;box-shadow:var(--shadow);letter-spacing:.01em}
 .bar .seg{flex:none}
+.pacec{flex:none;height:46px;border-radius:999px;padding:0 12px 0 10px;background:var(--paper);border:1px solid var(--line2);font:800 14px var(--body);color:var(--ink);display:none;align-items:center;gap:5px;font-variant-numeric:tabular-nums}
+.pacec svg{width:18px;height:18px;display:block;color:var(--ink2)}
 /* shared bits */
 .seg{display:inline-flex;border:1px solid var(--line2);border-radius:999px;overflow:hidden;background:var(--paper)}
 .seg button{background:none;border:0;padding:7px 13px;font:700 13px var(--body);color:var(--ink2)}
@@ -224,7 +226,7 @@ a{color:var(--teal);font-weight:700}
 .linkb{background:none;border:0;padding:6px;margin-top:10px;color:var(--teal);font:700 13px var(--body);text-decoration:underline;text-underline-offset:3px}
 .toast{position:fixed;left:50%;bottom:calc(96px + var(--sab));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:10px;font:700 13px var(--body);opacity:0;transition:.2s;pointer-events:none;z-index:80;max-width:90vw;text-align:center}
 .toast.show{opacity:1;transform:translateX(-50%)}
-@media (max-width:700px){.bar .seg{display:none}}
+@media (max-width:700px){.bar .seg{display:none}.pacec{display:inline-flex}.lotb{margin-left:auto}}
 @media (max-width:560px){
   .top h1 small{display:none}.top h1{font-size:21px}
   .chip.lb{width:34px;height:34px;padding:0;justify-content:center}.chip.lb span{display:none}.chip.lb svg{width:17px;height:17px}
@@ -234,6 +236,8 @@ a{color:var(--teal);font-weight:700}
   .cap{min-height:70px}
 }
 @media (max-width:440px){.stat{display:none}}
+@media (max-width:400px){.bar{padding:10px 10px 12px;gap:6px}.cbtn{width:42px;height:42px}.nextb{height:42px;padding:0 11px}.pacec{height:42px;padding:0 9px 0 7px;gap:3px}.playb{margin:0 3px}.lotb{font-size:18px;padding:0 11px;height:48px}}
+@media (max-width:340px){.pacec svg{display:none}.pacec{padding:0 10px}}
 @media (prefers-reduced-motion:reduce){.picado .fl,.flip .inner.turn,.winc,.playb.talk .ring .pr{animation:none}.toast,.sb img{transition:none}}
 </style>
 </head>
@@ -251,7 +255,7 @@ a{color:var(--teal);font-weight:700}
   <div class="stage">
     <div class="deal">
       <div class="cardarea" id="cardarea">
-        <button class="flip" id="flip" type="button" aria-label="Next card">
+        <button class="flip" id="flip" type="button" aria-label="Start calling">
           <span class="inner down" id="inner">
             <span class="face front"><img id="bigImg" alt="" draggable="false"></span>
             <span class="face back"><span class="pat"></span><span class="seal"><b>Lotería</b><span>54 cartas</span></span></span>
@@ -270,6 +274,7 @@ a{color:var(--teal);font-weight:700}
     <button class="cbtn" id="backBtn" type="button" aria-label="Put the last card back" title="Put the last card back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
     <button class="playb" id="playBtn" type="button" aria-label="Start calling"><svg class="ring" viewBox="0 0 74 74"><circle class="tr" cx="37" cy="37" r="33"/><circle class="pr" id="ringPr" cx="37" cy="37" r="33"/></svg><svg class="ic" id="playIc" viewBox="0 0 24 24" fill="currentColor"></svg></button>
     <button class="nextb" id="nextBtn" type="button"><span>Next card</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg></button>
+    <button class="pacec" id="paceChip" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M10 2h4"/></svg><span id="paceTxt"></span></button>
     <div class="stat" id="stat" aria-live="polite"></div>
     <div class="seg" id="paceBar" role="group" aria-label="Time between cards"><button type="button" data-v="slow">Slow</button><button type="button" data-v="normal">Normal</button><button type="button" data-v="fast">Fast</button></div>
     <button class="lotb" id="lotBtn" type="button">¡Lotería!</button>
@@ -322,7 +327,7 @@ a{color:var(--teal);font-weight:700}
   function ordinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
 
   var R = { playing: false, phase: 'idle', timer: 0, raf: 0, waitStart: 0, waitMs: 0, token: 0, down: false, opening: false };
-  var PACE = { slow: 7000, normal: 4000, fast: 2000 };
+  var PACE = { slow: 7000, normal: 4000, fast: 2000 }, PACE_NAME = { slow: 'Slow', normal: 'Normal', fast: 'Fast' };
 
   var toastT; function toast(m) { var t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove('show'); }, 2400); }
 
@@ -569,6 +574,10 @@ a{color:var(--teal);font-weight:700}
     $('nextBtn').disabled = done;
     $('stat').textContent = status();
     document.querySelectorAll('#paceBar button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === C.settings.pace); });
+    var secs = (PACE[C.settings.pace] || 4000) / 1000;
+    $('paceTxt').textContent = secs + 's';
+    $('paceChip').setAttribute('aria-label', PACE_NAME[C.settings.pace] + ': ' + secs + ' seconds between cards. Tap to change.');
+    $('flip').setAttribute('aria-label', pb.getAttribute('aria-label'));
   }
   function status() {
     if (C.pos >= 54) return 'That’s the whole deck';
@@ -1100,8 +1109,14 @@ a{color:var(--teal);font-weight:700}
   }
 
   // ---------- wiring ----------
-  $('flip').addEventListener('click', function () { if (!C.pos && !R.opening) play(); else if (!R.opening) next(); });
-  $('playBtn').addEventListener('click', function () { if (C.pos >= 54) newRoundAsk(); else if (R.playing) pause(); else play(); });
+  function playPause() { if (C.pos >= 54) newRoundAsk(); else if (R.playing) pause(); else play(); }
+  // Tapping the card pauses and resumes, like the play button; Next card turns one by hand.
+  $('flip').addEventListener('click', function () { var was = R.playing; playPause(); if (was && !R.playing) toast('Paused — tap the card to keep calling'); });
+  $('playBtn').addEventListener('click', playPause);
+  $('paceChip').addEventListener('click', function () {
+    var order = ['slow', 'normal', 'fast'], v = order[(order.indexOf(C.settings.pace) + 1) % 3];
+    setPace(v); toast(PACE_NAME[v] + ' — ' + PACE[v] / 1000 + ' seconds between cards');
+  });
   $('nextBtn').addEventListener('click', next);
   $('backBtn').addEventListener('click', back);
   $('lotBtn').addEventListener('click', shout);

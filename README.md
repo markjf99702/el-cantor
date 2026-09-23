@@ -6,7 +6,7 @@ Open `index.html` from any static host (GitHub Pages works). Put it on the home 
 
 ## What it does
 
-- **Calls the cards.** Shuffles the 54 cards and turns them over one at a time, calling each one aloud in Spanish. It says just the name by default, or the verse and then the name. Tap ▶ to call on its own at a slow, normal or fast pace, or turn each card by hand.
+- **Calls the cards.** Shuffles the 54 cards and turns them over one at a time, calling each one aloud in Spanish. It says just the name by default, or the verse and then the name. Tap ▶, or the card itself, to call on its own and to pause; **Next card** turns them by hand. On a phone, the timer button beside it switches between slow, normal and fast (7, 4 or 2 seconds between cards).
 - **Recorded voices.** Dora, Alex or Santa read the cards, so every phone and tablet sounds the same. The device's own Spanish voice is the fallback. On an iPhone it plays even with the silent switch on.
 - **Adivinanza** mode reads the verse with the card face down, so the table can guess before it turns over.
 - **The sábana** shows all 54 cards, lit in the order they were called.
