@@ -53,7 +53,10 @@ Someone calls the cards; you tap **Cantaron…**, pick the card, and it marks it
 - `print.html` — Make tablas.
 - `deck.js` — the cards, their verses, the winning shapes, Mark's four tablas, and the juego generator. Every page loads it.
   - The generator is frozen: changing it would change every tabla already printed.
-- `cards/` — the 54 card images.
+- `cards/` — the 54 card images, drawn for El Cantor.
+- `tools/cards/` — draws the cards.
+  - Each card is an SVG in a cut-paper style, written in Python: `card.py` is the template and shared pieces, and `art1.py` to `art5.py` hold the pictures.
+  - `python3 tools/cards/build.py` writes the SVGs, then `node tools/cards/render.mjs` (with [Playwright](https://playwright.dev)) turns them into `cards/*.jpg`. Rerun both after changing a card.
 - `audio/` — the recorded voices.
   - One clip per card: the verse, a breath, the name. Plus the opening line and ¡Lotería!
   - `voices.json` lists the voices and where each verse ends, so Adivinanza can stop before the name.
@@ -61,4 +64,4 @@ Someone calls the cards; you tap **Cantaron…**, pick the card, and it marks it
 
 ## License
 
-The code and the recorded voices are MIT — see [LICENSE](LICENSE). The card images in `cards/` are not covered by it.
+The code, the card art and the recorded voices are MIT — see [LICENSE](LICENSE).
