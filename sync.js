@@ -8,8 +8,10 @@
    newer change wins. Nothing about this shows until CLIENT_ID is filled in. */
 (function () {
   'use strict';
-  // The Google OAuth client for https://junkdrawer.works — README, "Saving to Google Drive".
-  var CLIENT_ID = '';
+  // The junkdrawer.works OAuth client, shared with Shelfmark and Terraville (README, "Saving to
+  // Google Drive"). Google only accepts it from these addresses, so elsewhere nothing shows.
+  var ORIGINS = ['https://junkdrawer.works'];
+  var CLIENT_ID = ORIGINS.indexOf(location.origin) >= 0 ? '897653851078-p5jrh2bto6h3bj0lc4jist3k1vsc1pj4.apps.googleusercontent.com' : '';
   var SCOPE = 'https://www.googleapis.com/auth/drive.appdata', FILE = 'loteria-sync.json', API = 'https://www.googleapis.com/';
   var KS = 'loteria.sync', KT = 'loteria.sync.token', KB = 'loteria.sync.base', KN = 'loteria.sync.seen';
   var KEEP_GONE = 180 * 864e5, RETRY = { retry: true };
@@ -281,7 +283,7 @@
   function init() {
     if (client) return;
     client = google.accounts.oauth2.initTokenClient({
-      client_id: CLIENT_ID, scope: SCOPE, callback: gotToken,
+      client_id: CLIENT_ID, scope: SCOPE, include_granted_scopes: false, callback: gotToken, // just our folder, not what the other apps on this client were given
       error_callback: function (e) { setStatus(st.on ? 'tap' : 'off', e && e.type === 'popup_closed' ? '' : 'Google sign-in didn’t finish.'); }
     });
     setStatus(status, note);
@@ -299,8 +301,9 @@
     var o = { prompt: st.email ? '' : 'select_account' }; if (st.email) o.login_hint = st.email;
     client.requestAccessToken(o);
   }
+  // Stop on this device. No revoke: it would cancel Google's permission for every app on this
+  // client, signing Shelfmark and Terraville out too. The token simply expires within the hour.
   function disconnect() {
-    if (tok && tok.at && window.google && google.accounts && google.accounts.oauth2) { try { google.accounts.oauth2.revoke(tok.at, function () { }); } catch (e) { } }
     tok = null; st = { on: false, email: '', name: '', last: 0 };
     put(KT, null); put(KB, null); put(KN, null); saveSt(); setStatus('off');
   }
