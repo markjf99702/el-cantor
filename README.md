@@ -50,21 +50,22 @@ Someone calls the cards; you tap **Cantaron…**, pick the card, and it marks it
 Anyone can turn this on from the home screen, from Settings in My tablas or El Cantor, or from the bottom of Make tablas. It needs a Google account, and each person's tablas go to their own Drive. Everyone who signs in with the same account shares one set.
 
 - **What's saved:** the people and tablas in My tablas, the tablas in Make tablas, El Cantor's winners and the juego it last printed. Called cards, voices and other settings stay with each device.
-- **Where:** one small file, `loteria-sync.json`, in the hidden app-data folder of the person's Google Drive. The app asks only for that folder (the `drive.appdata` permission); it can't see anything else in Drive. To delete the copy, open Google Drive → Settings → Manage apps, find the junkdrawer.works app (listed under the shared Google project's name), and choose Delete hidden app data.
+- **Where:** one file, `Lotería tablas.json`, in a `Lotería` folder in the person's Google Drive. The app asks only for `drive.file`, Google's narrowest Drive permission: the junkdrawer.works apps can open only the files they made, and nothing else in Drive. Deleting the folder removes the Drive copy; the next sync makes a new one from whatever the device has.
 - **How changes combine:** each device keeps working from its own copy and syncs when a page opens, a few seconds after a change, and when **Sync now** is tapped. Changes merge one tabla at a time, so edits on two devices both survive; if the same tabla changed on both, the newer change wins. The first time a device joins, nothing is thrown away: someone set up under the same name on both devices becomes one person with the tablas from both.
 - **The one-hour rule:** Google lets a website with no server of its own use Drive for an hour after signing in. After that, the ☁ button in My tablas and Make tablas shows a red dot. Tap it once to sync again; it usually goes by without asking anything.
 - **Stop saving on this device** turns it off here. The tablas stay on the device and in Drive.
 
 ### Setting it up
 
-`sync.js` uses the junkdrawer.works OAuth client that Shelfmark and Terraville also use, authorized for `https://junkdrawer.works`, and Drive saving shows only at that address. In its Google Cloud project, **Google Auth Platform → Data Access** must list `.../auth/drive.appdata` next to the other apps' `drive.file`. Google classes both as non-sensitive, so no review is needed.
+`sync.js` uses the junkdrawer.works OAuth client that Shelfmark and Terraville also use. It is authorized for `https://junkdrawer.works`, and Drive saving shows only at that address. All three apps ask for the same permission, `drive.file`, so there's nothing to add in Google Cloud, and approving it once covers every app.
 
-Two consequences of sharing the client:
+Things that come with sharing the client:
 
-- **One hidden folder:** the hidden app-data folder belongs to the Google project, so it would be shared by any junkdrawer.works app that used it. This app only reads and writes `loteria-sync.json`.
-- **No revoking:** **Stop saving on this device** forgets the sign-in without revoking it, because revoking cancels the permission for every app on the client. Sign-in also asks only for this app's folder (`include_granted_scopes: false`), so the token kept on the device can't reach the other apps' Drive files.
+- **One sign-in for the hour.** The Google sign-in is kept under the `junkdrawer.google` key in localStorage, shared with any junkdrawer.works app that follows the same convention. Turning on Drive saving within an hour of signing in to one of them needs no Google window at all.
+- **No revoking.** **Stop saving on this device** turns saving off here without revoking anything, because revoking cancels the permission for every app on the client.
+- **Files are found by tags, not names.** Each app's files carry `appProperties` naming the app (`loteria: 'folder'`, `loteria: 'sync'`), and the app searches by those, so apps sharing the client never pick up each other's files.
 
-To run it from another address, create a Web client with the Drive API on and `drive.appdata` allowed, add that origin under **Authorized JavaScript origins**, and put the client ID and origin in `sync.js`.
+To run it from another address, create a Web client with the Drive API turned on and `drive.file` allowed, add that origin under **Authorized JavaScript origins**, and put the client ID and origin in `sync.js`.
 
 ## Files
 

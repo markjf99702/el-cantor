@@ -1,19 +1,24 @@
 /* Saving to Google Drive, so tablas follow a person from device to device.
    Every page keeps working from localStorage exactly as before. When someone turns this on,
    the parts worth keeping — My tablas, Make tablas, El Cantor's winners and juego — are copied
-   into one small file in their own Google Drive, in the hidden app-data folder that only this
-   app can see, and what their other devices saved there is merged back in.
+   into one small file in a "Lotería" folder in their own Google Drive, and what their other
+   devices saved there is merged back in.
    Merging is three-way and item by item (a person, a tabla, a win): what this device changed
    since the last sync, what the Drive copy changed, and for an item changed on both, the
-   newer change wins. Nothing about this shows until CLIENT_ID is filled in. */
+   newer change wins. Nothing about this shows away from junkdrawer.works. */
 (function () {
   'use strict';
   // The junkdrawer.works OAuth client, shared with Shelfmark and Terraville (README, "Saving to
   // Google Drive"). Google only accepts it from these addresses, so elsewhere nothing shows.
   var ORIGINS = ['https://junkdrawer.works'];
   var CLIENT_ID = ORIGINS.indexOf(location.origin) >= 0 ? '897653851078-p5jrh2bto6h3bj0lc4jist3k1vsc1pj4.apps.googleusercontent.com' : '';
-  var SCOPE = 'https://www.googleapis.com/auth/drive.appdata', FILE = 'loteria-sync.json', API = 'https://www.googleapis.com/';
-  var KS = 'loteria.sync', KT = 'loteria.sync.token', KB = 'loteria.sync.base', KN = 'loteria.sync.seen';
+  // drive.file, like every junkdrawer.works app: Google lets the apps on this client see only the
+  // files they made. Ours are a "Lotería" folder and one file in it, found by their appProperties.
+  var SCOPE = 'https://www.googleapis.com/auth/drive.file', API = 'https://www.googleapis.com/';
+  var FOLDER = { name: 'Lotería', mimeType: 'application/vnd.google-apps.folder', appProperties: { loteria: 'folder' } };
+  var FILE = { name: 'Lotería tablas.json', mimeType: 'application/json', appProperties: { loteria: 'sync' } };
+  // KT is shared by every junkdrawer.works app: one sign-in, good for an hour, serves them all.
+  var KS = 'loteria.sync', KT = 'junkdrawer.google', KB = 'loteria.sync.base', KN = 'loteria.sync.seen';
   var KEEP_GONE = 180 * 864e5, RETRY = { retry: true };
 
   function get(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
@@ -179,29 +184,36 @@
   var st = Object.assign({ on: false, email: '', name: '', last: 0 }, get(KS) || {}), tok = get(KT);
   var status = 'off', note = '', busy = null, again = false, client = null, gisLoading = false, pushT = null, ups = [], watchers = [];
   function saveSt() { put(KS, st); }
-  function live() { return !!(tok && tok.at && tok.exp - 60000 > Date.now()); }
+  function live() { return !!(tok && tok.token && tok.exp - 60000 > Date.now() && String(tok.scope || '').indexOf(SCOPE) >= 0); }
   function setStatus(s, n) { status = s; note = n || ''; watchers = watchers.filter(function (f) { try { return f() !== false; } catch (e) { return false; } }); }
   function api(method, path, body, type) {
     if (!tok) return Promise.reject({ auth: true });
-    var h = { Authorization: 'Bearer ' + tok.at }; if (type) h['Content-Type'] = type;
+    var h = { Authorization: 'Bearer ' + tok.token }; if (type) h['Content-Type'] = type;
     return fetch(API + path, { method: method, headers: h, body: body }).then(function (r) {
       if (r.status === 401) { tok = null; put(KT, null); throw { auth: true }; }
       if (!r.ok) throw { http: r.status };
       return r.status === 204 ? null : r.json();
     });
   }
-  function findFile() {
-    return api('GET', 'drive/v3/files?spaces=appDataFolder&orderBy=createdTime&pageSize=10&fields=' + encodeURIComponent('files(id,version)') + '&q=' + encodeURIComponent("name='" + FILE + "' and trashed=false"))
+  function find(meta, fields) {
+    var k = Object.keys(meta.appProperties)[0], q = "appProperties has { key='" + k + "' and value='" + meta.appProperties[k] + "' } and trashed=false";
+    return api('GET', 'drive/v3/files?spaces=drive&orderBy=createdTime&pageSize=10&fields=' + encodeURIComponent('files(' + fields + ')') + '&q=' + encodeURIComponent(q))
       .then(function (x) { return x && x.files && x.files[0] || null; });
+  }
+  function findFile() { return find(FILE, 'id,version'); }
+  function folder() { // the "Lotería" folder in their Drive, made the first time
+    return find(FOLDER, 'id').then(function (f) {
+      return f ? f.id : api('POST', 'drive/v3/files?fields=id', JSON.stringify(FOLDER), 'application/json').then(function (x) { return x.id; });
+    });
   }
   function upload(file, data) {
     var body = JSON.stringify(data);
-    if (!file) {
-      var b = 'loteria-' + Date.now().toString(36);
+    if (!file) return folder().then(function (dir) {
+      var b = 'loteria-' + Date.now().toString(36), meta = Object.assign({ parents: [dir] }, FILE);
       return api('POST', 'upload/drive/v3/files?uploadType=multipart&fields=id,version',
-        '--' + b + '\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify({ name: FILE, parents: ['appDataFolder'], mimeType: 'application/json' }) +
+        '--' + b + '\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify(meta) +
         '\r\n--' + b + '\r\nContent-Type: application/json\r\n\r\n' + body + '\r\n--' + b + '--', 'multipart/related; boundary=' + b);
-    }
+    });
     // Another device may have saved since we read the file; then start over with its version.
     return api('GET', 'drive/v3/files/' + file.id + '?fields=version').then(function (x) {
       if (String(x.version) !== String(file.version)) throw RETRY;
@@ -211,6 +223,7 @@
   function whoami() {
     return api('GET', 'drive/v3/about?fields=' + encodeURIComponent('user(displayName,emailAddress)')).then(function (x) {
       st.email = x && x.user && x.user.emailAddress || ''; st.name = x && x.user && x.user.displayName || ''; saveSt();
+      if (tok) { tok.email = st.email; put(KT, tok); } // so the next junkdrawer.works app can skip the account chooser
     }, function () { });
   }
 
@@ -283,29 +296,36 @@
   function init() {
     if (client) return;
     client = google.accounts.oauth2.initTokenClient({
-      client_id: CLIENT_ID, scope: SCOPE, include_granted_scopes: false, callback: gotToken, // just our folder, not what the other apps on this client were given
+      client_id: CLIENT_ID, scope: SCOPE, callback: gotToken,
       error_callback: function (e) { setStatus(st.on ? 'tap' : 'off', e && e.type === 'popup_closed' ? '' : 'Google sign-in didn’t finish.'); }
     });
     setStatus(status, note);
   }
   function gotToken(r) {
     if (!r || r.error || !google.accounts.oauth2.hasGrantedAllScopes(r, SCOPE)) { setStatus(st.on ? 'tap' : 'off', 'Google Drive wasn’t allowed, so nothing was saved there.'); return; }
-    tok = { at: r.access_token, exp: Date.now() + (+r.expires_in || 3600) * 1000 }; put(KT, tok);
+    tok = { token: r.access_token, exp: Date.now() + (+r.expires_in || 3600) * 1000, scope: r.scope || SCOPE, email: st.email || (tok && tok.email) || '' }; put(KT, tok);
     st.on = true; saveSt();
+    (st.email ? Promise.resolve() : whoami()).then(sync);
+  }
+  // Turn it on. With a sign-in from any junkdrawer.works app still good, no Google window at all.
+  function start() {
+    if (!CLIENT_ID) return;
+    if (!live()) { signIn(); return; }
+    st.on = true; if (!st.email && tok.email) st.email = tok.email; saveSt();
     (st.email ? Promise.resolve() : whoami()).then(sync);
   }
   // Google only opens its window from a tap, so this has to run inside a click handler.
   function signIn() {
     if (!CLIENT_ID) return;
     if (!client) { loadGis(); setStatus(status, 'Google sign-in is still loading — tap again in a second.'); return; }
-    var o = { prompt: st.email ? '' : 'select_account' }; if (st.email) o.login_hint = st.email;
+    var hint = st.email || (tok && tok.email) || '', o = { prompt: hint ? '' : 'select_account' }; if (hint) o.login_hint = hint;
     client.requestAccessToken(o);
   }
-  // Stop on this device. No revoke: it would cancel Google's permission for every app on this
-  // client, signing Shelfmark and Terraville out too. The token simply expires within the hour.
+  // Stop on this device. The shared sign-in stays for the other apps, and nothing is revoked:
+  // revoking cancels Google's permission for every app on this client.
   function disconnect() {
-    tok = null; st = { on: false, email: '', name: '', last: 0 };
-    put(KT, null); put(KB, null); put(KN, null); saveSt(); setStatus('off');
+    st = { on: false, email: '', name: '', last: 0 };
+    put(KB, null); put(KN, null); saveSt(); setStatus('off');
   }
 
   // ---------- the bits of page each tool shows ----------
@@ -353,12 +373,12 @@
       host.innerHTML = st.on
         ? '<div class="eyebrow">Saved to Google Drive</div><p class="note">Tablas are saved to <b>' + esc(st.email || 'your Google Drive') + '</b> and show up on every device where you turn this on. ' + line() + '</p>' +
           '<div class="row"><button class="btn sm" type="button" data-a="now"' + (status === 'busy' ? ' disabled' : '') + '>Sync now</button><button class="btn sec sm" type="button" data-a="off">' + (armed ? 'Tap again to stop' : 'Stop saving on this device') + '</button></div>'
-        : '<div class="eyebrow">Save across devices</div><p class="note">Keep your tablas in your own Google Drive, and they’ll be on every phone, tablet and computer where you turn this on. They go in a private folder that only this app can see.' + (note ? ' ' + esc(note) : '') + '</p>' +
+        : '<div class="eyebrow">Save across devices</div><p class="note">Keep your tablas in your own Google Drive, and they’ll be on every phone, tablet and computer where you turn this on. They go in a “Lotería” folder that only the junkdrawer.works apps can open.' + (note ? ' ' + esc(note) : '') + '</p>' +
           '<div class="row"><button class="btn red sm" type="button" data-a="on">Save to Google Drive</button></div>';
       host.querySelectorAll('button[data-a]').forEach(function (b) {
         b.addEventListener('click', function () {
           var a = b.dataset.a;
-          if (a === 'on') signIn();
+          if (a === 'on') start();
           else if (a === 'now') now();
           else if (!armed) { armed = true; draw(); }
           else { armed = false; disconnect(); }
@@ -368,7 +388,7 @@
     watch(draw);
   }
   function watch(f) { watchers.push(f); f(); }
-  function now() { if (!st.on || !live()) signIn(); else sync(); } // inside a tap
+  function now() { if (!st.on) start(); else if (!live()) signIn(); else sync(); } // inside a tap
   function changed() { // a page saved something
     if (!CLIENT_ID || !st.on || !track()) return;
     clearTimeout(pushT);
@@ -378,7 +398,7 @@
   window.LoteriaSync = {
     ready: !!CLIENT_ID,
     isOn: function () { return !!CLIENT_ID && st.on; },
-    connect: signIn, now: now, changed: changed, chip: chip, card: card,
+    connect: start, now: now, changed: changed, chip: chip, card: card,
     onUpdate: function (f) { ups.push(f); }, // f(keys): synced data landed in these localStorage keys
     _merge: mergeCol, _cols: COLS // for tests
   };
