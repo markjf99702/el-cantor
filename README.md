@@ -1,6 +1,6 @@
 # El Cantor
 
-Lotería for the family table, in one package. Everything stays on the device: no accounts, nothing sent anywhere.
+Lotería for the family table, in one package. Everything stays on the device, unless you turn on saving to Google Drive so your tablas follow you to your other devices.
 
 Open `index.html` from any static host (GitHub Pages works). Put it on the home screen and it runs full screen. The home screen has three choices:
 
@@ -45,12 +45,35 @@ Someone calls the cards; you tap **Cantaron…**, pick the card, and it marks it
 - Copy in Mark's four, or anyone's tablas from My tablas on this device. **Play these in the app…** sends full tablas to My tablas, on this phone or another.
 - Hand-made tablas aren't numbered, so El Cantor checks them card by card. For a set it checks by number, use El Cantor's **Print tablas**.
 
+## Saving to Google Drive
+
+Anyone can turn this on from the home screen, from Settings in My tablas or El Cantor, or from the bottom of Make tablas. It needs a Google account, and each person's tablas go to their own Drive. Everyone who signs in with the same account shares one set.
+
+- **What's saved:** the people and tablas in My tablas, the tablas in Make tablas, El Cantor's winners and the juego it last printed. Called cards, voices and other settings stay with each device.
+- **Where:** one file, `Lotería tablas.json`, in a `Lotería` folder in the person's Google Drive. The app asks only for `drive.file`, Google's narrowest Drive permission: the junkdrawer.works apps can open only the files they made, and nothing else in Drive. Deleting the folder removes the Drive copy; the next sync makes a new one from whatever the device has.
+- **How changes combine:** each device keeps working from its own copy and syncs when a page opens, a few seconds after a change, and when **Sync now** is tapped. Changes merge one tabla at a time, so edits on two devices both survive; if the same tabla changed on both, the newer change wins. The first time a device joins, nothing is thrown away: someone set up under the same name on both devices becomes one person with the tablas from both.
+- **The one-hour rule:** Google lets a website with no server of its own use Drive for an hour after signing in. After that, the ☁ button in My tablas and Make tablas shows a red dot. Tap it once to sync again; it usually goes by without asking anything.
+- **Stop saving on this device** turns it off here. The tablas stay on the device and in Drive.
+
+### Setting it up
+
+`sync.js` uses the junkdrawer.works OAuth client that Shelfmark and Terraville also use. It is authorized for `https://junkdrawer.works`, and Drive saving shows only at that address. All three apps ask for the same permission, `drive.file`, so there's nothing to add in Google Cloud, and approving it once covers every app.
+
+Things that come with sharing the client:
+
+- **One sign-in for the hour.** The Google sign-in is kept under the `junkdrawer.google` key in localStorage, shared with any junkdrawer.works app that follows the same convention. Turning on Drive saving within an hour of signing in to one of them needs no Google window at all.
+- **No revoking.** **Stop saving on this device** turns saving off here without revoking anything, because revoking cancels the permission for every app on the client.
+- **Files are found by tags, not names.** Each app's files carry `appProperties` naming the app (`loteria: 'folder'`, `loteria: 'sync'`), and the app searches by those, so apps sharing the client never pick up each other's files.
+
+To run it from another address, create a Web client with the Drive API turned on and `drive.file` allowed, add that origin under **Authorized JavaScript origins**, and put the client ID and origin in `sync.js`.
+
 ## Files
 
 - `index.html` — the home screen.
 - `cantor.html` — El Cantor.
 - `board.html` — My tablas, the play-along board.
 - `print.html` — Make tablas.
+- `sync.js` — saving to Google Drive: signing in, the Drive file, and merging changes from every device.
 - `deck.js` — the cards, their verses, the winning shapes, Mark's four tablas, and the juego generator. Every page loads it.
   - The generator is frozen: changing it would change every tabla already printed.
 - `cards/` — the 54 card images, drawn for El Cantor.
