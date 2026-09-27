@@ -96,6 +96,10 @@ input:focus-visible,button:focus-visible{outline:2px solid var(--teal);outline-o
 .sheet .hd h2{margin:0;font:400 20px/1 var(--disp);flex:1}
 .sheet .hd input{flex:1}
 .sheet .bd{overflow:auto;padding:4px 14px 16px;flex:1;min-height:0;-webkit-overflow-scrolling:touch}
+.jd-foot{margin:4px 0 0;text-align:center;color:var(--ink3);font-size:13px}
+.jd-foot a{color:var(--ink2);font-weight:400;text-decoration:none}
+.jd-foot a:hover,.jd-foot a:focus-visible{text-decoration:underline;text-underline-offset:3px}
+.jd-foot a:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
 .pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:8px}
 .pk{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:5px 5px 6px;text-align:center;cursor:pointer;position:relative}
 .pk img{width:100%;aspect-ratio:2/3.26;object-fit:cover;border-radius:5px;display:block;background:#fff}
@@ -368,7 +372,8 @@ a{color:var(--teal);font-weight:700}
       '<div class="card"><div class="eyebrow">Who is playing on this device</div><div class="row" id="plist" style="margin-top:8px"></div><div class="row" style="margin-top:10px"><input id="pnew" placeholder="Add a person" style="flex:1"><button class="btn sm" type="button" id="padd">Add</button></div><p class="note" style="margin-top:8px">Each person keeps their own tablas. To send someone your tablas, use <b>Share</b> on the Tablas screen.</p></div>' +
       '<div class="card"><div class="eyebrow">Calling the game?</div><p class="note" style="margin-top:6px"><a href="cantor.html">El Cantor</a> shuffles a deck and reads each card aloud, prints numbered tablas, and checks a ¡Lotería! by tabla number.</p></div>' +
       '<div class="card" id="syncCard" hidden></div>' +
-      '<div class="card"><div class="eyebrow">About</div><p class="note" style="margin-top:6px">Everything lives on this device' + (window.LoteriaSync && LoteriaSync.ready ? ', and in your Google Drive if you save there' : ' — nothing is sent anywhere') + '. Reload-safe: the round survives a refresh.</p></div></div>');
+      '<div class="card"><div class="eyebrow">About</div><p class="note" style="margin-top:6px">Everything lives on this device' + (window.LoteriaSync && LoteriaSync.ready ? ', and in your Google Drive if you save there' : ' — nothing is sent anywhere') + '. Reload-safe: the round survives a refresh.</p></div>' +
+      '<footer class="jd-foot"><a href="https://junkdrawer.works/">Part of junkdrawer.works</a> <span aria-hidden="true">·</span> <a href="https://junkdrawer.works/privacy.html">Privacy</a></footer></div>');
     reopen = settingsSheet;
     if (window.LoteriaSync) LoteriaSync.card($('syncCard'));
     function draw() {

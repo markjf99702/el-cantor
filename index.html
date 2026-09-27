@@ -67,6 +67,9 @@ header p{margin:8px 0 0;color:var(--ink2);font-size:15.5px}
 .tile p{margin:0;color:var(--ink2);font-size:14px;flex:1}
 .go{align-self:flex-start;font:800 14px var(--body);color:var(--red)}
 footer{margin:26px auto 0;max-width:40em;text-align:center;color:var(--ink3);font-size:13px}
+.jd-foot{margin-top:10px}
+.jd-foot a{color:var(--ink2);text-decoration:none}
+.jd-foot a:hover,.jd-foot a:focus-visible{text-decoration:underline;text-underline-offset:3px}
 .card{max-width:560px;margin:22px auto 0;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow)}
 .eyebrow{font:800 11px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--ink3)}
 .note{color:var(--ink2);font-size:14px}
@@ -120,6 +123,11 @@ footer{margin:26px auto 0;max-width:40em;text-align:center;color:var(--ink3);fon
   </nav>
   <section class="card" id="syncCard" hidden></section>
   <footer><span id="privacy">Everything stays on this device: no accounts, nothing sent anywhere.</span> Numbered juegos that El Cantor checks by number print from El Cantor’s <b>Print tablas</b>.</footer>
+  <footer class="jd-foot">
+    <a href="https://junkdrawer.works/">Part of junkdrawer.works</a>
+    <span aria-hidden="true">·</span>
+    <a href="https://junkdrawer.works/privacy.html">Privacy</a>
+  </footer>
 </main>
 <script src="sync.js"></script>
 <script>(function () {

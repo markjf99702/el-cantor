@@ -126,6 +126,10 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 .sheet .hd{display:flex;gap:8px;align-items:center;padding:12px 14px 8px;flex:none}
 .sheet .hd h2{margin:0;font:400 20px/1 var(--disp);flex:1}
 .sheet .bd{overflow:auto;padding:4px 14px 18px;flex:1;min-height:0;-webkit-overflow-scrolling:touch}
+.jd-foot{margin:22px 0 0;text-align:center;color:var(--ink3);font-size:13px}
+.jd-foot a{color:var(--ink2);font-weight:400;text-decoration:none}
+.jd-foot a:hover,.jd-foot a:focus-visible{text-decoration:underline;text-underline-offset:3px}
+.jd-foot a:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
 .pers{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
 .per{display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 6px 8px;text-align:center}
 .per.on{border-color:var(--teal);background:var(--teal-soft)}
@@ -189,6 +193,11 @@ body.dragging,body.dragging *{cursor:grabbing!important}
         <button class="btn sec sm" type="button" id="appBtn">Play these in the app…</button>
       </div>
       <div class="card" id="syncCard" hidden style="margin-top:14px;max-width:560px"></div>
+      <footer class="jd-foot">
+        <a href="https://junkdrawer.works/">Part of junkdrawer.works</a>
+        <span aria-hidden="true">·</span>
+        <a href="https://junkdrawer.works/privacy.html">Privacy</a>
+      </footer>
     </div>
     <div class="deck" id="deck">
       <div class="dh">

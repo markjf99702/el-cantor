@@ -155,6 +155,10 @@ a.chip{text-decoration:none}
 .sheet .hd{display:flex;gap:8px;align-items:center;padding:14px 16px 8px;flex:none}
 .sheet .hd h2{margin:0;font:400 21px/1.1 var(--disp);flex:1}
 .sheet .bd{overflow:auto;padding:4px 16px 18px;flex:1;min-height:0;-webkit-overflow-scrolling:touch}
+.jd-foot{margin:4px 0 0;text-align:center;color:var(--ink3);font-size:13px}
+.jd-foot a{color:var(--ink2);font-weight:400;text-decoration:none}
+.jd-foot a:hover,.jd-foot a:focus-visible{text-decoration:underline;text-underline-offset:3px}
+.jd-foot a:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
 /* patterns */
 .pats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
 .pat{display:flex;gap:10px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:8px 10px;cursor:pointer;text-align:left}
@@ -701,7 +705,8 @@ a.chip{text-decoration:none}
       '<div class="card" id="winsCard"></div>' +
       '<div class="card" id="syncCard" hidden></div>' +
       '<div class="card"><div class="eyebrow">Playing along</div><p class="note" style="margin-top:6px">' + (BOARD_URL ? 'Anyone can mark their own tablas on their phone with the <a id="boardLink" target="_blank" rel="noopener">Lotería board</a> — tap <b>Cantaron…</b> there as you call. ' : '') + 'Printed tablas work too: <b>Print tablas</b> makes a numbered set, or <a href="print.html">make your own</a> card by card.</p></div>' +
-      '<div class="card"><div class="eyebrow">Keyboard</div><p class="note" style="margin-top:6px">Space starts or pauses · → next card · ← puts the last card back · L checks a ¡Lotería!</p></div></div>');
+      '<div class="card"><div class="eyebrow">Keyboard</div><p class="note" style="margin-top:6px">Space starts or pauses · → next card · ← puts the last card back · L checks a ¡Lotería!</p></div>' +
+      '<footer class="jd-foot"><a href="https://junkdrawer.works/">Part of junkdrawer.works</a> <span aria-hidden="true">·</span> <a href="https://junkdrawer.works/privacy.html">Privacy</a></footer></div>');
     if (BOARD_URL) $('boardLink').href = BOARD_URL;
     var STYLES = [
       ['name', 'Name only', 'Just the card: “¡La Luna!” The verse still shows on screen.'],
