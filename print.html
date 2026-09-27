@@ -135,6 +135,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 .pwarn{color:var(--red);font-size:13px;font-weight:600;margin:0}
 .toast{position:fixed;left:50%;bottom:calc(20px + var(--sab));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:10px;font:600 13px var(--body);opacity:0;transition:.2s;pointer-events:none;z-index:95;max-width:90vw;text-align:center}
 .toast.show{opacity:1;transform:translateX(-50%)}
+@media (max-width:420px){.top:has(#syncBtn:not([hidden])) h1 .t{display:none}}
 @media (max-width:760px){
   .top h1 small{display:none}
   .work{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) minmax(170px,40%)}
@@ -173,9 +174,10 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 <div class="app">
   <div class="top">
     <a class="chip ic home" href="./" aria-label="Home — all the Lotería tools" title="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5"/><path d="M6.5 10v9h11v-9"/></svg></a>
-    <h1>Lotería <small>Tablas to print</small></h1>
+    <h1><span class="t">Lotería</span> <small>Tablas to print</small></h1>
     <button class="chip" id="dblBtn" type="button"></button>
     <button class="chip ic" id="undoBtn" type="button" aria-label="Undo" title="Undo (Ctrl+Z)">↶</button>
+    <button class="chip ic" id="syncBtn" type="button" hidden></button>
     <button class="btn red sm" id="printBtn" type="button">Print…</button>
   </div>
   <div class="work">
@@ -186,6 +188,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
         <p class="note">Saved on this device as you go.</p>
         <button class="btn sec sm" type="button" id="appBtn">Play these in the app…</button>
       </div>
+      <div class="card" id="syncCard" hidden style="margin-top:14px;max-width:560px"></div>
     </div>
     <div class="deck" id="deck">
       <div class="dh">
@@ -201,6 +204,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 <div class="ghost" id="ghost" hidden></div>
 <div class="toast" id="toast" role="status"></div>
 <script src="deck.js" data-cards="cards/"></script>
+<script src="sync.js"></script>
 <script>(function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
@@ -217,14 +221,15 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   var LSP = 'loteria.print', LSA = 'loteria.v1';
   function blank(name) { return { id: uid(), name: name, cards: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }; }
   function okCards(c) { return Array.isArray(c) && c.length === 16 && c.every(function (n) { return n === (n | 0) && n >= 0 && n <= 54; }); }
+  function savedTablas(o) { return o.tablas.filter(function (t) { return t && okCards(t.cards); }).map(function (t) { return { id: t.id || uid(), name: String(t.name || 'Tabla'), cards: t.cards.slice() }; }); }
   var P = { tablas: [blank('Tabla 1')], set: { doubles: true, per: 2, paper: 'letter', names: true, who: '' } };
   try {
     var raw = localStorage.getItem(LSP);
-    if (raw) { var o = JSON.parse(raw); if (o && Array.isArray(o.tablas)) { P.tablas = o.tablas.filter(function (t) { return t && okCards(t.cards); }).map(function (t) { return { id: t.id || uid(), name: String(t.name || 'Tabla'), cards: t.cards.slice() }; }); P.set = Object.assign(P.set, o.set || {}); } }
+    if (raw) { var o = JSON.parse(raw); if (o && Array.isArray(o.tablas)) { P.tablas = savedTablas(o); P.set = Object.assign(P.set, o.set || {}); } }
   } catch (e) { }
   var UI = { active: P.tablas.length ? P.tablas[0].id : null, sel: null, q: '', flash: null, skip: {} };
   var H = []; // undo snapshots of P.tablas
-  function save() { try { localStorage.setItem(LSP, JSON.stringify(P)); } catch (e) { } }
+  function save() { try { localStorage.setItem(LSP, JSON.stringify(P)); } catch (e) { } if (window.LoteriaSync) LoteriaSync.changed(); }
   function tab(id) { return P.tablas.filter(function (t) { return t.id === id; })[0]; }
   function active() { var t = tab(UI.active); if (!t && P.tablas.length) { t = P.tablas[0]; UI.active = t.id; UI.sel = null; } return t; }
   function counts(tb) { var c = {}; tb.cards.forEach(function (n) { if (n) c[n] = (c[n] || 0) + 1; }); return c; }
@@ -609,6 +614,17 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     $('apCopy').addEventListener('click', function () {
       var url = link(), done = function () { toast('Link copied'); }, fail = function () { window.prompt('Copy this link:', url); };
       if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, fail); else fail();
+    });
+  }
+
+  // ---------- Google Drive ----------
+  if (window.LoteriaSync) {
+    LoteriaSync.chip($('syncBtn')); LoteriaSync.card($('syncCard'));
+    LoteriaSync.onUpdate(function (keys) { // tablas made on another device have landed here
+      if (keys.indexOf(LSP) < 0) return;
+      try { var o = JSON.parse(localStorage.getItem(LSP)); if (o && Array.isArray(o.tablas)) P.tablas = savedTablas(o); } catch (e) { }
+      if (D) end(false);
+      H = []; UI.sel = null; render(); // undo can't reach back past someone else's changes
     });
   }
 

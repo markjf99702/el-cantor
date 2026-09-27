@@ -67,6 +67,15 @@ header p{margin:8px 0 0;color:var(--ink2);font-size:15.5px}
 .tile p{margin:0;color:var(--ink2);font-size:14px;flex:1}
 .go{align-self:flex-start;font:800 14px var(--body);color:var(--red)}
 footer{margin:26px auto 0;max-width:40em;text-align:center;color:var(--ink3);font-size:13px}
+.card{max-width:560px;margin:22px auto 0;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow)}
+.eyebrow{font:800 11px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--ink3)}
+.note{color:var(--ink2);font-size:14px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{background:var(--ink);color:var(--bg);border:1px solid var(--ink);border-radius:10px;padding:9px 14px;font:800 14px var(--body);cursor:pointer}
+.btn.sm{padding:6px 11px;font-size:13px}
+.btn.sec{background:var(--paper);color:var(--ink);border-color:var(--line2)}
+.btn.red{background:var(--red);border-color:var(--red);color:#FFF7EA}
+.btn:disabled{opacity:.45;cursor:default}
 @media (max-width:760px){
   .tiles{grid-template-columns:1fr}
   .tile{flex-direction:row;align-items:center;padding:12px}
@@ -109,10 +118,16 @@ footer{margin:26px auto 0;max-width:40em;text-align:center;color:var(--ink3);fon
       <span class="go">Make tablas →</span>
     </a>
   </nav>
-  <footer>Everything stays on this device: no accounts, nothing sent anywhere. Numbered juegos that El Cantor checks by number print from El Cantor’s <b>Print tablas</b>.</footer>
+  <section class="card" id="syncCard" hidden></section>
+  <footer><span id="privacy">Everything stays on this device: no accounts, nothing sent anywhere.</span> Numbered juegos that El Cantor checks by number print from El Cantor’s <b>Print tablas</b>.</footer>
 </main>
+<script src="sync.js"></script>
 <script>(function () {
   'use strict';
+  if (window.LoteriaSync && LoteriaSync.ready) {
+    LoteriaSync.card(document.getElementById('syncCard'));
+    document.getElementById('privacy').textContent = 'Everything stays on this device unless you save to Google Drive, which keeps your tablas in a private folder in your own Drive.';
+  }
   function picado() { // the same banderitas as El Cantor
     var host = document.getElementById('picado'), W = host.clientWidth, H = 34; if (!W) return;
     var fw = 24, gap = 6, n = Math.floor((W + gap) / (fw + gap)), off = (W - (n * (fw + gap) - gap)) / 2, swag = Math.max(160, W / Math.max(1, Math.round(W / 260)));

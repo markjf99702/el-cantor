@@ -145,6 +145,7 @@ a{color:var(--teal);font-weight:700}
 .winc .row{justify-content:center;margin-top:18px}
 .toast{position:fixed;left:50%;bottom:calc(20px + var(--sab));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:10px;font:600 13px var(--body);opacity:0;transition:.2s;pointer-events:none;z-index:80;max-width:90vw;text-align:center}
 .toast.show{opacity:1;transform:translateX(-50%)}
+@media (max-width:420px){.top:has(#syncBtn:not([hidden])) h1 .t{display:none}}
 @media (max-width:520px){.top h1 small{display:none}.callbtn{min-width:88px;padding:6px 10px}.callbtn b{font-size:17px}.last .v{display:none}}
 @media (prefers-reduced-motion:reduce){.cell .mk.new,.winc,.cell.hit::after{animation:none}.toast{transition:none}}
 </style>
@@ -153,10 +154,11 @@ a{color:var(--teal);font-weight:700}
 <div class="app">
   <div class="top">
     <a class="chip ic home" href="./" aria-label="Home — all the Lotería tools" title="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5"/><path d="M6.5 10v9h11v-9"/></svg></a>
-    <h1>Lotería <small id="who"></small></h1>
+    <h1><span class="t">Lotería</span> <small id="who"></small></h1>
     <button class="chip" id="patBtn" type="button">Línea</button>
     <button class="chip" id="tablasBtn" type="button">Tablas</button>
     <button class="chip ic" id="clearBtn" type="button" aria-label="New round" title="New round">↺</button>
+    <button class="chip ic" id="syncBtn" type="button" hidden></button>
     <button class="chip ic" id="setBtn" type="button" aria-label="Settings" title="Settings">⋯</button>
   </div>
   <div class="called">
@@ -170,6 +172,7 @@ a{color:var(--teal);font-weight:700}
 <div id="winbox" hidden></div>
 <div class="toast" id="toast" role="status"></div>
 <script src="deck.js" data-cards="cards/"></script>
+<script src="sync.js"></script>
 <script>(function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
@@ -190,7 +193,7 @@ a{color:var(--teal);font-weight:700}
   var firstRun = true;
   try { var raw = localStorage.getItem(LS); if (raw) { var o = JSON.parse(raw); if (o && o.players && o.players.length) { S = Object.assign(fresh(), o); firstRun = false; } } } catch (e) { }
   try { var rg = localStorage.getItem(LSG); if (rg) { var g = JSON.parse(rg); if (g && g.called) G = Object.assign({ called: [], announced: {} }, g); } } catch (e) { }
-  function save() { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) { } }
+  function save() { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) { } if (window.LoteriaSync) LoteriaSync.changed(); }
   function saveG() { try { localStorage.setItem(LSG, JSON.stringify(G)); } catch (e) { } }
   function player() { var p = S.players.filter(function (p) { return p.id === S.current; })[0]; if (!p) { p = S.players[0]; S.current = p.id; } return p; }
   function isCalled(n) { return G.called.indexOf(n) >= 0; }
@@ -304,8 +307,9 @@ a{color:var(--teal);font-weight:700}
   }
 
   // ---------- sheets ----------
-  function openSheet(html) { var s = $('sheet'); s.innerHTML = '<div class="sheetbg"><div class="sheet">' + html + '</div></div>'; s.hidden = false; s.querySelector('.sheetbg').addEventListener('click', function (e) { if (e.target === e.currentTarget) closeSheet(); }); return s.querySelector('.sheet'); }
-  function closeSheet() { $('sheet').hidden = true; $('sheet').innerHTML = ''; UI.sheet = null; }
+  function openSheet(html) { reopen = null; UI.welcome = false; var s = $('sheet'); s.innerHTML = '<div class="sheetbg"><div class="sheet">' + html + '</div></div>'; s.hidden = false; s.querySelector('.sheetbg').addEventListener('click', function (e) { if (e.target === e.currentTarget) closeSheet(); }); return s.querySelector('.sheet'); }
+  var reopen = null; // the open sheet that holds a player's tablas, to reopen when synced tablas land
+  function closeSheet() { $('sheet').hidden = true; $('sheet').innerHTML = ''; UI.sheet = null; reopen = null; UI.welcome = false; }
 
   function pickerSheet(mode, onPick, taken) {
     var sh = openSheet('<div class="hd"><input id="pkq" placeholder="' + (mode === 'call' ? 'Name or number… “luna”, 23' : 'Pick a card for this square') + '" autocomplete="off" inputmode="search"><button class="btn sec sm" type="button" id="pkx">Done</button></div><div class="bd"><div class="pick" id="pk"></div></div>');
@@ -363,7 +367,10 @@ a{color:var(--teal);font-weight:700}
       '<div class="card"><div class="row" style="justify-content:space-between"><div><b>Dim squares outside the pattern</b><div class="note">Only for fixed shapes like Esquinas or La Ele.</div></div><button class="chip" type="button" id="gdBtn"></button></div></div>' +
       '<div class="card"><div class="eyebrow">Who is playing on this device</div><div class="row" id="plist" style="margin-top:8px"></div><div class="row" style="margin-top:10px"><input id="pnew" placeholder="Add a person" style="flex:1"><button class="btn sm" type="button" id="padd">Add</button></div><p class="note" style="margin-top:8px">Each person keeps their own tablas. To send someone your tablas, use <b>Share</b> on the Tablas screen.</p></div>' +
       '<div class="card"><div class="eyebrow">Calling the game?</div><p class="note" style="margin-top:6px"><a href="cantor.html">El Cantor</a> shuffles a deck and reads each card aloud, prints numbered tablas, and checks a ¡Lotería! by tabla number.</p></div>' +
-      '<div class="card"><div class="eyebrow">About</div><p class="note" style="margin-top:6px">Everything lives on this device — nothing is sent anywhere. Reload-safe: the round survives a refresh.</p></div></div>');
+      '<div class="card" id="syncCard" hidden></div>' +
+      '<div class="card"><div class="eyebrow">About</div><p class="note" style="margin-top:6px">Everything lives on this device' + (window.LoteriaSync && LoteriaSync.ready ? ', and in your Google Drive if you save there' : ' — nothing is sent anywhere') + '. Reload-safe: the round survives a refresh.</p></div></div>');
+    reopen = settingsSheet;
+    if (window.LoteriaSync) LoteriaSync.card($('syncCard'));
     function draw() {
       document.querySelectorAll('#mkseg button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === st.marker); });
       $('sndBtn').textContent = st.sound ? 'On' : 'Off'; $('sndBtn').classList.toggle('on', st.sound);
@@ -381,6 +388,7 @@ a{color:var(--teal);font-weight:700}
   function tablasSheet() {
     var p = player();
     openSheet('<div class="hd"><input id="tbName" value="' + esc(p.name) + '" aria-label="Player name" style="font:400 18px var(--disp);flex:1"><button class="btn sec sm" type="button" id="tbShare">Share</button><button class="btn sm" type="button" id="tbx">Done</button></div><div class="bd stack"><p class="note">Tap any square to change its card. Doubles are fine (house rules) — when that card is called, both squares get a bean. Names are editable.</p><div class="edb" id="edb"></div><div class="row"><button class="btn sec sm" type="button" id="tbAdd">+ Add a tabla</button><button class="btn sec sm" type="button" id="tbPrinted">+ A printed tabla</button><button class="btn sec sm" type="button" id="tbOrig">Restore the original four</button><a class="btn sec sm" href="print.html">Make tablas to print</a><button class="btn sec sm" type="button" id="tbDel" style="color:var(--red)">Remove this person</button></div></div>');
+    reopen = tablasSheet;
     function draw() {
       var host = $('edb'); host.innerHTML = '';
       p.boards.forEach(function (bd, bi) {
@@ -415,7 +423,7 @@ a{color:var(--teal);font-weight:700}
   // ---------- printed tablas (from El Cantor) ----------
   function printedSheet(p) {
     openSheet('<div class="hd"><h2>Add a printed tabla</h2><button class="btn sec sm" type="button" id="ptx">Cancel</button></div><div class="bd stack"><p class="note">Tablas printed from El Cantor carry a juego name along the bottom and a number at the top. Type both and the same tabla shows up here, square for square — so the caller can still check it by number.</p><div class="row"><input id="ptJ" placeholder="Juego, like CANELA" autocomplete="off" autocapitalize="characters" spellcheck="false" style="flex:1 1 10em;text-transform:uppercase;font-weight:700"><input id="ptN" placeholder="No." inputmode="numeric" autocomplete="off" maxlength="3" aria-label="Tabla number" style="width:5.5em"><button class="btn red" type="button" id="ptAdd" disabled>Add it</button></div><div class="edb"><div id="ptPrev"></div></div></div>');
-    var pick = null;
+    var pick = null; reopen = tablasSheet;
     function draw() {
       var name = L.juegoName($('ptJ').value), k = parseInt($('ptN').value, 10), host = $('ptPrev');
       pick = name && k >= 1 && k <= 999 ? { name: name + ' ' + k, cards: L.juegoTabla(name, k) } : null;
@@ -459,8 +467,11 @@ a{color:var(--teal);font-weight:700}
 
   // ---------- first visit ----------
   function welcomeSheet() {
-    var sh = openSheet('<div class="hd"><h2>Who’s playing on this device?</h2></div><div class="bd stack"><p class="note">Asked once. Tablas are saved on this phone or tablet only, so what you set up here is yours and nobody else’s.</p><input id="wName" placeholder="Your name" autocomplete="off"><div class="card"><div class="eyebrow">Start with</div><div class="row" style="margin-top:8px"><button class="btn red" type="button" id="wRandom">Random tablas I’ll edit</button><button class="btn sec" type="button" id="wMark">Mark’s four tablas</button></div><p class="note" style="margin-top:8px">Either way you can change every square later under <b>Tablas</b>.</p></div></div>');
+    var sh = openSheet('<div class="hd"><h2>Who’s playing on this device?</h2></div><div class="bd stack"><p class="note">Asked once. Tablas are saved on this phone or tablet' + (window.LoteriaSync && LoteriaSync.ready ? ', and in your own Google Drive if you turn that on below.' : ' only, so what you set up here is yours and nobody else’s.') + '</p><input id="wName" placeholder="Your name" autocomplete="off"><div class="card"><div class="eyebrow">Start with</div><div class="row" style="margin-top:8px"><button class="btn red" type="button" id="wRandom">Random tablas I’ll edit</button><button class="btn sec" type="button" id="wMark">Mark’s four tablas</button></div><p class="note" style="margin-top:8px">Either way you can change every square later under <b>Tablas</b>.</p></div>' +
+      (window.LoteriaSync && LoteriaSync.ready ? '<p class="note">Already saving tablas to Google Drive on another device? Turn it on here and they come right over.</p><div class="card" id="wSync"></div>' : '') + '</div>');
     sh.parentElement.replaceWith(sh.parentElement.cloneNode(true)); // drop the tap-outside-to-close handler
+    UI.welcome = true;
+    if (window.LoteriaSync) LoteriaSync.card($('wSync'));
     function go(mark) {
       var name = $('wName').value.trim() || (mark ? 'Mark' : 'Player');
       var p = { id: uid(), name: name, boards: mark ? origBoards() : [randomBoard('Tabla 1'), randomBoard('Tabla 2')] };
@@ -470,6 +481,18 @@ a{color:var(--teal);font-weight:700}
     $('wRandom').addEventListener('click', function () { go(false); });
     $('wMark').addEventListener('click', function () { go(true); });
     $('wName').addEventListener('keydown', function (e) { if (e.key === 'Enter') go(false); });
+  }
+
+  // ---------- Google Drive ----------
+  if (window.LoteriaSync) {
+    LoteriaSync.chip($('syncBtn'));
+    LoteriaSync.onUpdate(function (keys) { // tablas saved on another device have landed here
+      if (keys.indexOf(LS) < 0) return;
+      try { var o = JSON.parse(localStorage.getItem(LS)); if (o && o.players && o.players.length) { S = Object.assign(fresh(), o); firstRun = false; } } catch (e) { }
+      if (UI.welcome && !firstRun) { closeSheet(); toast('Your tablas are here from Google Drive'); }
+      else if (reopen) { var f = reopen; closeSheet(); f(); }
+      UI.focus = null; evaluate(false); render();
+    });
   }
 
   // ---------- wiring ----------

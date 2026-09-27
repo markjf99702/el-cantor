@@ -288,6 +288,7 @@ a.chip{text-decoration:none}
 <div id="winbox" hidden></div>
 <div class="toast" id="toast" role="status"></div>
 <script src="deck.js" data-cards="cards/"></script>
+<script src="sync.js"></script>
 <script>(function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
@@ -321,9 +322,12 @@ a.chip{text-decoration:none}
       C.round = Math.max(1, o.round | 0);
       if (!Array.isArray(C.patterns) || !C.patterns.length) C.patterns = L.CLASICO.slice();
       if (!Array.isArray(C.wins)) C.wins = [];
+    } else if (o) { // only what Google Drive brought over from another device: the winners and the juego
+      if (Array.isArray(o.wins)) C.wins = o.wins;
+      if (typeof o.juego === 'string') C.juego = o.juego;
     }
   } catch (e) { }
-  function save() { try { localStorage.setItem(LS, JSON.stringify(C)); } catch (e) { } }
+  function save() { try { localStorage.setItem(LS, JSON.stringify(C)); } catch (e) { } if (window.LoteriaSync) LoteriaSync.changed(); }
   function cur() { return C.pos ? C.order[C.pos - 1] : 0; }
   function orderOf(n) { var i = C.order.indexOf(n); return i >= 0 && i < C.pos ? i + 1 : 0; }
   function isOut(n) { return orderOf(n) > 0; }
@@ -695,6 +699,7 @@ a.chip{text-decoration:none}
       '<div class="card"><div class="row sp"><div><b>Sounds</b><p class="note">A card snap on each turn, a fanfare for a good ¡Lotería!</p></div><button class="chip" type="button" id="sndBtn"></button></div></div>' +
       '<div class="card"><div class="row sp"><div><b>Keep the screen on</b><p class="note">While a round is going, if this device allows it.</p></div><button class="chip" type="button" id="awBtn"></button></div></div>' +
       '<div class="card" id="winsCard"></div>' +
+      '<div class="card" id="syncCard" hidden></div>' +
       '<div class="card"><div class="eyebrow">Playing along</div><p class="note" style="margin-top:6px">' + (BOARD_URL ? 'Anyone can mark their own tablas on their phone with the <a id="boardLink" target="_blank" rel="noopener">Lotería board</a> — tap <b>Cantaron…</b> there as you call. ' : '') + 'Printed tablas work too: <b>Print tablas</b> makes a numbered set, or <a href="print.html">make your own</a> card by card.</p></div>' +
       '<div class="card"><div class="eyebrow">Keyboard</div><p class="note" style="margin-top:6px">Space starts or pauses · → next card · ← puts the last card back · L checks a ¡Lotería!</p></div></div>');
     if (BOARD_URL) $('boardLink').href = BOARD_URL;
@@ -746,6 +751,7 @@ a.chip{text-decoration:none}
     $('awBtn').addEventListener('click', function () { st.awake = !st.awake; save(); wake(st.awake && C.pos > 0 && C.pos < 54); draw(); });
     $('stx').addEventListener('click', closeSheet);
     UI.onVoices = draw; loadVoices(); draw();
+    if (window.LoteriaSync) LoteriaSync.card($('syncCard'));
   }
   function setPace(v) { C.settings.pace = v; save(); if (R.phase === 'waiting' && R.playing) wait(); else renderBar(); }
 
@@ -1111,6 +1117,12 @@ a.chip{text-decoration:none}
       return pdf.bytes('Lotería · Juego ' + name);
     });
   }
+
+  // ---------- Google Drive ----------
+  if (window.LoteriaSync) LoteriaSync.onUpdate(function (keys) { // winners and the juego from another device
+    if (keys.indexOf(LS) < 0) return;
+    try { var o = JSON.parse(localStorage.getItem(LS)); if (o) { if (Array.isArray(o.wins)) C.wins = o.wins; if (typeof o.juego === 'string') C.juego = o.juego; } } catch (e) { }
+  });
 
   // ---------- wiring ----------
   function playPause() { if (C.pos >= 54) newRoundAsk(); else if (R.playing) pause(); else play(); }
