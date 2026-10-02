@@ -57,11 +57,11 @@ Anyone can turn this on from the home screen, from Settings in My tablas or El C
 
 ### Setting it up
 
-`sync.js` uses the junkdrawer.works OAuth client that Shelfmark and Terraville also use. It is authorized for `https://junkdrawer.works`, and Drive saving shows only at that address. All three apps ask for the same permission, `drive.file`, so there's nothing to add in Google Cloud, and approving it once covers every app.
+`sync.js` uses the junkdrawer.works OAuth client that Shelfmark and Terraville also use. It is authorized for `https://el-cantor.junkdrawer.works` (and for `https://junkdrawer.works`, where El Cantor used to live), and Drive saving shows only there. All three apps ask for the same permission, `drive.file`, so there's nothing to add in Google Cloud, and approving it once covers every app.
 
 Things that come with sharing the client:
 
-- **One sign-in for the hour.** The Google sign-in is kept under the `junkdrawer.google` key in localStorage, shared with any junkdrawer.works app that follows the same convention. Turning on Drive saving within an hour of signing in to one of them needs no Google window at all.
+- **One sign-in for the hour.** The Google sign-in is kept under the `junkdrawer.google` key in localStorage, the same key every junkdrawer.works app uses. Each app has its own address now, so each keeps its own copy: a sign-in lasts the hour here, and the next one remembers the account.
 - **No revoking.** **Stop saving on this device** turns saving off here without revoking anything, because revoking cancels the permission for every app on the client.
 - **Files are found by tags, not names.** Each app's files carry `appProperties` naming the app (`loteria: 'folder'`, `loteria: 'sync'`), and the app searches by those, so apps sharing the client never pick up each other's files.
 

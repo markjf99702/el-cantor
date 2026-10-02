@@ -10,14 +10,15 @@
   'use strict';
   // The junkdrawer.works OAuth client, shared with Shelfmark and Terraville (README, "Saving to
   // Google Drive"). Google only accepts it from these addresses, so elsewhere nothing shows.
-  var ORIGINS = ['https://junkdrawer.works'];
+  // El Cantor lives at its own address now; junkdrawer.works/el-cantor/ forwards there.
+  var ORIGINS = ['https://el-cantor.junkdrawer.works', 'https://junkdrawer.works'];
   var CLIENT_ID = ORIGINS.indexOf(location.origin) >= 0 ? '897653851078-p5jrh2bto6h3bj0lc4jist3k1vsc1pj4.apps.googleusercontent.com' : '';
   // drive.file, like every junkdrawer.works app: Google lets the apps on this client see only the
   // files they made. Ours are a "Lotería" folder and one file in it, found by their appProperties.
   var SCOPE = 'https://www.googleapis.com/auth/drive.file', API = 'https://www.googleapis.com/';
   var FOLDER = { name: 'Lotería', mimeType: 'application/vnd.google-apps.folder', appProperties: { loteria: 'folder' } };
   var FILE = { name: 'Lotería tablas.json', mimeType: 'application/json', appProperties: { loteria: 'sync' } };
-  // KT is shared by every junkdrawer.works app: one sign-in, good for an hour, serves them all.
+  // KT is the key every junkdrawer.works app keeps its sign-in under: good for an hour, and it remembers the account.
   var KS = 'loteria.sync', KT = 'junkdrawer.google', KB = 'loteria.sync.base', KN = 'loteria.sync.seen';
   var KEEP_GONE = 180 * 864e5, RETRY = { retry: true };
 
