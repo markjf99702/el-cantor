@@ -7,6 +7,9 @@
 <meta name="apple-mobile-web-app-title" content="Tablas">
 <meta name="theme-color" content="#F3E7CF" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1D1714" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
 <title>Lotería · Make tablas</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bree+Serif&family=Nunito+Sans:ital,opsz,wght@0,6..12,400;0,6..12,600;0,6..12,700;0,6..12,800;1,6..12,400&display=swap">
 <style id="pagesize">@page{size:letter portrait;margin:0.4in}</style>
@@ -215,6 +218,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 <div class="toast" id="toast" role="status"></div>
 <script src="deck.js" data-cards="cards/"></script>
 <script src="sync.js"></script>
+<script>if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(function () { });</script>
 <script>(function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };

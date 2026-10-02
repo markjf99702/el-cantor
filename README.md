@@ -2,7 +2,7 @@
 
 Lotería for the family table, in one package. Everything stays on the device, unless you turn on saving to Google Drive so your tablas follow you to your other devices.
 
-Open `index.html` from any static host (GitHub Pages works). Put it on the home screen and it runs full screen. The home screen has three choices:
+Play it at [el-cantor.junkdrawer.works](https://el-cantor.junkdrawer.works/), or open `index.html` from any static host. Install it from the browser (on an iPhone, Share → Add to Home Screen) and it runs as its own app. It works offline too: installing keeps the card pictures, and the recorded voices are kept as they play. The home screen has three choices:
 
 - **El Cantor** (`cantor.html`) calls the game: the phone, tablet or laptop at the head of the table that replaces the deck and the person reading it.
 - **My tablas** (`board.html`) is the play-along board: each player marks their own tablas on their phone as cards are called.
@@ -73,6 +73,9 @@ To run it from another address, create a Web client with the Drive API turned on
 - `cantor.html` — El Cantor.
 - `board.html` — My tablas, the play-along board.
 - `print.html` — Make tablas.
+- `carry.js` — the first time it opens at el-cantor.junkdrawer.works, brings the tablas saved at its old address, junkdrawer.works/el-cantor/.
+- `manifest.webmanifest`, `icon.svg` and the `icon-*.png` sizes — installing it as an app. `node tools/make-icons.mjs` redraws the PNGs from `icon.svg` and `tools/icon-full-bleed.svg`.
+- `sw.js` — the offline copy: the pages, the card pictures, and each voice clip once it has played.
 - `sync.js` — saving to Google Drive: signing in, the Drive file, and merging changes from every device.
 - `deck.js` — the cards, their verses, the winning shapes, Mark's four tablas, and the juego generator. Every page loads it.
   - The generator is frozen: changing it would change every tabla already printed.

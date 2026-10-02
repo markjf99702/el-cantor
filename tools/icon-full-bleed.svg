@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+  </defs>
+  <g>
+    <rect width="64" height="64" fill="#1F6F6D"/>
+    <g transform="translate(32 34) scale(.8) translate(-32 -34)">
+    <path d="M-2 7.5Q32 14 66 7.5" fill="none" stroke="#F3E7CF" stroke-width=".9" stroke-opacity=".75"/>
+    <g>
+      <path d="M3 8.6h7.4v6l-1.85-1.5-1.85 1.5-1.85-1.5L3 14.6z" fill="#D99A2B"/>
+      <path d="M15.2 10.6h7.4v6l-1.85-1.5-1.85 1.5-1.85-1.5-1.85 1.5z" fill="#B7332F"/>
+      <path d="M41.4 10.6h7.4v6l-1.85-1.5-1.85 1.5-1.85-1.5-1.85 1.5z" fill="#C2477A"/>
+      <path d="M53.6 8.6H61v6l-1.85-1.5-1.85 1.5-1.85-1.5-1.85 1.5z" fill="#D99A2B"/>
+    </g>
+    <g transform="rotate(-6 32 38)">
+      <rect x="17.5" y="17" width="29" height="40" rx="3" fill="#FBF4E4"/>
+      <rect x="20" y="19.5" width="24" height="35" rx="1.2" fill="none" stroke="#2B221C" stroke-width="1.3"/>
+      <path d="M32 44.5C21.5 37.6 22.4 28.2 27.6 28.2c2.5 0 3.9 1.8 4.4 3.3.5-1.5 1.9-3.3 4.4-3.3 5.2 0 6.1 9.4-4.4 16.3z" fill="#B7332F"/>
+      <rect x="23.5" y="48.2" width="17" height="2.8" rx="1.4" fill="#2B221C"/>
+      <rect x="22.4" y="22" width="4.4" height="3.4" rx=".8" fill="#2B221C"/>
+    </g>
+    </g>
+  </g>
+</svg>
