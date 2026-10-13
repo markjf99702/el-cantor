@@ -476,6 +476,8 @@ check('board: the game picker works from the keyboard as well as by tapping', as
     const game = async () => (await saved(page, 'loteria.v1')).patterns;
     const shape = name => page.locator('#pats .pat', { hasText: name }).first();
     await page.click('#patBtn');
+    // Clásico's little picture: the top row, a whole square in the middle, and the corners.
+    assert.deepEqual(await shape('Clásico').locator('.mini i').evaluateAll(is => is.flatMap((i, k) => i.className ? [k] : [])), [0, 1, 2, 3, 5, 6, 9, 10, 12, 15]);
     await shape('Esquinas').focus(); await page.keyboard.press('Enter');
     assert.deepEqual(await game(), ['esquinas'], 'Enter on Esquinas');
     await shape('Centro').focus(); await page.keyboard.press(' ');

@@ -83,7 +83,7 @@
   var SQ = [0, 1, 2, 4, 5, 6, 8, 9, 10].map(function (b) { return [b, b + 1, b + 4, b + 5]; });
   var ALL = []; for (var i = 0; i < 16; i++) ALL.push(i);
   var PATS = [
-    { id: 'clasico', name: 'Clásico', sub: '4 in a row, 4 corners, or 4 in a square', combo: ['linea', 'esquinas', 'cuadro'], show: [0, 1, 2, 3, 12, 15, 9, 10] },
+    { id: 'clasico', name: 'Clásico', sub: '4 in a row, 4 corners, or 4 in a square', combo: ['linea', 'esquinas', 'cuadro'], show: [0, 1, 2, 3, 5, 6, 9, 10, 12, 15] },
     { id: 'linea', name: 'Línea', sub: 'any row, column or diagonal', sets: rows().concat(cols(), [[0, 5, 10, 15], [3, 6, 9, 12]]), show: [0, 1, 2, 3] },
     { id: 'esquinas', name: 'Esquinas', sub: 'the four corners', sets: [[0, 3, 12, 15]] },
     { id: 'centro', name: 'Centro', sub: 'the middle four', sets: [[5, 6, 9, 10]] },
