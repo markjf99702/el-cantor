@@ -175,7 +175,11 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   .slot{position:relative;display:flex;align-items:center;justify-content:center;min-width:0;min-height:0}
 }
 .pt{flex:none;width:var(--tw);height:var(--th);border:var(--bw) solid #B7332F;border-radius:.09in;padding:var(--pad);background:#fff;display:flex;flex-direction:column;gap:var(--hg);-webkit-print-color-adjust:exact;print-color-adjust:exact}
-.pt.rot{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-90deg)}
+/* Two per page, each tabla turned sideways. Before it turns, its box is taller than half a page, and Chromium splits
+   whatever runs off the bottom of a page onto the next one. So it's anchored to the top of the upper half and the
+   bottom of the lower half, then moved to the middle of its half. */
+.pt.rot{position:absolute;left:calc(50% - var(--tw) / 2);top:0;transform:translateY(calc((var(--sh) - var(--th)) / 2)) rotate(-90deg)}
+.slot:last-child .pt.rot{top:auto;bottom:0;transform:translateY(calc((var(--th) - var(--sh)) / 2)) rotate(-90deg)}
 .pt .ph{flex:none;height:var(--hh);display:flex;align-items:center;justify-content:space-between;gap:.12in;font-family:"Bree Serif",Georgia,serif;font-size:calc(var(--hh) * .8);line-height:1;color:#B7332F;white-space:nowrap}
 .pt .ph span{color:#2B221C;font-size:.68em;overflow:hidden;text-overflow:ellipsis}
 .pt .pg{display:grid;grid-template-columns:repeat(4,var(--cw));grid-auto-rows:var(--ch);gap:var(--gap)}
@@ -537,13 +541,13 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     var aw = (L.rot ? sh : sw) - 0.02, ah = (L.rot ? sw : sh) - 0.02; // two per page: turn each tabla sideways to fill a half page
     var bw = 0.05, pad = 0.07, gap = 0.045, hr = names ? 0.3 : 0, hg = names ? 0.05 : 0, over = 2 * bw + 2 * pad + 3 * gap;
     var cw = Math.min((aw - over) / 4, (ah - over - hg) / (4 * RATIO + hr));
-    return { pp: pp, L: L, pw: pw, ph: ph, gut: gut, bw: bw, pad: pad, gap: gap, hg: hg, cw: cw, ch: cw * RATIO, hh: cw * hr, tw: 4 * cw + over, th: 4 * cw * RATIO + cw * hr + hg + over };
+    return { pp: pp, L: L, pw: pw, ph: ph, gut: gut, sh: sh, bw: bw, pad: pad, gap: gap, hg: hg, cw: cw, ch: cw * RATIO, hh: cw * hr, tw: 4 * cw + over, th: 4 * cw * RATIO + cw * hr + hg + over };
   }
   function printList() { return P.tablas.filter(function (t) { return filled(t) && !UI.skip[t.id]; }); }
   function renderPrint() {
     var g = geometry(P.set.per, P.set.paper), host = $('printout'), list = printList(), per = g.L.cols * g.L.rows;
     $('pagesize').textContent = '@page{size:' + g.pp.css + ' portrait;margin:' + MARGIN + 'in}';
-    var vars = { pw: g.pw, ph: g.ph, gut: g.gut, bw: g.bw, pad: g.pad, gap: g.gap, hg: g.hg, cw: g.cw, ch: g.ch, hh: g.hh, tw: g.tw, th: g.th };
+    var vars = { pw: g.pw, ph: g.ph, gut: g.gut, sh: g.sh, bw: g.bw, pad: g.pad, gap: g.gap, hg: g.hg, cw: g.cw, ch: g.ch, hh: g.hh, tw: g.tw, th: g.th };
     Object.keys(vars).forEach(function (k) { host.style.setProperty('--' + k, vars[k].toFixed(4) + 'in'); });
     host.style.setProperty('--cols', g.L.cols); host.style.setProperty('--rows', g.L.rows);
     var html = '';

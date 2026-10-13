@@ -198,6 +198,40 @@ check('print: tap a square, then tap cards to fill it in order; a third copy is 
   } finally { await ctx.close(); }
 });
 
+check('print: two per page prints every tabla whole (Letter and A4, names on and off)', async () => {
+  const ctx = await context(DESKTOP);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await page.goto(base + 'print.html');
+    await page.click('#tg button[data-a="preset"][data-k="0"]'); // Mark's four
+    await page.click('#tg button[data-a="rnd"]'); // and a fifth, alone on the last page
+    for (const paper of ['letter', 'a4']) for (const names of ['1', '0']) {
+      const what = `${paper}, names ${names === '1' ? 'on' : 'off'}`;
+      await page.click('#printBtn');
+      await page.click('#pers .per[data-v="2"]');
+      await page.click(`#paperSeg button[data-v="${paper}"]`);
+      await page.click(`#nameSeg button[data-v="${names}"]`);
+      assert.equal(await page.textContent('#psum'), '5 tablas on 3 pages — cut along the gap between them.');
+      await page.click('#pdx');
+      await page.emulateMedia({ media: 'print' });
+      // Where each tabla's box sits before it's turned sideways. Chromium splits whatever runs off the
+      // bottom of a page onto the next one, which tore the lower tabla on every page but the last.
+      const boxes = await page.evaluate(() => [...document.querySelectorAll('#printout .page')].map(pg => [...pg.querySelectorAll('.pt')].map(pt => {
+        const slot = pt.parentElement, top = slot.offsetTop - pg.offsetTop + pt.offsetTop, left = slot.offsetLeft - pg.offsetLeft + pt.offsetLeft;
+        return { top, bottom: top + pt.offsetHeight, left, right: left + pt.offsetWidth, w: pg.offsetWidth, h: pg.offsetHeight, name: pt.querySelector('img') && pt.querySelector('img').getAttribute('src') };
+      })));
+      assert.deepEqual(boxes.map(p => p.length), [2, 2, 1], what);
+      boxes.forEach((p, i) => p.forEach((b, j) => {
+        assert.ok(b.top >= -1 && b.bottom <= b.h + 1 && b.left >= -1 && b.right <= b.w + 1, `${what}: tabla ${2 * i + j + 1} runs off page ${i + 1} (${JSON.stringify(b)})`);
+      }));
+      const pdf = (await page.pdf({ preferCSSPageSize: true, printBackground: true })).toString('latin1');
+      assert.equal((pdf.match(/\/Type\s*\/Page\b(?!s)/g) || []).length, 3, what + ': the PDF has 3 pages');
+      await page.emulateMedia({ media: null });
+    }
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 // ---------------------------------------------------------------- Google Drive (a stand-in for it)
 async function driveDevice(g, data) {
   const ctx = await context(PHONE);
