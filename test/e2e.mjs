@@ -379,6 +379,22 @@ check('board: a tabla’s label stays on one line above its grid, and its win al
   }
 });
 
+check('board: Settings keeps each On/Off beside its words on a phone', async () => {
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.v1': ANA });
+    await page.goto(base + 'board.html');
+    await page.evaluate(() => document.fonts.ready);
+    await page.click('#setBtn');
+    for (const id of ['sndBtn', 'gdBtn']) {
+      const r = await page.evaluate(id => { const b = document.getElementById(id), t = b.previousElementSibling.getBoundingClientRect(), c = b.getBoundingClientRect(); return { textRight: t.right, textTop: t.top, textBottom: t.bottom, chipLeft: c.left, chipMiddle: (c.top + c.bottom) / 2 }; }, id);
+      assert.ok(r.chipLeft >= r.textRight && r.chipMiddle > r.textTop && r.chipMiddle < r.textBottom, `#${id} isn't beside its words (${JSON.stringify(r)})`);
+    }
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('board: Restore the original four and Remove a tabla ask for a second tap', async () => {
   const ctx = await context(PHONE);
   try {

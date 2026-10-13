@@ -127,6 +127,8 @@ input:focus-visible,button:focus-visible{outline:2px solid var(--teal);outline-o
 .pk.used{outline:2px solid var(--teal)}
 .pk.taken{opacity:.35}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.row.sp{justify-content:space-between;flex-wrap:nowrap}
+.row.sp>div{flex:1;min-width:0}
 .btn{background:var(--ink);color:var(--bg);border:1px solid var(--ink);border-radius:10px;padding:9px 14px;font:700 14px var(--body)}
 .btn.sec{background:var(--paper);color:var(--ink);border-color:var(--line2)}
 .btn.red{background:var(--red);border-color:var(--red);color:var(--red-ink)}
@@ -406,8 +408,8 @@ a{color:var(--teal);font-weight:700}
     var st = S.settings;
     openSheet('<div class="hd"><h2>Settings</h2><button class="btn sec sm" type="button" id="stx">Done</button></div><div class="bd stack">' +
       '<div class="card"><div class="eyebrow">Marker</div><div class="row" style="margin-top:8px"><div class="seg" id="mkseg"><button type="button" data-v="bean">Frijol</button><button type="button" data-v="chip">Ficha</button><button type="button" data-v="coin">Moneda</button></div></div></div>' +
-      '<div class="card"><div class="row" style="justify-content:space-between"><div><b>Sounds</b><div class="note">A bean drop on each mark, a little fanfare on a win.</div></div><button class="chip" type="button" id="sndBtn"></button></div></div>' +
-      '<div class="card"><div class="row" style="justify-content:space-between"><div><b>Dim squares outside the pattern</b><div class="note">Only for fixed shapes like Esquinas or La Ele.</div></div><button class="chip" type="button" id="gdBtn"></button></div></div>' +
+      '<div class="card"><div class="row sp"><div><b>Sounds</b><div class="note">A bean drop on each mark, a little fanfare on a win.</div></div><button class="chip" type="button" id="sndBtn"></button></div></div>' +
+      '<div class="card"><div class="row sp"><div><b>Dim squares outside the pattern</b><div class="note">Only for fixed shapes like Esquinas or La Ele.</div></div><button class="chip" type="button" id="gdBtn"></button></div></div>' +
       '<div class="card"><div class="eyebrow">Who is playing on this device</div><div class="row" id="plist" style="margin-top:8px"></div><div class="row" style="margin-top:10px"><input id="pnew" placeholder="Add a person" style="flex:1"><button class="btn sm" type="button" id="padd">Add</button></div><p class="note" style="margin-top:8px">Each person keeps their own tablas. To send someone your tablas, use <b>Share</b> on the Tablas screen.</p></div>' +
       '<div class="card"><div class="eyebrow">Calling the game?</div><p class="note" style="margin-top:6px"><a href="cantor.html">El Cantor</a> shuffles a deck and reads each card aloud, prints numbered tablas, and checks a ¡Lotería! by tabla number.</p></div>' +
       '<div class="card" id="syncCard" hidden></div>' +
