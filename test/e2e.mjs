@@ -270,6 +270,28 @@ check('board: the Tablas sheet stays where it was after a square is changed', as
   } finally { await ctx.close(); }
 });
 
+check('board: the game picker works from the keyboard as well as by tapping', async () => {
+  const ctx = await context(DESKTOP);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.v1': ANA });
+    await page.goto(base + 'board.html');
+    const game = async () => (await saved(page, 'loteria.v1')).patterns;
+    const shape = name => page.locator('#pats .pat', { hasText: name }).first();
+    await page.click('#patBtn');
+    await shape('Esquinas').focus(); await page.keyboard.press('Enter');
+    assert.deepEqual(await game(), ['esquinas'], 'Enter on Esquinas');
+    await shape('Centro').focus(); await page.keyboard.press(' ');
+    assert.deepEqual(await game(), ['centro'], 'Space on Centro');
+    await shape('La Ele').focus(); await page.keyboard.press('Shift+Enter');
+    assert.deepEqual(await game(), ['centro', 'ele'], 'Shift+Enter adds a shape, like holding it');
+    await shape('Clásico').click();
+    assert.deepEqual(await game(), ['linea', 'esquinas', 'cuadro'], 'a click still picks');
+    assert.equal(await page.textContent('#patBtn'), 'Clásico ▾');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('board: Restore the original four and Remove a tabla ask for a second tap', async () => {
   const ctx = await context(PHONE);
   try {

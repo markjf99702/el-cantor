@@ -369,6 +369,7 @@ a{color:var(--teal);font-weight:700}
         b.addEventListener('pointerdown', function () { held = false; t = setTimeout(function () { held = true; pick(true); toast(p.name + ' added'); }, 550); });
         b.addEventListener('pointerup', function () { clearTimeout(t); if (!held) pick(false); });
         b.addEventListener('pointerleave', function () { clearTimeout(t); });
+        b.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(e.shiftKey); } }); // Shift adds a shape, like holding it
         b.addEventListener('contextmenu', function (e) { e.preventDefault(); });
         host.appendChild(b);
       });
