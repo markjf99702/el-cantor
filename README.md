@@ -40,7 +40,7 @@ Keyboard: Space starts or pauses · → next card · ← puts the last card back
 
 ### My tablas — playing along
 
-Someone calls the cards; you tap **Cantaron…**, pick the card, and it marks itself on every tabla where it appears.
+Someone calls the cards; you tap **Cantaron…**, pick the card, and it marks itself on every tabla where it appears. A card picked again stays marked. To take one back, tap its square or its name in the row of called cards, or ↶ for the last one.
 
 - Pick the game each round: Clásico, or a single shape, the same list El Cantor uses.
 - Edit tablas square by square. Doubles are fine (family rule), but not three of a card: when that card is called, both squares get a bean. Up to six tablas per person.

@@ -390,6 +390,33 @@ check('board: calling a card from Cantaron… doesn’t put a phone’s keyboard
   }
 });
 
+check('board: a card picked again in Cantaron… stays called, and taking one back says so', async () => {
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.v1': ANA });
+    await page.goto(base + 'board.html');
+    const called = async () => (await saved(page, 'loteria.game')).called;
+    const toast = t => until(page, t => document.getElementById('toast').textContent === t, t);
+    await page.click('#callBtn');
+    for (const n of [1, 2, 3, 4]) { await page.fill('#pkq', String(n)); await page.press('#pkq', 'Enter'); }
+    await page.waitForSelector('#winbox .winc'); // Mine 1's top row
+    await page.click('#winOk');
+    await page.fill('#pkq', '3'); await page.press('#pkq', 'Enter'); // the caller says La Dama again
+    await toast('La Dama is already called');
+    assert.deepEqual(await called(), [1, 2, 3, 4], 'picking La Dama again took it back off');
+    await page.click('#pkx');
+    assert.equal(await page.locator('#boards .tabla.win').count(), 1, 'Mine 1 lost its win');
+    await page.locator('#boards .tabla').first().locator('.cell').first().tap(); // El Gallo's bean
+    await toast('Took El Gallo back off');
+    assert.deepEqual(await called(), [2, 3, 4]);
+    await page.locator('#hist .h', { hasText: 'La Dama' }).tap();
+    await toast('Took La Dama back off');
+    assert.deepEqual(await called(), [2, 4]);
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('board: the Tablas sheet stays where it was after a square is changed', async () => {
   const ctx = await context(PHONE);
   try {

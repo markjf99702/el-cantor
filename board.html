@@ -333,7 +333,7 @@ a{color:var(--teal);font-weight:700}
 
   function call(n) {
     var i = G.called.indexOf(n);
-    if (i >= 0) G.called.splice(i, 1); else G.called.push(n);
+    if (i >= 0) { G.called.splice(i, 1); toast('Took ' + card(n).name + ' back off'); } else G.called.push(n);
     tick(); evaluate(i < 0); render();
   }
   function clearRound() { G.called = []; G.announced = {}; saveG(); render(); patternSheet('New round — what are we playing?'); }
@@ -588,7 +588,8 @@ a{color:var(--teal);font-weight:700}
   }
 
   // ---------- wiring ----------
-  $('callBtn').addEventListener('click', function () { pickerSheet('call', function (n) { call(n); }); });
+  // A card called again stays called; one is taken back with ↶, its square, or the row of called cards.
+  $('callBtn').addEventListener('click', function () { pickerSheet('call', function (n) { if (isCalled(n)) toast(card(n).name + ' is already called'); else call(n); }); });
   $('patBtn').addEventListener('click', function () { patternSheet(); });
   $('tablasBtn').addEventListener('click', tablasSheet);
   $('setBtn').addEventListener('click', settingsSheet);
