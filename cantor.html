@@ -331,18 +331,25 @@ a.chip{text-decoration:none}
   function fresh() { return { order: shuffled(), pos: 0, round: 1, patterns: L.CLASICO.slice(), juego: '', wins: [], print: freshPrint(), settings: freshSettings() }; }
   var C = fresh();
   function goodWins(w) { return Array.isArray(w) ? w.filter(function (x) { return x && typeof x === 'object'; }) : []; } // a damaged save may hold nulls
+  function wholeDeck(o) { return o && Array.isArray(o.order) && o.order.length === 54 && o.order.slice().sort(function (a, b) { return a - b; }).every(function (n, i) { return n === i + 1; }); }
+  // Takes in a save: this device's when the page opens, or one another El Cantor window made since. The settings
+  // and print objects stay the same objects, because an open sheet holds on to them.
+  function take(o) {
+    var st = C.settings, pr = C.print;
+    C = Object.assign(C, o);
+    C.settings = Object.assign(st, freshSettings(), o.settings || {});
+    C.print = Object.assign(pr, freshPrint(), o.print || {});
+    C.pos = Math.max(0, Math.min(54, o.pos | 0));
+    C.round = Math.max(1, o.round | 0);
+    if (!Array.isArray(C.patterns) || !C.patterns.length) C.patterns = L.CLASICO.slice();
+    C.wins = goodWins(C.wins);
+    if (typeof C.juego !== 'string') C.juego = '';
+  }
   try {
     var raw = localStorage.getItem(LS), o = raw && JSON.parse(raw);
-    if (o && Array.isArray(o.order) && o.order.length === 54 && o.order.slice().sort(function (a, b) { return a - b; }).every(function (n, i) { return n === i + 1; })) {
-      C = Object.assign(C, o);
-      C.settings = Object.assign(freshSettings(), o.settings || {});
+    if (wholeDeck(o)) {
+      take(o);
       if (o.settings && !('check' in o.settings)) { C.settings.style = 'name'; C.settings.check = false; save(); } // saved before Name only became the default
-      C.print = Object.assign(freshPrint(), o.print || {});
-      C.pos = Math.max(0, Math.min(54, o.pos | 0));
-      C.round = Math.max(1, o.round | 0);
-      if (!Array.isArray(C.patterns) || !C.patterns.length) C.patterns = L.CLASICO.slice();
-      C.wins = goodWins(C.wins);
-      if (typeof C.juego !== 'string') C.juego = '';
     } else if (o) { // only what Google Drive brought over from another device: the winners and the juego
       C.wins = goodWins(o.wins);
       if (typeof o.juego === 'string') C.juego = o.juego;
@@ -1145,6 +1152,24 @@ a.chip{text-decoration:none}
     if (keys.indexOf(LS) < 0) return;
     try { var o = JSON.parse(localStorage.getItem(LS)); if (o) { if (Array.isArray(o.wins)) C.wins = goodWins(o.wins); if (typeof o.juego === 'string') C.juego = o.juego; } } catch (e) { }
   });
+
+  // ---------- another El Cantor window on this device ----------
+  // The installed app and a browser tab, or two tabs, share one save. When the other one turns a card or shuffles,
+  // this one stops calling and follows it, so no card is called twice and neither puts the other's round back.
+  function follow(raw) {
+    var o; try { o = JSON.parse(raw); } catch (x) { return; }
+    if (!wholeDeck(o)) return;
+    var was = C.round + ':' + C.pos + ':' + C.order.join(), busy = R.playing || R.phase !== 'idle' || R.opening;
+    take(o);
+    if (C.round + ':' + C.pos + ':' + C.order.join() !== was) {
+      pause(); hush(); R.phase = 'idle'; R.opening = false;
+      showCard(false, true);
+      if (busy) toast('Paused — another El Cantor window turned a card');
+    }
+    renderCaption(); renderAll();
+  }
+  window.addEventListener('storage', function (e) { if (e.key === LS && e.newValue) follow(e.newValue); });
+  window.addEventListener('pageshow', function (e) { if (e.persisted) try { follow(localStorage.getItem(LS)); } catch (x) { } }); // back from the browser's history, which missed the saves made meanwhile
 
   // ---------- wiring ----------
   function playPause() { if (C.pos >= 54) newRoundAsk(); else if (R.playing) pause(); else play(); }

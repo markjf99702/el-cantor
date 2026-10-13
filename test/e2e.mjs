@@ -145,6 +145,60 @@ check('cantor: deals cards and keeps the round through a reload', async () => {
   } finally { await ctx.close(); }
 });
 
+check('cantor: two windows on one device follow each other instead of calling a card twice', async () => {
+  // The installed app and a browser tab share one save. A known deck, read as Adivinanza so each call takes a few seconds.
+  const order = run(1, 54).reverse();
+  const ctx = await context(DESKTOP), calls = [];
+  // Every card either window announces, through reloads too.
+  await ctx.exposeBinding('noteCall', (src, name) => calls.push(name));
+  await ctx.addInitScript(() => addEventListener('DOMContentLoaded', () => { const l = document.getElementById('live'); if (l) new MutationObserver(() => window.noteCall(l.textContent)).observe(l, { childList: true }); }));
+  try {
+    const A = await ctx.newPage(), problems = watch(A);
+    await seed(A, { 'loteria.cantor': { order, pos: 0, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], juego: '', wins: [], settings: { speak: false, sound: false, awake: false, check: false, style: 'riddle', pace: 'fast' } } });
+    await A.goto(base + 'cantor.html');
+    const B = await ctx.newPage(), problemsB = watch(B);
+    await B.goto(base + 'cantor.html');
+    const names = await A.evaluate(() => Loteria.CARDS.map(c => c.name)), name = n => names[n - 1];
+    const at = (p, pos) => until(p, s => document.getElementById('sub').textContent === s, 'Round 1 · ' + pos + ' of 54');
+    const stat = p => p.textContent('#stat');
+    // B is calling on its own, first in its opening line and then in the middle of a card, when A turns one by hand.
+    for (const busy of ['Here we go…', 'Reading…']) {
+      await B.click('#playBtn');
+      await until(B, s => document.getElementById('stat').textContent === s, busy);
+      await B.evaluate(() => { document.getElementById('toast').textContent = ''; });
+      await A.click('#nextBtn');
+      const pos = (await saved(A, 'loteria.cantor')).pos;
+      await at(B, pos);
+      assert.equal(await stat(B), 'Paused', busy + ': B kept calling after A turned a card');
+      assert.equal(await B.textContent('#cap h2'), name(order[pos - 1]), busy + ': B isn’t showing the card A turned');
+      assert.equal(await B.textContent('#toast'), 'Paused — another El Cantor window turned a card');
+      await B.waitForTimeout(2500);
+      assert.equal((await saved(B, 'loteria.cantor')).pos, pos, busy + ': B called a card on its own after stopping');
+      assert.equal(await stat(B), 'Paused', busy + ': B is stuck');
+      await B.click('#playBtn'); // ▶ carries on from A's card
+      await at(B, pos + 1);
+      await at(A, pos + 1);
+      await B.click('#playBtn'); // pause
+    }
+    // The lab's order: B sits idle while A turns three cards, then B turns the next one.
+    const p0 = (await saved(A, 'loteria.cantor')).pos;
+    await until(B, () => document.getElementById('stat').textContent === 'Paused');
+    for (let i = 1; i <= 3; i++) await A.click('#nextBtn');
+    await at(B, p0 + 3);
+    await B.click('#nextBtn');
+    await at(A, p0 + 4);
+    assert.equal(await A.getAttribute('#bigImg', 'alt'), name(order[p0 + 3]));
+    await A.reload();
+    await at(A, p0 + 4);
+    // Back from the browser's history, a page picks up what was saved while it was away.
+    await A.evaluate(() => { const c = JSON.parse(localStorage.getItem('loteria.cantor')); c.pos += 2; localStorage.setItem('loteria.cantor', JSON.stringify(c)); dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true })); });
+    await at(A, p0 + 6);
+    await at(B, p0 + 6);
+    assert.deepEqual(calls, order.slice(0, p0 + 4).map(name), 'the cards called in the two windows');
+    assert.deepEqual(problems.concat(problemsB), []);
+  } finally { await ctx.close(); }
+});
+
 check('cantor: checks a printed tabla by juego and number (CANELA 7 never changes)', async () => {
   // Printed sheets outlive code: tabla 7 of juego CANELA must always be these cards.
   const CANELA7 = [21, 51, 23, 6, 16, 33, 8, 4, 14, 20, 9, 40, 29, 41, 13, 25];
