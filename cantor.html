@@ -682,22 +682,24 @@ a.chip{text-decoration:none}
 
   function patternSheet(title) {
     openSheet('<div class="hd"><h2>' + esc(title || 'What are we playing?') + '</h2><button class="btn sec sm" type="button" id="ptx">Done</button></div><div class="bd stack"><p class="note">Tell the table what wins this round. <b>Clásico</b> is the regular game — 4 in a row, 4 corners, or 4 in a square. Hold a shape for a second to add it on top of what’s picked. El Cantor checks winning tablas against this.</p><div class="pats" id="pats"></div></div>');
+    // A held shape is added while the finger is still down, and the shapes are drawn again; the press is kept here,
+    // not on its button, so letting go on the new button doesn't pick that shape on its own.
+    var press = { held: false, t: 0 };
     function draw() {
       var host = $('pats'); host.innerHTML = '';
       PATS.forEach(function (p) {
         var on = p.combo ? L.isClasico(C.patterns) : (C.patterns.indexOf(p.id) >= 0 && !L.isClasico(C.patterns)), show = p.show || p.sets[0];
         var b = document.createElement('button'); b.type = 'button'; b.className = 'pat' + (on ? ' on' : '');
         b.innerHTML = '<span class="mini">' + ALL.map(function (i) { return '<i class="' + (show.indexOf(i) >= 0 ? (p.combo || p.min || (p.sets && p.sets.length > 1) ? 'q' : 'f') : '') + '"></i>'; }).join('') + '</span><span><b>' + p.name + '</b><small>' + p.sub + '</small></span>';
-        var held = false, t;
         function pick(add) {
           if (p.combo) C.patterns = L.CLASICO.slice();
           else if (add) { if (L.isClasico(C.patterns)) C.patterns = [p.id]; else if (C.patterns.indexOf(p.id) < 0) C.patterns.push(p.id); }
           else C.patterns = [p.id];
           save(); draw(); renderTop(); if (!C.pos) renderCaption();
         }
-        b.addEventListener('pointerdown', function () { held = false; t = setTimeout(function () { held = true; pick(true); toast(p.name + ' added'); }, 550); });
-        b.addEventListener('pointerup', function () { clearTimeout(t); if (!held) pick(false); });
-        b.addEventListener('pointerleave', function () { clearTimeout(t); });
+        b.addEventListener('pointerdown', function () { clearTimeout(press.t); press.held = false; press.t = setTimeout(function () { press.held = true; pick(true); toast(p.name + ' added'); }, 550); });
+        b.addEventListener('pointerup', function () { clearTimeout(press.t); if (press.held) press.held = false; else pick(false); });
+        b.addEventListener('pointerleave', function () { clearTimeout(press.t); });
         b.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(e.shiftKey); } });
         b.addEventListener('contextmenu', function (e) { e.preventDefault(); });
         host.appendChild(b);

@@ -462,6 +462,32 @@ check('board: the game picker works from the keyboard as well as by tapping', as
   } finally { await ctx.close(); }
 });
 
+check('games: holding a shape adds it to the game, with a mouse or a finger, in My tablas and El Cantor', async () => {
+  const CANTOR = { order: run(1, 54), pos: 0, round: 1, patterns: ['esquinas'], juego: '', wins: [], settings: { speak: false, sound: false, awake: false, check: false } };
+  for (const [tool, key, data] of [['board.html', 'loteria.v1', { ...ANA, patterns: ['esquinas'] }], ['cantor.html', 'loteria.cantor', CANTOR]]) {
+    for (const kind of [DESKTOP, PHONE]) {
+      const ctx = await context(kind);
+      try {
+        const page = await ctx.newPage(), problems = watch(page), what = tool + (kind === PHONE ? ', a finger' : ', a mouse');
+        await seed(page, { [key]: data });
+        await page.goto(base + tool);
+        await page.click('#patBtn');
+        const shape = name => page.locator('#pats .pat', { has: page.locator('b', { hasText: new RegExp('^' + name + '$') }) });
+        const box = await shape('Centro').boundingBox(), x = box.x + box.width / 2, y = box.y + box.height / 2;
+        const cdp = kind === PHONE ? await ctx.newCDPSession(page) : null;
+        if (cdp) await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] }); else { await page.mouse.move(x, y); await page.mouse.down(); }
+        await until(page, () => document.getElementById('toast').textContent === 'Centro added');
+        if (cdp) await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); else await page.mouse.up();
+        assert.deepEqual((await saved(page, key)).patterns, ['esquinas', 'centro'], what + ': letting go left only the held shape');
+        assert.equal(await page.textContent('#patBtn'), 'Esquinas · Centro ▾', what);
+        if (cdp) await shape('La Ele').tap(); else await shape('La Ele').click(); // a quick tap still picks one shape
+        assert.deepEqual((await saved(page, key)).patterns, ['ele'], what + ': a tap after a hold');
+        assert.deepEqual(problems, [], what);
+      } finally { await ctx.close(); }
+    }
+  }
+});
+
 check('board: a long game name in the header doesn’t paint over the Lotería title', async () => {
   for (const [w, pats] of [[360, ['equis', 'marco']], [390, ['equis', 'marco']], [360, ['llena']], [390, ['linea', 'esquinas', 'cuadro']]]) {
     const ctx = await context({ ...PHONE, viewport: { width: w, height: 780 } });

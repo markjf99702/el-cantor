@@ -387,22 +387,24 @@ a{color:var(--teal);font-weight:700}
 
   function patternSheet(title) {
     openSheet('<div class="hd"><h2>' + (title || 'What are we playing?') + '</h2><button class="btn sec sm" type="button" id="ptx">Done</button></div><div class="bd stack"><p class="note">Tap the game for this round. <b>Clásico</b> is the regular game — a tabla wins on 4 in a row, 4 corners, or 4 in a square. The others are single shapes; hold one for a second to add it on top of what’s selected.</p><div class="pats" id="pats"></div></div>');
+    // A held shape is added while the finger is still down, and the shapes are drawn again; the press is kept here,
+    // not on its button, so letting go on the new button doesn't pick that shape on its own.
+    var press = { held: false, t: 0 };
     function draw() {
       var host = $('pats'); host.innerHTML = '';
       PATS.forEach(function (p) {
         var on = p.combo ? isClasico() : (S.patterns.indexOf(p.id) >= 0 && !isClasico()), show = p.show || p.sets[0];
         var b = document.createElement('button'); b.type = 'button'; b.className = 'pat' + (on ? ' on' : '');
         b.innerHTML = '<span class="mini">' + ALL.map(function (i) { return '<i class="' + (show.indexOf(i) >= 0 ? (p.combo || p.min || (p.sets && p.sets.length > 1) ? 'q' : 'f') : '') + '"></i>'; }).join('') + '</span><span><b>' + p.name + '</b><small>' + p.sub + '</small></span>';
-        var held = false, t;
         function pick(add) {
           if (p.combo) S.patterns = CLASICO.slice();
           else if (add) { if (isClasico()) S.patterns = [p.id]; else if (S.patterns.indexOf(p.id) < 0) S.patterns.push(p.id); }
           else S.patterns = [p.id];
           save(); draw(); G.announced = {}; evaluate(true); render();
         }
-        b.addEventListener('pointerdown', function () { held = false; t = setTimeout(function () { held = true; pick(true); toast(p.name + ' added'); }, 550); });
-        b.addEventListener('pointerup', function () { clearTimeout(t); if (!held) pick(false); });
-        b.addEventListener('pointerleave', function () { clearTimeout(t); });
+        b.addEventListener('pointerdown', function () { clearTimeout(press.t); press.held = false; press.t = setTimeout(function () { press.held = true; pick(true); toast(p.name + ' added'); }, 550); });
+        b.addEventListener('pointerup', function () { clearTimeout(press.t); if (press.held) press.held = false; else pick(false); });
+        b.addEventListener('pointerleave', function () { clearTimeout(press.t); });
         b.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(e.shiftKey); } }); // Shift adds a shape, like holding it
         b.addEventListener('contextmenu', function (e) { e.preventDefault(); });
         host.appendChild(b);
