@@ -33,7 +33,7 @@ Every page has a ⌂ button back to the home screen. They all load the same `dec
   - Tables that check can switch that in Settings, or tap **Check a tabla first**.
   - To check a printed tabla, type its juego and tabla number. El Cantor shows the tabla with beans on the called cards, whether it wins the current game, and when it first did.
   - For store-bought tablas, tap the cards the player reads out instead.
-- **Games:** Clásico (4 in a row, 4 corners, or 4 in a square), or a single shape. The shapes are Línea, Esquinas and Cuadrito on their own, La Equis, La Ele, El Marco, Rieles, Escalera, Centro, Siete Loco and Tabla Llena.
+- **Games:** Clásico (4 in a row, 4 corners, or 4 in a square), or a single shape. The shapes are Línea, Esquinas, Cuadrito, La Equis, La Ele, El Marco, Rieles, Escalera, Centro, Siete Loco and Tabla Llena.
 - **Keeps a tally** of who won each round.
 
 Keyboard: Space starts or pauses · → next card · ← puts the last card back · L checks a ¡Lotería!
