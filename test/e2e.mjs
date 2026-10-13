@@ -348,6 +348,37 @@ check('board: a long game name in the header doesn’t paint over the Lotería t
   }
 });
 
+check('board: a tabla’s label stays on one line above its grid, and its win always shows in full', async () => {
+  const FOUR = [[11, 24, 43, 33, 16, 51, 29, 52, 26, 31, 31, 49, 22, 19, 44, 50], [45, 38, 4, 32, 36, 47, 47, 26, 5, 9, 35, 28, 20, 12, 8, 37], [1, 39, 2, 21, 35, 48, 48, 13, 3, 14, 23, 34, 18, 38, 6, 30], [15, 25, 34, 17, 40, 41, 41, 7, 46, 12, 42, 53, 54, 10, 27, 38]];
+  const marks = FOUR.map((cards, i) => ({ id: 't' + i, name: 'Tabla ' + (i + 1), cards }));
+  const cases = [
+    { w: 390, h: 844, boards: [{ id: 'm1', name: 'La tabla de Mamá Lupe', cards: run(1) }, { id: 'm2', name: 'Mine 2', cards: run(17) }], pats: ['linea', 'esquinas', 'cuadro'], called: [1, 2, 3, 4], win: '· ¡línea!' },
+    { w: 375, h: 667, boards: marks, pats: ['esquinas'], called: [11, 33, 22, 50], win: '· ¡esquinas!' },
+    { w: 360, h: 780, boards: marks, pats: ['llena'], called: FOUR[0], win: '· ¡tabla llena!' },
+    { w: 360, h: 780, boards: marks.concat(marks.slice(0, 2).map((b, i) => ({ ...b, id: 'x' + i, name: 'Otra ' + (i + 1) }))), pats: ['llena'], called: FOUR[0], win: '· ¡tabla llena!', narrow: true },
+  ];
+  for (const c of cases) {
+    const ctx = await context({ ...PHONE, viewport: { width: c.w, height: c.h } });
+    try {
+      const page = await ctx.newPage(), problems = watch(page), what = `${c.w}x${c.h} ${c.win}`;
+      await seed(page, { 'loteria.v1': { ...people(c.boards), patterns: c.pats }, 'loteria.game': { called: c.called, announced: {} } });
+      await page.goto(base + 'board.html');
+      await page.evaluate(() => document.fonts.ready);
+      const l = await page.evaluate(() => {
+        const t = document.querySelector('#boards .tabla'), lbl = t.querySelector('.lbl'), k = lbl.querySelector('.k'), z = lbl.querySelector('.z'), w = k.querySelector('.w'), R = e => e.getBoundingClientRect();
+        let box = null, full = null; // the win's box, and how wide it is when nothing holds it in
+        if (w) { box = R(w).width; const was = w.style.cssText; w.style.cssText = 'flex:none;max-width:none'; full = R(w).width; w.style.cssText = was; }
+        return { text: k.textContent, k: R(k).height, bottom: R(k).bottom, grid: R(t.querySelector('.grid')).top, right: R(k).right, z: R(z).left, zEnd: R(z).right, end: R(lbl).right, box, full, cut: w ? full > box + 0.01 : null };
+      });
+      assert.ok(l.k <= 16 && l.bottom <= l.grid, `${what}: the label wraps onto the grid (${JSON.stringify(l)})`);
+      assert.ok(l.text.endsWith(c.win), what + ': ' + l.text);
+      assert.ok(l.right <= l.z + 0.5 && l.zEnd <= l.end + 0.5, `${what}: the label runs past its tabla (${JSON.stringify(l)})`);
+      if (!c.narrow) assert.equal(l.cut, false, what + ': the win is cut off');
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
+});
+
 check('board: Restore the original four and Remove a tabla ask for a second tap', async () => {
   const ctx = await context(PHONE);
   try {

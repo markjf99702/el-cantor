@@ -79,9 +79,12 @@ input:focus-visible,button:focus-visible{outline:2px solid var(--teal);outline-o
 .stage{flex:1;min-height:0;position:relative;padding:2px 10px 6px}
 .boards{position:absolute;inset:2px 10px 6px;display:grid;justify-content:center;align-content:center;gap:var(--gap,10px)}
 .tabla{width:var(--bw);display:flex;flex-direction:column;gap:3px;min-width:0}
-.tabla .lbl{display:flex;justify-content:space-between;align-items:center;font:600 11px var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);padding:0 2px;height:16px}
+.tabla .lbl{display:flex;justify-content:space-between;align-items:center;gap:6px;font:600 11px var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);padding:0 2px;height:16px}
 .tabla .lbl button{background:none;border:0;padding:0;color:inherit;font:inherit;letter-spacing:inherit;text-transform:inherit;display:flex;align-items:center;gap:4px}
-.tabla .lbl .k{font-weight:700;color:var(--ink2)}
+.tabla .lbl .k{font-weight:700;color:var(--ink2);min-width:0;white-space:nowrap}
+.tabla .lbl .k span{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.tabla .lbl .k .w{flex:none;max-width:calc(100% - 4px)} /* on a narrow tabla the name gives way, not the win */
+.tabla .lbl .z{flex:none}
 .tabla.win .lbl .k{color:var(--green)}
 .grid{display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);gap:2px;background:var(--line2);border:2px solid var(--line2);border-radius:8px;overflow:hidden;aspect-ratio:2/3.26;box-shadow:var(--shadow);position:relative}
 .tabla.win .grid{border-color:var(--green);box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 40%,transparent),var(--shadow)}
@@ -291,7 +294,7 @@ a{color:var(--teal);font-weight:700}
       var bd = x.b, hits = checkBoard(bd), hitCells = {}; hits.forEach(function (h) { h.cells.forEach(function (c) { hitCells[c] = 1; }); });
       var t = document.createElement('div'); t.className = 'tabla' + (hits.length ? ' win' : ''); t.dataset.id = bd.id;
       var lbl = document.createElement('div'); lbl.className = 'lbl';
-      lbl.innerHTML = '<button type="button" class="k">' + esc(bd.name) + (hits.length ? ' · ¡' + hits[0].pat.name.toLowerCase() + '!' : '') + '</button><button type="button" class="z" aria-label="Enlarge">' + (UI.focus == null ? (p.boards.length > 1 ? '⤢' : '') : '⤡') + '</button>';
+      lbl.innerHTML = '<button type="button" class="k"><span class="nm">' + esc(bd.name) + '</span>' + (hits.length ? '<span class="w">· ¡' + hits[0].pat.name.toLowerCase() + '!</span>' : '') + '</button><button type="button" class="z" aria-label="Enlarge">' + (UI.focus == null ? (p.boards.length > 1 ? '⤢' : '') : '⤡') + '</button>';
       lbl.querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () { if (p.boards.length < 2) return; UI.focus = UI.focus == null ? bd.id : null; renderBoards(); }); });
       var g = document.createElement('div'); g.className = 'grid';
       bd.cards.forEach(function (n, ci) {
