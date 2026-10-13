@@ -325,6 +325,8 @@ a{color:var(--teal);font-weight:700}
   function openSheet(html) { reopen = null; UI.welcome = false; var s = $('sheet'); s.innerHTML = '<div class="sheetbg"><div class="sheet">' + html + '</div></div>'; s.hidden = false; s.querySelector('.sheetbg').addEventListener('click', function (e) { if (e.target === e.currentTarget) closeSheet(); }); return s.querySelector('.sheet'); }
   var reopen = null; // the open sheet that holds a player's tablas, to reopen when synced tablas land
   function closeSheet() { $('sheet').hidden = true; $('sheet').innerHTML = ''; UI.sheet = null; reopen = null; UI.welcome = false; }
+  // How far down the open sheet is, to come back to the same place when it's drawn again.
+  function sheetScroll(top) { var b = document.querySelector('#sheet .bd'); if (!b) return 0; if (top != null) b.scrollTop = top; return b.scrollTop; }
 
   function pickerSheet(mode, onPick, taken) {
     var sh = openSheet('<div class="hd"><input id="pkq" placeholder="' + (mode === 'call' ? 'Name or number… “luna”, 23' : 'Pick a card for this square') + '" autocomplete="off" inputmode="search"><button class="btn sec sm" type="button" id="pkx">Done</button></div><div class="bd"><div class="pick" id="pk"></div></div>');
@@ -419,11 +421,12 @@ a{color:var(--teal);font-weight:700}
         bd.cards.forEach(function (n, ci) {
           var cell = document.createElement('div'); cell.className = 'cell'; cell.innerHTML = '<img src="' + src(n) + '" alt="' + esc(card(n).name) + '" draggable="false">';
           cell.addEventListener('click', function () {
+            var top = sheetScroll();
             pickerSheet('edit', function (pick) {
               // Tablas from Google Drive may have landed while the picker was open: change the tabla as it is now.
               var now = player().boards.filter(function (b) { return b.id === bd.id; })[0];
               if (now) { now.cards[ci] = pick; save(); } else toast(bd.name + ' was removed on another device');
-              closeSheet(); tablasSheet(); evaluate(false); render();
+              closeSheet(); tablasSheet(); sheetScroll(top); evaluate(false); render();
             }, bd.cards.filter(function (x, k) { return k !== ci; }));
           });
           eg.appendChild(cell);
@@ -536,7 +539,7 @@ a{color:var(--teal);font-weight:700}
     LoteriaSync.onUpdate(function (keys) { // tablas saved on another device have landed here
       if (keys.indexOf(LS) < 0) return;
       try { var o = JSON.parse(localStorage.getItem(LS)); if (o && o.players && o.players.length) { S = Object.assign(fresh(), o); firstRun = false; } } catch (e) { }
-      if (reopen) { var f = reopen; closeSheet(); f(); }
+      if (reopen) { var f = reopen, top = sheetScroll(); closeSheet(); f(); sheetScroll(top); }
       else if (UI.welcome && !firstRun) { closeSheet(); toast('Your tablas are here from Google Drive'); }
       UI.focus = null; evaluate(false); render();
     });

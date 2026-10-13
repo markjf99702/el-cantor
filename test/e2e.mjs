@@ -249,6 +249,27 @@ check('board: calling a card from Cantaron… doesn’t put a phone’s keyboard
   }
 });
 
+check('board: the Tablas sheet stays where it was after a square is changed', async () => {
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.v1': people([1, 2, 3].map(k => ({ id: 'm' + k, name: 'Mine ' + k, cards: run(1 + (k - 1) * 16) }))) });
+    await page.goto(base + 'board.html');
+    await page.click('#tablasBtn');
+    const scroll = () => page.evaluate(() => document.querySelector('#sheet .bd').scrollTop);
+    await page.evaluate(() => { const b = document.querySelector('#sheet .bd'); b.scrollTop = b.scrollHeight; });
+    const square = page.locator('#edb > div').nth(2).locator('.eg .cell').nth(5);
+    await square.scrollIntoViewIfNeeded();
+    const before = await scroll();
+    assert.ok(before > 500, 'scrolled down to the third tabla');
+    await square.click();
+    await page.fill('#pkq', '54'); await page.press('#pkq', 'Enter');
+    assert.equal((await saved(page, 'loteria.v1')).players[0].boards[2].cards[5], 54);
+    assert.ok(Math.abs(await scroll() - before) <= 2, `the sheet went from ${before} to ${await scroll()}`);
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('board: Restore the original four and Remove a tabla ask for a second tap', async () => {
   const ctx = await context(PHONE);
   try {
@@ -390,7 +411,7 @@ check('drive: a shared link on a new phone that saves to Drive asks again once t
   } finally { await A.ctx.close(); await B.ctx.close(); }
 });
 
-check('drive: a card picked in the tabla editor, or a printed tabla being typed in, survives a sync landing meanwhile', async () => {
+check('drive: the Tablas sheet, a card being picked and a printed tabla being typed in all survive a sync landing meanwhile', async () => {
   const g = fakeGoogle();
   const A = await driveDevice(g, { 'loteria.v1': ANA });
   const B = await driveDevice(g, { 'loteria.v1': ANA });
@@ -410,15 +431,20 @@ check('drive: a card picked in the tabla editor, or a printed tabla being typed 
   try {
     await A.page.goto(base + 'board.html'); await synced(A.page);
     await B.page.goto(base + 'board.html'); await synced(B.page);
-    // B is picking a card for square 1 of Mine 1 when A's rename lands.
+    // B is scrolled down the Tablas sheet when A's rename lands: the sheet is drawn again, in the same place.
     await B.page.click('#tablasBtn');
-    await B.page.locator('#edb .eg .cell').first().click();
+    const top = await B.page.evaluate(() => { const b = document.querySelector('#sheet .bd'); b.scrollTop = b.scrollHeight; return b.scrollTop; });
     await renameOnA(1, 'Otra');
+    assert.equal(await B.page.inputValue('#edb > div:nth-child(2) input'), 'Otra');
+    assert.ok(Math.abs(await B.page.evaluate(() => document.querySelector('#sheet .bd').scrollTop) - top) <= 2, 'the Tablas sheet went back to the top');
+    // B is picking a card for square 1 of Mine 1 when A's next rename lands.
+    await B.page.locator('#edb .eg .cell').first().click();
+    await renameOnA(1, 'Otro');
     assert.equal(await B.page.getAttribute('#pkq', 'placeholder'), 'Pick a card for this square', 'the picker stays open');
     await B.page.fill('#pkq', '54'); await B.page.press('#pkq', 'Enter');
     let mine = (await saved(B.page, 'loteria.v1')).players[0].boards;
     assert.equal(mine[0].cards[0], 54, 'the picked card was lost');
-    assert.equal(mine[1].name, 'Otra');
+    assert.equal(mine[1].name, 'Otro');
     // B is typing in a printed tabla when A's next rename lands.
     await B.page.click('#tbPrinted');
     await B.page.fill('#ptJ', 'CANELA'); await B.page.fill('#ptN', '7');
