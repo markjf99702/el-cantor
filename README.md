@@ -1,8 +1,18 @@
 # El Cantor
 
-Lotería for the family table, in one package. Everything stays on the device, unless you turn on saving to Google Drive so your tablas follow you to your other devices.
+**Play it: [el-cantor.junkdrawer.works](https://el-cantor.junkdrawer.works/)**
 
-Play it at [el-cantor.junkdrawer.works](https://el-cantor.junkdrawer.works/), or open `index.html` from any static host. Install it from the browser (on an iPhone, Share → Add to Home Screen) and it runs as its own app. It works offline too: installing keeps the card pictures, and the recorded voices are kept as they play. The home screen has three choices:
+**Lotería for the family table, in one package.** Everything stays on the device, unless you turn on saving to Google Drive so your tablas follow you to your other devices.
+
+<p align="center">
+  <img src="docs/phone-cantor.png" alt="El Cantor on a phone, five cards into round 2: card No. 1, El Gallo, face up with its verse, and La Rosa, El Corazón and La Sirena in the row of cards called before it" width="250">
+  &nbsp;
+  <img src="docs/phone-board.png" alt="My tablas on a phone: Mark's four tablas with beans on the eight cards called so far, Tabla 1 outlined in green for a línea across its top row, and La Araña as the last card called" width="250">
+  &nbsp;
+  <img src="docs/phone-print.png" alt="Make tablas on a phone: Tabla 1 full, with Las Jaras on it twice, Tabla 2 nine cards in with its tenth square picked, and the deck of cards below to tap or drag from" width="250">
+</p>
+
+Install it from the browser (on an iPhone, Share → Add to Home Screen) and it runs as its own app. It works offline too: installing keeps the card pictures, and the recorded voices are kept as they play. The home screen has three choices:
 
 - **El Cantor** (`cantor.html`) calls the game: the phone, tablet or laptop at the head of the table that replaces the deck and the person reading it.
 - **My tablas** (`board.html`) is the play-along board: each player marks their own tablas on their phone as cards are called.
@@ -10,9 +20,9 @@ Play it at [el-cantor.junkdrawer.works](https://el-cantor.junkdrawer.works/), or
 
 Every page has a ⌂ button back to the home screen. They all load the same `deck.js` and card images.
 
-## El Cantor
+## How it plays
 
-## What it does
+### El Cantor — calling the game
 
 - **Calls the cards.** Shuffles the 54 cards and turns them over one at a time, calling each one aloud in Spanish. It says just the name by default, or the verse and then the name. Tap ▶, or the card itself, to call on its own and to pause; **Next card** turns them by hand. On a phone, the timer button beside it switches between slow, normal and fast (7, 4 or 2 seconds between cards).
 - **Recorded voices.** Dora, Alex or Santa read the cards, so every phone and tablet sounds the same. The device's own Spanish voice is the fallback. On an iPhone it plays even with the silent switch on.
@@ -23,12 +33,12 @@ Every page has a ⌂ button back to the home screen. They all load the same `dec
   - Tables that check can switch that in Settings, or tap **Check a tabla first**.
   - To check a printed tabla, type its juego and tabla number. El Cantor shows the tabla with beans on the called cards, whether it wins the current game, and when it first did.
   - For store-bought tablas, tap the cards the player reads out instead.
-- **Games:** Clásico (4 in a row, 4 corners, or 4 in a square), or a single shape. The shapes are La Equis, La Ele, El Marco, Rieles, Escalera, Centro, Siete Loco and Tabla Llena.
+- **Games:** Clásico (4 in a row, 4 corners, or 4 in a square), or a single shape. The shapes are Línea, Esquinas and Cuadrito on their own, La Equis, La Ele, El Marco, Rieles, Escalera, Centro, Siete Loco and Tabla Llena.
 - **Keeps a tally** of who won each round.
 
 Keyboard: Space starts or pauses · → next card · ← puts the last card back · L checks a ¡Lotería!
 
-## My tablas — playing along
+### My tablas — playing along
 
 Someone calls the cards; you tap **Cantaron…**, pick the card, and it marks itself on every tabla where it appears.
 
@@ -37,7 +47,7 @@ Someone calls the cards; you tap **Cantaron…**, pick the card, and it marks it
 - **+ A printed tabla** adds a tabla from El Cantor's printed juegos by its name and number. It starts with the juego El Cantor last printed on this device.
 - Several people on one device, each with their own tablas. **Share** makes a link that carries a set of tablas to another phone.
 
-## Make tablas — by hand, to print
+### Make tablas — by hand, to print
 
 - Drag cards from the deck onto a tabla. On a phone or iPad, press and hold a card before you drag it. Drag a square to move it, onto another tabla to copy it, or back to the deck to take it off. You can also tap a square and then tap cards.
 - **Doubles ✓** is the family rule: a card can go on a tabla twice, but not three times. **Random** makes a tabla like Mark's four, with 15 cards and one of them twice, side by side in the middle. Turn it off to allow each card only once.
@@ -67,7 +77,21 @@ Things that come with sharing the client:
 
 To run it from another address, create a Web client with the Drive API turned on and `drive.file` allowed, add that origin under **Authorized JavaScript origins**, and put the client ID and origin in `sync.js`.
 
-## Files
+## Running it
+
+It's a static site: plain HTML, CSS and JavaScript, with no build step. It runs from any static host as it is.
+
+```sh
+npx serve .                   # or any static file server, then open the printed address
+npm test                      # uses the three tools in Chromium through the real pages (needs Playwright)
+npm install                   # once, for the screenshots
+node tools/screenshots.mjs    # redraws the pictures in docs/
+node tools/make-icons.mjs     # redraws the PNG icons from icon.svg
+```
+
+To put it online with GitHub Pages: **Settings → Pages → Build and deployment → Deploy from a branch**, then pick `main` and `/ (root)`.
+
+### Files
 
 - `index.html` — the home screen.
 - `cantor.html` — El Cantor.
@@ -88,6 +112,8 @@ To run it from another address, create a Web client with the Drive API turned on
   - One clip per card: the verse, a breath, the name. Plus the opening line and ¡Lotería!
   - `voices.json` lists the voices and where each verse ends, so Adivinanza can stop before the name.
 - `tools/make_voices.py` — renders `audio/` with [Kokoro-82M](https://github.com/hexgrad/kokoro) (Apache-2.0), using espeak-ng's Latin American Spanish for pronunciation. Rerun it after changing a verse in `deck.js`; the usage is at the top of the script.
+- `tools/screenshots.mjs` — draws the pictures in `docs/`, with each tool opened on the same saved tablas every time. It saves them with 256 colours using upng-js, from `npm install`.
+- `test/e2e.mjs` — what `npm test` runs: El Cantor, My tablas and Make tablas used through the real pages in Chromium, two devices saving to a stand-in Google Drive (`test/fake-google.mjs`), and every page offline.
 
 ## License
 

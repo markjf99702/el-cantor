@@ -5,5 +5,8 @@
   "description": "Lotería for the family table: a caller that reads the cards aloud, play-along tablas on every phone, and tablas to print.",
   "scripts": {
     "test": "node test/e2e.mjs"
+  },
+  "devDependencies": {
+    "upng-js": "^2.1.0"
   }
 }
