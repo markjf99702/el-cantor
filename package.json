@@ -1,0 +1,9 @@
+{
+  "name": "el-cantor",
+  "private": true,
+  "type": "module",
+  "description": "Lotería for the family table: a caller that reads the cards aloud, play-along tablas on every phone, and tablas to print.",
+  "scripts": {
+    "test": "node test/e2e.mjs"
+  }
+}
