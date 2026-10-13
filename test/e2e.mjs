@@ -328,6 +328,26 @@ check('board: the game picker works from the keyboard as well as by tapping', as
   } finally { await ctx.close(); }
 });
 
+check('board: a long game name in the header doesn’t paint over the Lotería title', async () => {
+  for (const [w, pats] of [[360, ['equis', 'marco']], [390, ['equis', 'marco']], [360, ['llena']], [390, ['linea', 'esquinas', 'cuadro']]]) {
+    const ctx = await context({ ...PHONE, viewport: { width: w, height: 780 } });
+    try {
+      const page = await ctx.newPage(), problems = watch(page), what = `${w}px, ${pats.join('+')}`;
+      await seed(page, { 'loteria.v1': { ...ANA, patterns: pats } });
+      await page.goto(base + 'board.html');
+      await page.evaluate(() => document.fonts.ready);
+      const r = await page.evaluate(() => {
+        const t = document.querySelector('.top h1 .t'), cs = getComputedStyle(t), box = t.getBoundingClientRect();
+        return { right: box.right, width: box.width, shown: cs.display !== 'none', chip: document.getElementById('patBtn').getBoundingClientRect().left, clips: cs.overflow === 'hidden', cut: t.scrollWidth > t.clientWidth };
+      });
+      assert.ok(!r.shown || (r.right <= r.chip && r.clips), `${what}: the title runs under the game chip (${JSON.stringify(r)})`);
+      assert.ok(!r.shown || r.width >= 35, `${what}: the title is cut to a sliver instead of “Lo…” or nothing (${JSON.stringify(r)})`);
+      if (pats.length === 3) assert.ok(!r.cut, what + ': Clásico leaves room for the whole title');
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
+});
+
 check('board: Restore the original four and Remove a tabla ask for a second tap', async () => {
   const ctx = await context(PHONE);
   try {

@@ -52,8 +52,10 @@ input:focus-visible,button:focus-visible{outline:2px solid var(--teal);outline-o
 .app{position:absolute;inset:0;display:flex;flex-direction:column;padding-top:var(--sat);padding-bottom:var(--sab)}
 /* header */
 .top{display:flex;align-items:center;gap:6px;padding:8px 10px 6px;flex:none}
-.top h1{margin:0;font:400 20px/1 var(--disp);letter-spacing:.01em;color:var(--red);flex:1;display:flex;align-items:baseline;gap:8px;min-width:0}
+.top h1{margin:0;font:400 20px/1 var(--disp);letter-spacing:.01em;color:var(--red);flex:1;display:flex;align-items:baseline;gap:8px;min-width:0;container-type:inline-size}
 .top h1 small{font:600 11px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top h1 .t{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} /* a long game name in the chip leaves less room */
+@container (width < 36px){.top h1 .t{display:none}} /* not even room for "Lo…" */
 .chip{background:var(--paper);border:1px solid var(--line2);border-radius:999px;padding:6px 11px;font:600 12.5px var(--body);color:var(--ink2);white-space:nowrap;display:inline-flex;align-items:center;gap:5px;text-decoration:none}
 .chip.home svg{width:17px;height:17px;display:block}
 .chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
