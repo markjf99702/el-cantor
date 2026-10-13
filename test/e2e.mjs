@@ -171,7 +171,7 @@ check('cantor: two windows on one device follow each other instead of calling a 
       await at(B, pos);
       assert.equal(await stat(B), 'Paused', busy + ': B kept calling after A turned a card');
       assert.equal(await B.textContent('#cap h2'), name(order[pos - 1]), busy + ': B isn’t showing the card A turned');
-      assert.equal(await B.textContent('#toast'), 'Paused — another El Cantor window turned a card');
+      assert.equal(await B.textContent('#toast'), 'Paused — another window turned a card');
       await B.waitForTimeout(2500);
       assert.equal((await saved(B, 'loteria.cantor')).pos, pos, busy + ': B called a card on its own after stopping');
       assert.equal(await stat(B), 'Paused', busy + ': B is stuck');

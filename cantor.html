@@ -1168,7 +1168,7 @@ a.chip{text-decoration:none}
     if (C.round + ':' + C.pos + ':' + C.order.join() !== was) {
       pause(); hush(); R.phase = 'idle'; R.opening = false;
       showCard(false, true);
-      if (busy) toast('Paused — another El Cantor window turned a card');
+      if (busy) toast('Paused — another window turned a card');
     }
     renderCaption(); renderAll();
   }
