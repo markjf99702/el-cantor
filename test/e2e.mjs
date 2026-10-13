@@ -587,9 +587,8 @@ check('drive: a second device gets the tablas, and a rename comes back to the fi
     await B.page.locator('#edb input').first().fill('Mía');
     await B.page.locator('#edb input').first().dispatchEvent('change');
     await synced(B.page, t);
-    const ta = (await saved(A.page, 'loteria.sync')).last;
     await A.page.evaluate(() => LoteriaSync.now());
-    await synced(A.page, ta);
+    await until(A.page, () => JSON.parse(localStorage.getItem('loteria.v1')).players[0].boards[0].name === 'Mía', null, 30000);
     assert.deepEqual((await saved(A.page, 'loteria.v1')).players[0].boards.map(b => b.name), ['Mía', 'Mine 2']);
     await until(A.page, () => document.querySelector('#boards .tabla .lbl .k').textContent.indexOf('Mía') === 0);
     assert.deepEqual(A.problems, []); assert.deepEqual(B.problems, []);
@@ -625,10 +624,8 @@ check('drive: the Tablas sheet, a card being picked and a printed tabla being ty
     await A.page.locator('#edb input').nth(i).dispatchEvent('change');
     await A.page.click('#tbx');
     await synced(A.page, ta);
-    const tb = await last(B);
-    await B.page.evaluate(() => LoteriaSync.now());
-    await synced(B.page, tb);
-    assert.ok((await saved(B.page, 'loteria.v1')).players[0].boards.some(b => b.name === name), 'the rename reached B');
+    await B.page.evaluate(() => LoteriaSync.now()); // if B is still syncing its own change, it syncs again straight after
+    await until(B.page, name => JSON.parse(localStorage.getItem('loteria.v1')).players[0].boards.some(b => b.name === name), name, 30000);
   }
   try {
     await A.page.goto(base + 'board.html'); await synced(A.page);
