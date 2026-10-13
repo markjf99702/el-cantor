@@ -228,6 +228,27 @@ check('board: a shared link on a new device makes that person its player, and sa
   }
 });
 
+check('board: calling a card from Cantaron… doesn’t put a phone’s keyboard up; a computer keeps typing', async () => {
+  for (const kind of [PHONE, DESKTOP]) {
+    const ctx = await context(kind);
+    try {
+      const page = await ctx.newPage(), problems = watch(page), phone = kind === PHONE;
+      await seed(page, { 'loteria.v1': ANA });
+      await page.goto(base + 'board.html');
+      await page.click('#callBtn');
+      const focused = () => page.evaluate(() => document.activeElement && document.activeElement.id);
+      assert.equal(await focused(), phone ? 'callBtn' : 'pkq');
+      const first = page.locator('#pk .pk').first();
+      if (phone) await first.tap(); else await first.click();
+      assert.deepEqual((await saved(page, 'loteria.game')).called, [1]);
+      assert.equal(await page.getAttribute('#pkq', 'placeholder'), 'Name or number… “luna”, 23', 'the picker stays open');
+      if (phone) assert.notEqual(await focused(), 'pkq', 'the search box took focus, which puts the keyboard up');
+      else assert.equal(await focused(), 'pkq', 'the search box is ready for the next card');
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
+});
+
 check('board: Restore the original four and Remove a tabla ask for a second tap', async () => {
   const ctx = await context(PHONE);
   try {

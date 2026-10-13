@@ -336,7 +336,7 @@ a{color:var(--teal);font-weight:700}
         if (f && !(c.key.indexOf(f) >= 0 || (num && c.n === num))) return;
         var d = document.createElement('div'); d.className = 'pk' + (mode === 'call' && isCalled(c.n) ? ' called' : '') + (taken && taken.indexOf(c.n) >= 0 ? ' taken' : '');
         d.innerHTML = '<span class="num">' + c.n + '</span><img src="' + src(c.n) + '" alt="" loading="lazy"><div class="n">' + c.name + '</div>';
-        d.addEventListener('click', function () { onPick(c.n); if (mode === 'call') { draw(); q.value = ''; q.focus(); } });
+        d.addEventListener('click', function () { onPick(c.n); if (mode === 'call') { draw(); q.value = ''; if (!('ontouchstart' in window)) q.focus(); } }); // on a phone, focus would put the keyboard over the cards
         grid.appendChild(d);
       });
       if (!grid.children.length) grid.innerHTML = '<div class="note">No card matches “' + esc(q.value) + '”.</div>';
