@@ -295,6 +295,13 @@ check('board: calling a card from Cantaron… doesn’t put a phone’s keyboard
       assert.equal(await page.getAttribute('#pkq', 'placeholder'), 'Name or number… “luna”, 23', 'the picker stays open');
       if (phone) assert.notEqual(await focused(), 'pkq', 'the search box took focus, which puts the keyboard up');
       else assert.equal(await focused(), 'pkq', 'the search box is ready for the next card');
+      // Typed, then called: a phone shows the whole deck again under the empty box, a computer the card it just called.
+      await page.fill('#pkq', 'luna');
+      if (phone) await page.locator('#pk .pk').first().tap(); else await page.press('#pkq', 'Enter');
+      assert.deepEqual((await saved(page, 'loteria.game')).called, [1, 23]);
+      assert.equal(await page.inputValue('#pkq'), '');
+      assert.equal(await page.locator('#pk .pk').count(), phone ? 54 : 1, phone ? 'the cards stayed filtered to La Luna under an empty box' : 'La Luna went out of view');
+      if (phone) assert.notEqual(await focused(), 'pkq'); else assert.equal(await focused(), 'pkq');
       assert.deepEqual(problems, []);
     } finally { await ctx.close(); }
   }

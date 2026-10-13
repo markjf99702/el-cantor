@@ -367,7 +367,12 @@ a{color:var(--teal);font-weight:700}
         if (f && !(c.key.indexOf(f) >= 0 || (num && c.n === num))) return;
         var d = document.createElement('div'); d.className = 'pk' + (mode === 'call' && isCalled(c.n) ? ' called' : '') + (taken && taken.indexOf(c.n) >= 0 ? ' taken' : '');
         d.innerHTML = '<span class="num">' + c.n + '</span><img src="' + src(c.n) + '" alt="" loading="lazy"><div class="n">' + c.name + '</div>';
-        d.addEventListener('click', function () { onPick(c.n); if (mode === 'call') { draw(); q.value = ''; if (!('ontouchstart' in window)) q.focus(); } }); // on a phone, focus would put the keyboard over the cards
+        d.addEventListener('click', function () {
+          onPick(c.n); if (mode !== 'call') return;
+          // A phone leaves its keyboard down (it would cover the cards), so the whole deck comes back for the next card;
+          // a computer keeps the card it just called in view, with the box ready to type the next one.
+          if ('ontouchstart' in window) { q.value = ''; draw(); } else { draw(); q.value = ''; q.focus(); }
+        });
         grid.appendChild(d);
       });
       if (!grid.children.length) grid.innerHTML = '<div class="note">No card matches “' + esc(q.value) + '”.</div>';
