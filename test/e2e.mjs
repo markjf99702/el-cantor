@@ -374,6 +374,20 @@ check('print: tap a square, then tap cards to fill it in order; a third copy is 
   } finally { await ctx.close(); }
 });
 
+check('print: on an iPhone the deck’s last row clears the home indicator', async () => {
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    const cdp = await ctx.newCDPSession(page);
+    await cdp.send('Emulation.setSafeAreaInsetsOverride', { insets: { top: 47, topMax: 47, bottom: 34, bottomMax: 34, left: 0, leftMax: 0, right: 0, rightMax: 0 } });
+    await page.goto(base + 'print.html');
+    const pad = await page.evaluate(() => { const g = document.getElementById('dg'); g.scrollTop = g.scrollHeight; const last = [...g.querySelectorAll('.dk')].pop().getBoundingClientRect(); return { pad: getComputedStyle(g).paddingBottom, bottom: last.bottom }; });
+    assert.equal(pad.pad, '44px', 'the deck pads 10px plus the 34px home indicator');
+    assert.ok(pad.bottom <= 844 - 34, `the last row ends at ${pad.bottom}, under the home indicator`);
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('print: two per page prints every tabla whole (Letter and A4, names on and off)', async () => {
   const ctx = await context(DESKTOP);
   try {
