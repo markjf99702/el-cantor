@@ -179,6 +179,33 @@ check('board: a first visit picks a player, then plays a round to a ¡Lotería!'
   } finally { await ctx.close(); }
 });
 
+check('board: Restore the original four and Remove a tabla ask for a second tap', async () => {
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.v1': people([1, 2, 3, 4, 5].map(k => ({ id: 'm' + k, name: 'Mine ' + k, cards: run(1 + (k - 1) * 7) }))) });
+    await page.goto(base + 'board.html');
+    const names = async () => (await saved(page, 'loteria.v1')).players[0].boards.map(b => b.name);
+    await page.click('#tablasBtn');
+    await page.click('#tbOrig');
+    assert.deepEqual(await names(), ['Mine 1', 'Mine 2', 'Mine 3', 'Mine 4', 'Mine 5'], 'one tap replaced the tablas');
+    assert.equal(await page.textContent('#tbOrig'), 'Tap again to replace all 5 tablas');
+    await page.click('#tbOrig');
+    assert.deepEqual(await names(), ['Tabla 1', 'Tabla 2', 'Tabla 3', 'Tabla 4']);
+    assert.equal(await page.textContent('#tbOrig'), 'Restore the original four');
+    await page.click('#tbOrig'); // already Mark's four: nothing to lose, so no second tap
+    assert.equal(await page.textContent('#tbOrig'), 'Restore the original four');
+    const del = page.locator('#edb [data-a="del"]').first();
+    await del.click();
+    assert.deepEqual(await names(), ['Tabla 1', 'Tabla 2', 'Tabla 3', 'Tabla 4'], 'one tap removed a tabla');
+    assert.equal(await del.textContent(), 'Tap again to remove Tabla 1');
+    await del.click();
+    assert.deepEqual(await names(), ['Tabla 2', 'Tabla 3', 'Tabla 4']);
+    assert.equal(await page.locator('#edb [data-a="del"]').first().textContent(), 'Remove', 'the next Remove asks again');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 // ---------------------------------------------------------------- Make tablas
 check('print: tap a square, then tap cards to fill it in order; a third copy is refused', async () => {
   const ctx = await context(DESKTOP);

@@ -405,8 +405,10 @@ a{color:var(--teal);font-weight:700}
     var p = player();
     openSheet('<div class="hd"><input id="tbName" value="' + esc(p.name) + '" aria-label="Player name" style="font:400 18px var(--disp);flex:1"><button class="btn sec sm" type="button" id="tbShare">Share</button><button class="btn sm" type="button" id="tbx">Done</button></div><div class="bd stack"><p class="note">Tap any square to change its card. Doubles are fine (house rules) — when that card is called, both squares get a bean. Names are editable.</p><div class="edb" id="edb"></div><div class="row"><button class="btn sec sm" type="button" id="tbAdd">+ Add a tabla</button><button class="btn sec sm" type="button" id="tbPrinted">+ A printed tabla</button><button class="btn sec sm" type="button" id="tbOrig">Restore the original four</button><a class="btn sec sm" href="print.html">Make tablas to print</a><button class="btn sec sm" type="button" id="tbDel" style="color:var(--red)">Remove this person</button></div></div>');
     reopen = tablasSheet;
+    var origArmed = false; // the tablas a tap would replace or remove are only gone on a second tap
     function draw() {
       var host = $('edb'); host.innerHTML = '';
+      origArmed = false; $('tbOrig').textContent = 'Restore the original four';
       p.boards.forEach(function (bd, bi) {
         var counts = {}; bd.cards.forEach(function (n) { counts[n] = (counts[n] || 0) + 1; });
         var dups = Object.keys(counts).filter(function (n) { return counts[n] > 1; }).map(function (n) { return card(+n).name; });
@@ -422,13 +424,18 @@ a{color:var(--teal);font-weight:700}
           eg.appendChild(cell);
         });
         w.querySelector('[data-a="rnd"]').addEventListener('click', function () { var r = randomBoard(bd.name); bd.cards = r.cards; save(); draw(); evaluate(false); render(); });
-        var del = w.querySelector('[data-a="del"]'); if (del) del.addEventListener('click', function () { p.boards.splice(bi, 1); save(); UI.focus = null; draw(); evaluate(false); render(); });
+        var del = w.querySelector('[data-a="del"]'), rmArmed = false;
+        if (del) del.addEventListener('click', function () { if (!rmArmed) { rmArmed = true; this.textContent = 'Tap again to remove ' + bd.name; return; } p.boards.splice(bi, 1); save(); UI.focus = null; draw(); evaluate(false); render(); });
         host.appendChild(w);
       });
     }
     $('tbPrinted').addEventListener('click', function () { if (p.boards.length >= 6) { toast('Six tablas is plenty'); return; } printedSheet(p); });
     $('tbAdd').addEventListener('click', function () { if (p.boards.length >= 6) { toast('Six tablas is plenty'); return; } p.boards.push(randomBoard('Tabla ' + (p.boards.length + 1))); save(); draw(); render(); });
-    $('tbOrig').addEventListener('click', function () { p.boards = origBoards(); save(); draw(); evaluate(false); render(); });
+    $('tbOrig').addEventListener('click', function () {
+      var four = origBoards(), same = function (bs) { return JSON.stringify(bs.map(function (b) { return [b.name, b.cards]; })); };
+      if (p.boards.length && same(p.boards) !== same(four) && !origArmed) { origArmed = true; this.textContent = 'Tap again to replace ' + (p.boards.length === 1 ? 'your tabla' : 'all ' + p.boards.length + ' tablas'); return; }
+      p.boards = four; save(); draw(); evaluate(false); render();
+    });
     var delArmed = false;
     $('tbDel').addEventListener('click', function () { if (S.players.length < 2) { toast('Add someone else first — the app needs one player'); return; } if (!delArmed) { delArmed = true; this.textContent = 'Tap again to remove ' + p.name; return; } S.players = S.players.filter(function (x) { return x.id !== p.id; }); S.current = S.players[0].id; save(); closeSheet(); UI.focus = null; evaluate(false); render(); });
     $('tbName').addEventListener('change', function () { p.name = $('tbName').value.trim() || p.name; $('tbName').value = p.name; save(); render(); });
