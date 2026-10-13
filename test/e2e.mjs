@@ -194,6 +194,40 @@ check('board: Escape leaves the first-visit sheet up, and saves nobody', async (
   } finally { await ctx.close(); }
 });
 
+check('board: a shared link on a new device makes that person its player, and saves no stand-in Mark', async () => {
+  const CARDS1 = '1.2.3.4.5.6.7.8.9.a.b.c.d.e.f.g', who = async page => (await saved(page, 'loteria.v1') || { players: [] }).players.map(p => p.name + ':' + p.boards.length);
+  for (const step of ['add', 'no thanks', 'mark', 'set up']) {
+    const ctx = await context(PHONE);
+    try {
+      const page = await ctx.newPage(), problems = watch(page);
+      if (step === 'set up') await seed(page, { 'loteria.v1': ANA });
+      await page.goto(base + 'board.html#t=' + (step === 'mark' ? 'Mark' : step === 'set up' ? 'Ana' : 'Mom') + '~Tabla%201:' + CARDS1);
+      assert.match(await sheetTitle(page), /^Tablas from /, step);
+      if (step !== 'set up') assert.deepEqual(await who(page), [], step + ': saved a player before anyone chose');
+      if (step === 'add') {
+        await page.click('#imOk');
+        assert.deepEqual(await who(page), ['Mom:1']);
+        assert.equal((await saved(page, 'loteria.v1')).current, (await saved(page, 'loteria.v1')).players[0].id);
+      } else if (step === 'no thanks') {
+        await page.keyboard.press('Escape');
+        assert.equal(await sheetTitle(page), 'Tablas from Mom', 'Escape closed it');
+        await page.click('#imNo');
+        assert.equal(await sheetTitle(page), 'Who’s playing on this device?');
+        assert.deepEqual(await who(page), []);
+      } else if (step === 'mark') {
+        assert.equal(await page.textContent('#imOk'), 'Add and use', 'a new phone already “has” a Mark');
+        await page.click('#imOk');
+        assert.deepEqual(await who(page), ['Mark:1']);
+      } else {
+        assert.equal(await page.textContent('#imOk'), 'Replace and use', 'a device that has Ana replaces her tablas');
+        await page.click('#imOk');
+        assert.deepEqual(await who(page), ['Ana:1']);
+      }
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
+});
+
 check('board: Restore the original four and Remove a tabla ask for a second tap', async () => {
   const ctx = await context(PHONE);
   try {
@@ -314,6 +348,23 @@ check('drive: a second device gets the tablas, and a rename comes back to the fi
     await synced(A.page, ta);
     assert.deepEqual((await saved(A.page, 'loteria.v1')).players[0].boards.map(b => b.name), ['Mía', 'Mine 2']);
     await until(A.page, () => document.querySelector('#boards .tabla .lbl .k').textContent.indexOf('Mía') === 0);
+    assert.deepEqual(A.problems, []); assert.deepEqual(B.problems, []);
+  } finally { await A.ctx.close(); await B.ctx.close(); }
+});
+
+check('drive: a shared link on a new phone that saves to Drive asks again once the Drive tablas land', async () => {
+  const g = fakeGoogle();
+  const A = await driveDevice(g, { 'loteria.v1': ANA });
+  const B = await driveDevice(g, {});
+  try {
+    await A.page.goto(base + 'board.html');
+    await synced(A.page);
+    await B.page.goto(base + 'board.html#t=Ana~Tabla%201:1.2.3.4.5.6.7.8.9.a.b.c.d.e.f.g');
+    await synced(B.page);
+    assert.equal(await sheetTitle(B.page), 'Tablas from Ana', 'the import was dropped when Drive landed');
+    assert.equal(await B.page.textContent('#imOk'), 'Replace and use');
+    await B.page.click('#imOk');
+    assert.deepEqual((await saved(B.page, 'loteria.v1')).players.map(p => p.name + ':' + p.boards.length), ['Ana:1']);
     assert.deepEqual(A.problems, []); assert.deepEqual(B.problems, []);
   } finally { await A.ctx.close(); await B.ctx.close(); }
 });

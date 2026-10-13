@@ -482,10 +482,21 @@ a{color:var(--teal);font-weight:700}
   function maybeImport() {
     var imp = decodeShare(location.hash); if (!imp) return;
     history.replaceState(null, '', location.pathname + location.search);
-    var existing = S.players.filter(function (p) { return p.name.toLowerCase() === imp.name.toLowerCase(); })[0];
-    openSheet('<div class="hd"><h2>Tablas from ' + esc(imp.name) + '</h2></div><div class="bd stack"><p class="note">This link carries ' + imp.boards.length + ' tabla' + (imp.boards.length === 1 ? '' : 's') + ' for “' + esc(imp.name) + '”.' + (existing ? ' You already have a ' + esc(existing.name) + ' on this device — importing replaces their tablas.' : '') + '</p><div class="row"><button class="btn red" type="button" id="imOk">' + (existing ? 'Replace and use' : 'Add and use') + '</button><button class="btn sec" type="button" id="imNo">No thanks</button></div></div>');
-    $('imNo').addEventListener('click', closeSheet);
-    $('imOk').addEventListener('click', function () { if (existing) { existing.boards = imp.boards; S.current = existing.id; } else { var p = { id: uid(), name: imp.name, boards: imp.boards }; S.players.push(p); S.current = p.id; } save(); closeSheet(); UI.focus = null; evaluate(false); render(); toast('Playing as ' + imp.name); });
+    importSheet(imp);
+  }
+  // On a device nobody has set up yet, the person in the link becomes its player, or No thanks goes on to
+  // Who's playing. Nothing is saved before one or the other, so the stand-in Mark never sticks.
+  function importSheet(imp) {
+    var first = firstRun, existing = first ? null : S.players.filter(function (p) { return p.name.toLowerCase() === imp.name.toLowerCase(); })[0];
+    var sh = openSheet('<div class="hd"><h2>Tablas from ' + esc(imp.name) + '</h2></div><div class="bd stack"><p class="note">This link carries ' + imp.boards.length + ' tabla' + (imp.boards.length === 1 ? '' : 's') + ' for “' + esc(imp.name) + '”.' + (existing ? ' You already have a ' + esc(existing.name) + ' on this device — importing replaces their tablas.' : '') + '</p><div class="row"><button class="btn red" type="button" id="imOk">' + (existing ? 'Replace and use' : 'Add and use') + '</button><button class="btn sec" type="button" id="imNo">No thanks</button></div></div>');
+    if (first) { sh.parentElement.replaceWith(sh.parentElement.cloneNode(true)); UI.welcome = true; } // waits for a choice, like Who's playing
+    reopen = function () { importSheet(imp); }; // tablas from Google Drive landed: ask again with them in place
+    $('imNo').addEventListener('click', function () { if (first) welcomeSheet(); else closeSheet(); });
+    $('imOk').addEventListener('click', function () {
+      if (existing) { existing.boards = imp.boards; S.current = existing.id; }
+      else { var p = { id: uid(), name: imp.name, boards: imp.boards }; if (first) S.players = [p]; else S.players.push(p); S.current = p.id; }
+      firstRun = false; save(); closeSheet(); UI.focus = null; evaluate(false); render(); toast('Playing as ' + imp.name);
+    });
   }
 
   // ---------- first visit ----------
@@ -512,8 +523,8 @@ a{color:var(--teal);font-weight:700}
     LoteriaSync.onUpdate(function (keys) { // tablas saved on another device have landed here
       if (keys.indexOf(LS) < 0) return;
       try { var o = JSON.parse(localStorage.getItem(LS)); if (o && o.players && o.players.length) { S = Object.assign(fresh(), o); firstRun = false; } } catch (e) { }
-      if (UI.welcome && !firstRun) { closeSheet(); toast('Your tablas are here from Google Drive'); }
-      else if (reopen) { var f = reopen; closeSheet(); f(); }
+      if (reopen) { var f = reopen; closeSheet(); f(); }
+      else if (UI.welcome && !firstRun) { closeSheet(); toast('Your tablas are here from Google Drive'); }
       UI.focus = null; evaluate(false); render();
     });
   }
@@ -533,7 +544,8 @@ a{color:var(--teal);font-weight:700}
   window.addEventListener('resize', layout);
   if (window.visualViewport) window.visualViewport.addEventListener('resize', layout);
   render();
-  if (firstRun && !decodeShare(location.hash)) welcomeSheet(); else { save(); maybeImport(); }
+  if (!firstRun) save();
+  if (firstRun && !decodeShare(location.hash)) welcomeSheet(); else maybeImport();
   window.addEventListener('hashchange', maybeImport);
 })();
 </script>
