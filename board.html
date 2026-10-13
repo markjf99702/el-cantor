@@ -386,7 +386,7 @@ a{color:var(--teal);font-weight:700}
   }
 
   function patternSheet(title) {
-    openSheet('<div class="hd"><h2>' + (title || 'What are we playing?') + '</h2><button class="btn sec sm" type="button" id="ptx">Done</button></div><div class="bd stack"><p class="note">Tap the game for this round. <b>Clásico</b> is the regular game — a tabla wins on 4 in a row, 4 corners, or 4 in a square. The others are single shapes; hold one for a second to add it on top of what’s selected.</p><div class="pats" id="pats"></div></div>');
+    openSheet('<div class="hd"><h2>' + (title || 'What are we playing?') + '</h2><button class="btn sec sm" type="button" id="ptx">Done</button></div><div class="bd stack"><p class="note">Tap the game for this round. <b>Clásico</b> is the regular game — a tabla wins on 4 in a row, 4 corners, or 4 in a square. The others are single shapes; hold one for a second to add it on top of what’s selected, and a tabla wins on any one of them.</p><div class="pats" id="pats"></div></div>');
     // A held shape is added while the finger is still down, and the shapes are drawn again; the press is kept here,
     // not on its button, so letting go on the new button doesn't pick that shape on its own.
     var press = { held: false, t: 0 };

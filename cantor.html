@@ -681,7 +681,7 @@ a.chip{text-decoration:none}
   function closeSheet() { var s = $('sheet'); if (s.hidden) return; s.hidden = true; s.innerHTML = ''; UI.sheet = null; UI.onVoices = null; if (UI.onClose) { var f = UI.onClose; UI.onClose = null; f(); } }
 
   function patternSheet(title) {
-    openSheet('<div class="hd"><h2>' + esc(title || 'What are we playing?') + '</h2><button class="btn sec sm" type="button" id="ptx">Done</button></div><div class="bd stack"><p class="note">Tell the table what wins this round. <b>Clásico</b> is the regular game — 4 in a row, 4 corners, or 4 in a square. Hold a shape for a second to add it on top of what’s picked. El Cantor checks winning tablas against this.</p><div class="pats" id="pats"></div></div>');
+    openSheet('<div class="hd"><h2>' + esc(title || 'What are we playing?') + '</h2><button class="btn sec sm" type="button" id="ptx">Done</button></div><div class="bd stack"><p class="note">Tell the table what wins this round. <b>Clásico</b> is the regular game — 4 in a row, 4 corners, or 4 in a square. Hold a shape for a second to add it on top of what’s picked; a tabla wins on any one of them. El Cantor checks winning tablas against this.</p><div class="pats" id="pats"></div></div>');
     // A held shape is added while the finger is still down, and the shapes are drawn again; the press is kept here,
     // not on its button, so letting go on the new button doesn't pick that shape on its own.
     var press = { held: false, t: 0 };

@@ -472,6 +472,7 @@ check('games: holding a shape adds it to the game, with a mouse or a finger, in 
         await seed(page, { [key]: data });
         await page.goto(base + tool);
         await page.click('#patBtn');
+        assert.match(await page.textContent('#sheet .note'), /add it on top of what’s (selected|picked)(, and|;) a tabla wins on any one of them\./, what + ': the sheet doesn’t say either shape wins');
         const shape = name => page.locator('#pats .pat', { has: page.locator('b', { hasText: new RegExp('^' + name + '$') }) });
         const box = await shape('Centro').boundingBox(), x = box.x + box.width / 2, y = box.y + box.height / 2;
         const cdp = kind === PHONE ? await ctx.newCDPSession(page) : null;
