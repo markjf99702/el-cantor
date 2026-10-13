@@ -179,6 +179,21 @@ check('board: a first visit picks a player, then plays a round to a ¡Lotería!'
   } finally { await ctx.close(); }
 });
 
+check('board: Escape leaves the first-visit sheet up, and saves nobody', async () => {
+  const ctx = await context(DESKTOP);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await page.goto(base + 'board.html');
+    assert.equal(await sheetTitle(page), 'Who’s playing on this device?');
+    await page.keyboard.press('Escape');
+    assert.equal(await sheetTitle(page), 'Who’s playing on this device?', 'Escape closed it');
+    await page.mouse.click(640, 30); // outside the sheet
+    assert.equal(await sheetTitle(page), 'Who’s playing on this device?');
+    assert.equal(await saved(page, 'loteria.v1'), null);
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('board: Restore the original four and Remove a tabla ask for a second tap', async () => {
   const ctx = await context(PHONE);
   try {

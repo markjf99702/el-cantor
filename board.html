@@ -529,7 +529,7 @@ a{color:var(--teal);font-weight:700}
     $('clOk').addEventListener('click', function () { closeSheet(); clearRound(); });
     $('clNo').addEventListener('click', closeSheet);
   });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closeSheet(); $('winbox').hidden = true; } });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { if (!UI.welcome) closeSheet(); $('winbox').hidden = true; } }); // the first-visit sheet waits for a choice
   window.addEventListener('resize', layout);
   if (window.visualViewport) window.visualViewport.addEventListener('resize', layout);
   render();
