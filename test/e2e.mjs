@@ -109,6 +109,21 @@ check('fonts: every page has Bree Serif and Nunito Sans, served from here', asyn
   } finally { await ctx.close(); }
 });
 
+check('no JavaScript: every page says what it needs it for', async () => {
+  assert.ok(existsSync(join(root, '.nojekyll')), 'no .nojekyll, so GitHub Pages runs Jekyll over the site');
+  const ctx = await context(PHONE, { javaScriptEnabled: false });
+  try {
+    const page = await ctx.newPage();
+    const SAYS = { '': 'El Cantor, My tablas and Make tablas all need JavaScript to work.', 'cantor.html': 'El Cantor needs JavaScript to shuffle and call the cards.', 'board.html': 'My tablas needs JavaScript to mark your tablas as the cards are called.', 'print.html': 'Make tablas needs JavaScript to put cards on tablas and print them.' };
+    for (const p in SAYS) {
+      await page.goto(base + p);
+      const n = page.locator('.noscript');
+      assert.ok(await n.count() && await n.isVisible(), (p || 'index.html') + ' says nothing without JavaScript');
+      assert.equal(await n.textContent(), SAYS[p]);
+    }
+  } finally { await ctx.close(); }
+});
+
 // ---------------------------------------------------------------- El Cantor
 check('cantor: deals cards and keeps the round through a reload', async () => {
   const ctx = await context(PHONE);

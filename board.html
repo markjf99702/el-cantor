@@ -171,9 +171,11 @@ a{color:var(--teal);font-weight:700}
 @media (max-width:420px){.top:has(#syncBtn:not([hidden])) h1 .t{display:none}}
 @media (max-width:520px){.top h1 small{display:none}.callbtn{min-width:88px;padding:6px 10px}.callbtn b{font-size:17px}.last .v{display:none}}
 @media (prefers-reduced-motion:reduce){.cell .mk.new,.winc,.cell.hit::after{animation:none}.toast{transition:none}}
+.noscript{position:fixed;inset:0;z-index:100;margin:0;display:flex;align-items:center;justify-content:center;padding:16px;text-align:center;font:400 22px/1.3 var(--disp);color:var(--ink);background:var(--bg)}
 </style>
 </head>
 <body>
+<noscript><p class="noscript">My tablas needs JavaScript to mark your tablas as the cards are called.</p></noscript>
 <div class="app">
   <div class="top">
     <a class="chip ic home" href="./" aria-label="Home — all the Lotería tools" title="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5"/><path d="M6.5 10v9h11v-9"/></svg></a>
