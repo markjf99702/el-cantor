@@ -226,6 +226,35 @@ check('cantor: checks a printed tabla by juego and number (CANELA 7 never change
   } finally { await ctx.close(); }
 });
 
+check('cantor: checking card by card keeps a card read out twice, and a chip takes a card back off', async () => {
+  // Mark's Tabla 2 has La Corona twice in its second row, read out square by square: El Cazo, La Corona, La Corona, El Negrito.
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await page.goto(base + 'cantor.html');
+    const N = await page.evaluate(() => Object.fromEntries(Loteria.CARDS.map(c => [c.name, c.n])));
+    async function checkAfter(called) {
+      const first = called.map(n => N[n]);
+      await page.evaluate(s => localStorage.setItem('loteria.cantor', JSON.stringify(s)), { order: first.concat(run(1, 54).filter(n => first.indexOf(n) < 0)), pos: first.length, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], juego: '', wins: [], settings: { speak: false, sound: false, check: true } });
+      await page.reload();
+      await page.click('#lotBtn');
+      for (const c of ['El Cazo', 'La Corona', 'La Corona', 'El Negrito']) await page.locator('#vfPick .pk', { has: page.locator('.n', { hasText: new RegExp('^' + c + '$') }) }).click();
+    }
+    const verdict = async () => [await page.textContent('#vfV h3'), await page.textContent('#vfV p')];
+    const chips = () => page.$$eval('#vfChips .chip', bs => bs.map(b => b.textContent));
+    await checkAfter(['El Cazo', 'El Negrito', 'La Corona']);
+    assert.deepEqual(await verdict(), ['All 3 are out', 'If they make the shape — Clásico — it’s good. It finished on the card just called, La Corona.']);
+    assert.deepEqual(await chips(), ['El Cazo · #1 ✕', 'La Corona · #3 ✕', 'El Negrito · #2 ✕']);
+    await checkAfter(['El Cazo', 'El Negrito', 'El Gallo']); // La Corona not called yet: the second tap took it off, and the tabla passed
+    assert.deepEqual(await verdict(), ['Not yet', 'La Corona hasn’t been called.']);
+    await page.locator('#vfChips .chip', { hasText: 'La Corona' }).click();
+    assert.deepEqual(await chips(), ['El Cazo · #1 ✕', 'El Negrito · #2 ✕']);
+    assert.equal((await verdict())[0], 'All 2 are out');
+    assert.equal(await page.locator('#vfPick .pk.no').count(), 0, 'La Corona is still picked in the deck');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 // ---------------------------------------------------------------- My tablas
 check('board: a first visit picks a player, then plays a round to a ¡Lotería!', async () => {
   const ctx = await context(PHONE);

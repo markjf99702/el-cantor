@@ -887,7 +887,8 @@ a.chip{text-decoration:none}
         var d = document.createElement('button'); d.type = 'button'; d.className = 'pk' + (sel ? (o ? ' yes' : ' no') : '');
         d.setAttribute('aria-pressed', sel ? 'true' : 'false');
         d.innerHTML = (sel ? '<span class="st">' + (o ? '#' + o : '✕') + '</span>' : '') + '<img src="' + src(c.n) + '" alt="" loading="lazy" draggable="false"><div class="n">' + esc(c.name) + '</div>';
-        d.addEventListener('click', function () { var i = V.picked.indexOf(c.n); if (i >= 0) V.picked.splice(i, 1); else V.picked.push(c.n); V.q = ''; $('vfQ').value = ''; pickGrid(); cardsVerdict(); });
+        // A card read out twice (a double on their tabla) stays picked; its chip above takes a card back off.
+        d.addEventListener('click', function () { if (V.picked.indexOf(c.n) < 0) V.picked.push(c.n); V.q = ''; $('vfQ').value = ''; pickGrid(); cardsVerdict(); });
         host.appendChild(d);
       });
       if (!host.children.length) host.innerHTML = '<p class="note">No card matches “' + esc(V.q) + '”.</p>';
@@ -895,7 +896,8 @@ a.chip{text-decoration:none}
     function cardsVerdict() {
       var v = $('vfV'), out = V.picked.filter(isOut), not = V.picked.filter(function (n) { return !isOut(n); });
       V.how = ''; V.tabla = '';
-      $('vfChips').innerHTML = V.picked.map(function (n) { return '<span class="chip ' + (isOut(n) ? 'ok' : 'bad') + '">' + esc(card(n).name) + (isOut(n) ? ' · #' + orderOf(n) : ' · not yet') + '</span>'; }).join('');
+      $('vfChips').innerHTML = V.picked.map(function (n) { return '<button type="button" class="chip ' + (isOut(n) ? 'ok' : 'bad') + '" data-n="' + n + '" aria-label="Take ' + esc(card(n).name) + ' off">' + esc(card(n).name) + (isOut(n) ? ' · #' + orderOf(n) : ' · not yet') + ' <span aria-hidden="true">✕</span></button>'; }).join('');
+      $('vfChips').querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () { var i = V.picked.indexOf(+b.dataset.n); if (i >= 0) V.picked.splice(i, 1); pickGrid(); cardsVerdict(); }); });
       if (!V.picked.length) { v.className = 'verdict'; v.innerHTML = '<p class="note" style="margin:0">Have them read out their winning cards, and tap each one below. A tabla from a store or another set works this way.</p>'; return; }
       if (not.length) { v.className = 'verdict no'; v.innerHTML = '<h3>Not yet</h3><p>' + esc(list(not.map(function (n) { return card(n).name; }))) + (not.length === 1 ? ' hasn’t' : ' haven’t') + ' been called.</p>'; return; }
       var last = Math.max.apply(null, out.map(orderOf));
