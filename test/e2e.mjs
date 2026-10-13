@@ -33,17 +33,11 @@ const origin = base.slice(0, -1);
 const browser = await pw.chromium.launch();
 const PHONE = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true };
 const DESKTOP = { viewport: { width: 1280, height: 800 } };
-// Google Fonts still come from Google until the fonts are served from here.
-const STILL_FROM_GOOGLE = ['https://fonts.googleapis.com/', 'https://fonts.gstatic.com/'];
 
 // A fresh browser profile: nothing saved, service workers off unless asked for, and nothing reaches the internet.
 async function context(kind = PHONE, extra = {}) {
   const ctx = await browser.newContext({ ...kind, serviceWorkers: 'block', ...extra });
-  await ctx.route(url => !url.href.startsWith(base), route => {
-    const u = route.request().url();
-    if (STILL_FROM_GOOGLE.some(h => u.startsWith(h))) return route.fulfill({ status: 200, contentType: 'text/css', body: '' });
-    return route.abort();
-  });
+  await ctx.route(url => !url.href.startsWith(base), route => route.abort());
   return ctx;
 }
 // Everything that went wrong on a page: errors, missing files, and requests that left the site.
@@ -54,7 +48,7 @@ function watch(page, allow = []) {
   page.on('response', r => { if (r.status() >= 400) problems.push(r.status() + ' ' + r.url()); });
   page.on('request', r => {
     const u = r.url();
-    if (u.startsWith(base) || /^(data|blob):/.test(u) || allow.concat(STILL_FROM_GOOGLE).some(h => u.startsWith(h))) return;
+    if (u.startsWith(base) || /^(data|blob):/.test(u) || allow.some(h => u.startsWith(h))) return;
     problems.push('left the site: ' + u);
   });
   return problems;
@@ -99,6 +93,20 @@ check('home: the three tools, at phone and desktop width', async () => {
       assert.deepEqual(problems, []);
     } finally { await ctx.close(); }
   }
+});
+
+check('fonts: every page has Bree Serif and Nunito Sans, served from here', async () => {
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    for (const p of ['', 'cantor.html', 'board.html', 'print.html']) {
+      await page.goto(base + p);
+      await page.evaluate(() => document.fonts.ready);
+      const faces = await page.evaluate(() => [...document.fonts].filter(f => f.status === 'loaded').map(f => f.family.replace(/["']/g, '') + ' ' + f.style));
+      for (const f of ['Bree Serif normal', 'Nunito Sans normal']) assert.ok(faces.indexOf(f) >= 0, (p || 'index.html') + ' has no ' + f + ' (it has ' + faces.join(', ') + ')');
+    }
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
 });
 
 // ---------------------------------------------------------------- El Cantor

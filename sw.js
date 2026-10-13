@@ -3,10 +3,12 @@
 // show with no signal; the recorded voices are kept as they play.
 // Network first, so a new version shows up as soon as you're online.
 
-const CACHE = 'el-cantor-v1'; // bump the number when the file list changes
+const CACHE = 'el-cantor-v2'; // bump the number when the file list changes
 const SHELL = [
   './', 'index.html', 'carry.js', 'cantor.html', 'board.html', 'print.html', 'deck.js', 'sync.js',
   'icon.svg', 'icon-180.png', 'icon-192.png', 'manifest.webmanifest', 'audio/voices.json',
+  'fonts/fonts.css', 'fonts/bree-serif-latin.woff2', 'fonts/bree-serif-latin-ext.woff2', 'fonts/nunito-sans-latin.woff2',
+  'fonts/nunito-sans-latin-ext.woff2', 'fonts/nunito-sans-italic-latin.woff2', 'fonts/nunito-sans-italic-latin-ext.woff2',
 ];
 const CARDS = [
   'ElAlacran.jpg', 'ElApache.jpg', 'ElArbol.jpg', 'ElArpa.jpg', 'ElBandolon.jpg', 'ElBarril.jpg',

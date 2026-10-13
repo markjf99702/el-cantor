@@ -75,11 +75,12 @@ To run it from another address, create a Web client with the Drive API turned on
 - `print.html` — Make tablas.
 - `carry.js` — the first time it opens at el-cantor.junkdrawer.works, brings the tablas saved at its old address, junkdrawer.works/el-cantor/.
 - `manifest.webmanifest`, `icon.svg` and the `icon-*.png` sizes — installing it as an app. `node tools/make-icons.mjs` redraws the PNGs from `icon.svg` and `tools/icon-full-bleed.svg`.
-- `sw.js` — the offline copy: the pages, the card pictures, and each voice clip once it has played.
+- `sw.js` — the offline copy: the pages, the fonts, the card pictures, and each voice clip once it has played.
 - `sync.js` — saving to Google Drive: signing in, the Drive file, and merging changes from every device.
 - `deck.js` — the cards, their verses, the winning shapes, Mark's four tablas, and the juego generator. Every page loads it.
   - The generator is frozen: changing it would change every tabla already printed.
 - `cards/` — the 54 card images, drawn for El Cantor.
+- `fonts/` — Bree Serif and Nunito Sans (SIL Open Font License), served from here so nothing loads from elsewhere.
 - `tools/cards/` — draws the cards.
   - Each card is an SVG in a cut-paper style, written in Python: `card.py` is the template and shared pieces, and `art1.py` to `art5.py` hold the pictures.
   - `python3 tools/cards/build.py` writes the SVGs, then `node tools/cards/render.mjs` (with [Playwright](https://playwright.dev)) turns them into `cards/*.jpg`. Rerun both after changing a card.
