@@ -411,6 +411,35 @@ check('board: the Tablas sheet stays where it was after a square is changed', as
   } finally { await ctx.close(); }
 });
 
+check('board: a card goes on a tabla twice but not three times, as in Make tablas', async () => {
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    const mine = run(1); mine[5] = 5; // El Paraguas twice, side by side, like Mark's four
+    await seed(page, { 'loteria.v1': people([{ id: 'm1', name: 'Mine 1', cards: mine }]) });
+    await page.goto(base + 'board.html');
+    await page.click('#tablasBtn');
+    const cards = async () => (await saved(page, 'loteria.v1')).players[0].boards[0].cards;
+    const put = async (square, n) => { await page.locator('#edb .eg .cell').nth(square).click(); await page.fill('#pkq', String(n)); await page.press('#pkq', 'Enter'); };
+    await put(0, 5);
+    await until(page, () => document.getElementById('toast').textContent === 'El Paraguas is already on Mine 1 twice');
+    assert.equal(await page.getAttribute('#pkq', 'placeholder'), 'Pick a card for this square', 'the picker closed instead of letting another card be picked');
+    await page.fill('#pkq', '23'); await page.press('#pkq', 'Enter'); // La Luna instead
+    assert.deepEqual((await cards()).slice(0, 6), [23, 2, 3, 4, 5, 5]);
+    await put(1, 23);
+    assert.deepEqual((await cards()).slice(0, 6), [23, 23, 3, 4, 5, 5], 'a second La Luna is fine');
+    await put(2, 23);
+    await until(page, () => document.getElementById('toast').textContent === 'La Luna is already on Mine 1 twice');
+    await page.click('#pkx');
+    assert.deepEqual((await cards()).slice(0, 6), [23, 23, 3, 4, 5, 5]);
+    await page.click('#tablasBtn');
+    await put(4, 5); // the same card on its own square changes nothing
+    assert.deepEqual((await cards()).slice(0, 6), [23, 23, 3, 4, 5, 5]);
+    assert.equal(await page.textContent('#edb .warn'), 'Twice: El Paraguas, La Luna');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('board: the game picker works from the keyboard as well as by tapping', async () => {
   const ctx = await context(DESKTOP);
   try {
