@@ -44,6 +44,7 @@ Someone calls the cards; you tap **Cantaron…**, pick the card, and it marks it
 
 - Pick the game each round: Clásico, or a single shape, the same list El Cantor uses.
 - Edit tablas square by square. Doubles are fine (family rule), but not three of a card: when that card is called, both squares get a bean. Up to six tablas per person.
+- **Random tabla** deals 16 different cards, with no double, as a start to edit from. Make tablas' **Random** makes one like Mark's four instead.
 - **+ A printed tabla** adds a tabla from El Cantor's printed juegos by its name and number. It starts with the juego El Cantor last printed on this device.
 - Several people on one device, each with their own tablas. **Share** makes a link that carries a set of tablas to another phone.
 
