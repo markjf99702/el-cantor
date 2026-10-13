@@ -482,13 +482,16 @@ a{color:var(--teal);font-weight:700}
   }
 
   // ---------- share / import ----------
-  function encodeShare(p) { return '#t=' + encodeURIComponent(p.name) + '~' + p.boards.map(function (b) { return encodeURIComponent(b.name) + ':' + b.cards.map(function (n) { return n.toString(36); }).join('.'); }).join('~'); }
+  // ~ separates the person and the tablas, so a ~ in a name goes in as %7E.
+  function encodeShare(p) { var enc = function (s) { return encodeURIComponent(s).replace(/~/g, '%7E'); }; return '#t=' + enc(p.name) + '~' + p.boards.map(function (b) { return enc(b.name) + ':' + b.cards.map(function (n) { return n.toString(36); }).join('.'); }).join('~'); }
   function decodeShare(h) {
     var m = /#t=(.+)$/.exec(h); if (!m) return null;
     var parts = m[1].split('~'); if (parts.length < 2) return null;
-    var boards = parts.slice(1).map(function (s) { var i = s.indexOf(':'); var cards = s.slice(i + 1).split('.').map(function (x) { return parseInt(x, 36); }); if (cards.length !== 16 || cards.some(function (n) { return !(n >= 1 && n <= 54); })) return null; return { id: uid(), name: decodeURIComponent(s.slice(0, i)) || 'Tabla', cards: cards }; });
-    if (boards.some(function (b) { return !b; })) return null;
-    return { name: decodeURIComponent(parts[0]) || 'Guest', boards: boards };
+    try {
+      var boards = parts.slice(1).map(function (s) { var i = s.indexOf(':'); var cards = s.slice(i + 1).split('.').map(function (x) { return parseInt(x, 36); }); if (cards.length !== 16 || cards.some(function (n) { return !(n >= 1 && n <= 54); })) return null; return { id: uid(), name: decodeURIComponent(s.slice(0, i)) || 'Tabla', cards: cards }; });
+      if (boards.some(function (b) { return !b; })) return null;
+      return { name: decodeURIComponent(parts[0]) || 'Guest', boards: boards };
+    } catch (e) { return null; } // a name cut off in the middle of a letter
   }
   function shareUrl(p) { return location.href.split('#')[0] + encodeShare(p); }
   function shareSheet() {

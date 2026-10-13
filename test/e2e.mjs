@@ -236,6 +236,34 @@ check('board: a shared link on a new device makes that person its player, and sa
   }
 });
 
+check('board: a share link carries a ~ in a name, and a broken link doesn’t stop the board', async () => {
+  let url;
+  for (const step of ['share', 'open', 'broken']) {
+    const ctx = await context(PHONE);
+    try {
+      const page = await ctx.newPage(), problems = watch(page);
+      if (step === 'share') {
+        await seed(page, { 'loteria.v1': { ...people([{ id: 'm1', name: 'Mía ~ la buena', cards: run(1) }]), players: [{ id: 'tl', name: 'Tía~Lupe', boards: [{ id: 'm1', name: 'Mía ~ la buena', cards: run(1) }] }], current: 'tl' } });
+        await page.goto(base + 'board.html');
+        await page.click('#tablasBtn'); await page.click('#tbShare');
+        url = await page.inputValue('#shUrl');
+      } else if (step === 'open') { // on another phone
+        await page.goto(url);
+        assert.equal(await sheetTitle(page), 'Tablas from Tía~Lupe');
+        await page.click('#imOk');
+        const v1 = await saved(page, 'loteria.v1');
+        assert.deepEqual([v1.players[0].name, v1.players[0].boards[0].name, v1.players[0].boards[0].cards], ['Tía~Lupe', 'Mía ~ la buena', run(1)]);
+      } else { // cut off in the middle of an accented letter
+        await page.goto(base + 'board.html#t=Mam%C3~Tabla%201:1.2.3.4.5.6.7.8.9.a.b.c.d.e.f.g');
+        assert.equal(await sheetTitle(page), 'Who’s playing on this device?');
+        await page.evaluate(() => { location.hash = '#t=Mom~Tabla%201:1.2.3.4.5.6.7.8.9.a.b.c.d.e.f.g'; });
+        await until(page, () => (document.querySelector('#sheet h2') || {}).textContent === 'Tablas from Mom');
+      }
+      assert.deepEqual(problems, [], step);
+    } finally { await ctx.close(); }
+  }
+});
+
 check('board: calling a card from Cantaron… doesn’t put a phone’s keyboard up; a computer keeps typing', async () => {
   for (const kind of [PHONE, DESKTOP]) {
     const ctx = await context(kind);
