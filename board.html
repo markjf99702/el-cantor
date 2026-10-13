@@ -419,7 +419,12 @@ a{color:var(--teal);font-weight:700}
         bd.cards.forEach(function (n, ci) {
           var cell = document.createElement('div'); cell.className = 'cell'; cell.innerHTML = '<img src="' + src(n) + '" alt="' + esc(card(n).name) + '" draggable="false">';
           cell.addEventListener('click', function () {
-            pickerSheet('edit', function (pick) { bd.cards[ci] = pick; save(); closeSheet(); tablasSheet(); evaluate(false); render(); }, bd.cards.filter(function (x, k) { return k !== ci; }));
+            pickerSheet('edit', function (pick) {
+              // Tablas from Google Drive may have landed while the picker was open: change the tabla as it is now.
+              var now = player().boards.filter(function (b) { return b.id === bd.id; })[0];
+              if (now) { now.cards[ci] = pick; save(); } else toast(bd.name + ' was removed on another device');
+              closeSheet(); tablasSheet(); evaluate(false); render();
+            }, bd.cards.filter(function (x, k) { return k !== ci; }));
           });
           eg.appendChild(cell);
         });
@@ -429,7 +434,7 @@ a{color:var(--teal);font-weight:700}
         host.appendChild(w);
       });
     }
-    $('tbPrinted').addEventListener('click', function () { if (p.boards.length >= 6) { toast('Six tablas is plenty'); return; } printedSheet(p); });
+    $('tbPrinted').addEventListener('click', function () { if (p.boards.length >= 6) { toast('Six tablas is plenty'); return; } printedSheet(); });
     $('tbAdd').addEventListener('click', function () { if (p.boards.length >= 6) { toast('Six tablas is plenty'); return; } p.boards.push(randomBoard('Tabla ' + (p.boards.length + 1))); save(); draw(); render(); });
     $('tbOrig').addEventListener('click', function () {
       var four = origBoards(), same = function (bs) { return JSON.stringify(bs.map(function (b) { return [b.name, b.cards]; })); };
@@ -444,22 +449,30 @@ a{color:var(--teal);font-weight:700}
   }
 
   // ---------- printed tablas (from El Cantor) ----------
-  function printedSheet(p) {
+  function printedSheet(typed) {
     openSheet('<div class="hd"><h2>Add a printed tabla</h2><button class="btn sec sm" type="button" id="ptx">Cancel</button></div><div class="bd stack"><p class="note">Tablas printed from El Cantor carry a juego name along the bottom and a number at the top. Type both and the same tabla shows up here, square for square — so the caller can still check it by number.</p><div class="row"><input id="ptJ" placeholder="Juego, like CANELA" autocomplete="off" autocapitalize="characters" spellcheck="false" style="flex:1 1 10em;text-transform:uppercase;font-weight:700"><input id="ptN" placeholder="No." inputmode="numeric" autocomplete="off" maxlength="3" aria-label="Tabla number" style="width:5.5em"><button class="btn red" type="button" id="ptAdd" disabled>Add it</button></div><div class="edb"><div id="ptPrev"></div></div></div>');
-    var pick = null; reopen = tablasSheet;
+    var pick = null;
+    typed = typed || { j: null, n: '' };
+    reopen = function () { printedSheet(typed); }; // tablas from Google Drive landed: come back with what was typed
     function draw() {
+      typed.j = $('ptJ').value; typed.n = $('ptN').value;
       var name = L.juegoName($('ptJ').value), k = parseInt($('ptN').value, 10), host = $('ptPrev');
       pick = name && k >= 1 && k <= 999 ? { name: name + ' ' + k, cards: L.juegoTabla(name, k) } : null;
       $('ptAdd').disabled = !pick;
       host.innerHTML = pick ? '<div class="tabla" style="--bw:100%"><div class="lbl"><span class="k">' + esc(pick.name) + '</span></div><div class="eg">' + pick.cards.map(function (n) { return '<div class="cell"><img src="' + src(n) + '" alt="' + esc(card(n).name) + '" draggable="false"></div>'; }).join('') + '</div></div>' : '';
     }
     var last = ''; try { var c = JSON.parse(localStorage.getItem('loteria.cantor') || 'null'); last = (c && c.juego) || ''; } catch (e) { }
-    if (last) $('ptJ').value = last; // the juego El Cantor last printed on this device
+    $('ptJ').value = typed.j != null ? typed.j : last; // to start, the juego El Cantor last printed on this device
+    $('ptN').value = typed.n;
     $('ptJ').addEventListener('input', draw);
     $('ptN').addEventListener('input', function () { this.value = this.value.replace(/\D/g, ''); draw(); });
-    $('ptAdd').addEventListener('click', function () { if (!pick) return; p.boards.push({ id: uid(), name: pick.name, cards: pick.cards }); save(); closeSheet(); evaluate(true); render(); tablasSheet(); toast(pick.name + ' added'); });
+    $('ptAdd').addEventListener('click', function () {
+      var p = player(); if (!pick) return; if (p.boards.length >= 6) { toast('Six tablas is plenty'); return; }
+      p.boards.push({ id: uid(), name: pick.name, cards: pick.cards }); save(); closeSheet(); evaluate(true); render(); tablasSheet(); toast(pick.name + ' added');
+    });
     $('ptx').addEventListener('click', function () { closeSheet(); tablasSheet(); });
-    if (!('ontouchstart' in window)) (last ? $('ptN') : $('ptJ')).focus();
+    draw();
+    if (!('ontouchstart' in window)) ($('ptJ').value ? $('ptN') : $('ptJ')).focus();
   }
 
   // ---------- share / import ----------

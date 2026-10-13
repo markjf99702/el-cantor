@@ -369,6 +369,49 @@ check('drive: a shared link on a new phone that saves to Drive asks again once t
   } finally { await A.ctx.close(); await B.ctx.close(); }
 });
 
+check('drive: a card picked in the tabla editor, or a printed tabla being typed in, survives a sync landing meanwhile', async () => {
+  const g = fakeGoogle();
+  const A = await driveDevice(g, { 'loteria.v1': ANA });
+  const B = await driveDevice(g, { 'loteria.v1': ANA });
+  const last = async d => (await saved(d.page, 'loteria.sync')).last;
+  async function renameOnA(i, name) { // A renames a tabla and it reaches Drive; then B syncs
+    const ta = await last(A);
+    await A.page.click('#tablasBtn');
+    await A.page.locator('#edb input').nth(i).fill(name);
+    await A.page.locator('#edb input').nth(i).dispatchEvent('change');
+    await A.page.click('#tbx');
+    await synced(A.page, ta);
+    const tb = await last(B);
+    await B.page.evaluate(() => LoteriaSync.now());
+    await synced(B.page, tb);
+    assert.ok((await saved(B.page, 'loteria.v1')).players[0].boards.some(b => b.name === name), 'the rename reached B');
+  }
+  try {
+    await A.page.goto(base + 'board.html'); await synced(A.page);
+    await B.page.goto(base + 'board.html'); await synced(B.page);
+    // B is picking a card for square 1 of Mine 1 when A's rename lands.
+    await B.page.click('#tablasBtn');
+    await B.page.locator('#edb .eg .cell').first().click();
+    await renameOnA(1, 'Otra');
+    assert.equal(await B.page.getAttribute('#pkq', 'placeholder'), 'Pick a card for this square', 'the picker stays open');
+    await B.page.fill('#pkq', '54'); await B.page.press('#pkq', 'Enter');
+    let mine = (await saved(B.page, 'loteria.v1')).players[0].boards;
+    assert.equal(mine[0].cards[0], 54, 'the picked card was lost');
+    assert.equal(mine[1].name, 'Otra');
+    // B is typing in a printed tabla when A's next rename lands.
+    await B.page.click('#tbPrinted');
+    await B.page.fill('#ptJ', 'CANELA'); await B.page.fill('#ptN', '7');
+    await renameOnA(1, 'Segunda'); // another tabla: the same one changed on both would go to the newer change
+    assert.equal(await sheetTitle(B.page), 'Add a printed tabla', 'the printed tabla sheet was swapped for Tablas');
+    assert.equal(await B.page.inputValue('#ptJ'), 'CANELA'); assert.equal(await B.page.inputValue('#ptN'), '7');
+    await B.page.click('#ptAdd');
+    mine = (await saved(B.page, 'loteria.v1')).players[0].boards;
+    assert.deepEqual(mine.map(b => b.name), ['Mine 1', 'Segunda', 'CANELA 7']);
+    assert.equal(mine[0].cards[0], 54);
+    assert.deepEqual(A.problems, []); assert.deepEqual(B.problems, []);
+  } finally { await A.ctx.close(); await B.ctx.close(); }
+});
+
 // ---------------------------------------------------------------- offline
 check('offline: every page opens with no network once it has been opened, and sw.js keeps every file they load', async () => {
   const sw = await readFile(join(root, 'sw.js'), 'utf8'), box = { self: { addEventListener() { } } };
