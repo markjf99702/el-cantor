@@ -251,8 +251,10 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   var P = { tablas: [blank('Tabla 1')], set: { doubles: true, per: 2, paper: 'letter', names: true, who: '' } };
   try {
     var raw = localStorage.getItem(LSP);
-    if (raw) { var o = JSON.parse(raw); if (o && Array.isArray(o.tablas)) { P.tablas = savedTablas(o); P.set = Object.assign(P.set, o.set || {}); } }
+    if (raw) { var o = JSON.parse(raw); if (o && Array.isArray(o.tablas)) { P.tablas = savedTablas(o); if (o.set && typeof o.set === 'object') P.set = Object.assign(P.set, o.set); } }
   } catch (e) { }
+  P.set.per = +P.set.per; if ([1, 2, 4].indexOf(P.set.per) < 0) P.set.per = 2; // a damaged save falls back to the defaults
+  if (P.set.paper !== 'letter' && P.set.paper !== 'a4') P.set.paper = 'letter';
   var UI = { active: P.tablas.length ? P.tablas[0].id : null, sel: null, q: '', flash: null, skip: {} };
   var H = []; // undo snapshots of P.tablas
   function save() { try { localStorage.setItem(LSP, JSON.stringify(P)); } catch (e) { } if (window.LoteriaSync) LoteriaSync.changed(); }

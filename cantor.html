@@ -328,6 +328,7 @@ a.chip{text-decoration:none}
   function freshPrint() { return { name: '', count: 12, per: 1, paper: defaultPaper() }; }
   function fresh() { return { order: shuffled(), pos: 0, round: 1, patterns: L.CLASICO.slice(), juego: '', wins: [], print: freshPrint(), settings: freshSettings() }; }
   var C = fresh();
+  function goodWins(w) { return Array.isArray(w) ? w.filter(function (x) { return x && typeof x === 'object'; }) : []; } // a damaged save may hold nulls
   try {
     var raw = localStorage.getItem(LS), o = raw && JSON.parse(raw);
     if (o && Array.isArray(o.order) && o.order.length === 54 && o.order.slice().sort(function (a, b) { return a - b; }).every(function (n, i) { return n === i + 1; })) {
@@ -338,9 +339,10 @@ a.chip{text-decoration:none}
       C.pos = Math.max(0, Math.min(54, o.pos | 0));
       C.round = Math.max(1, o.round | 0);
       if (!Array.isArray(C.patterns) || !C.patterns.length) C.patterns = L.CLASICO.slice();
-      if (!Array.isArray(C.wins)) C.wins = [];
+      C.wins = goodWins(C.wins);
+      if (typeof C.juego !== 'string') C.juego = '';
     } else if (o) { // only what Google Drive brought over from another device: the winners and the juego
-      if (Array.isArray(o.wins)) C.wins = o.wins;
+      C.wins = goodWins(o.wins);
       if (typeof o.juego === 'string') C.juego = o.juego;
     }
   } catch (e) { }
@@ -1139,7 +1141,7 @@ a.chip{text-decoration:none}
   // ---------- Google Drive ----------
   if (window.LoteriaSync) LoteriaSync.onUpdate(function (keys) { // winners and the juego from another device
     if (keys.indexOf(LS) < 0) return;
-    try { var o = JSON.parse(localStorage.getItem(LS)); if (o) { if (Array.isArray(o.wins)) C.wins = o.wins; if (typeof o.juego === 'string') C.juego = o.juego; } } catch (e) { }
+    try { var o = JSON.parse(localStorage.getItem(LS)); if (o) { if (Array.isArray(o.wins)) C.wins = goodWins(o.wins); if (typeof o.juego === 'string') C.juego = o.juego; } } catch (e) { }
   });
 
   // ---------- wiring ----------

@@ -408,6 +408,54 @@ check('print: two per page prints every tabla whole (Letter and A4, names on and
   } finally { await ctx.close(); }
 });
 
+// ---------------------------------------------------------------- damaged saves
+check('saves: a damaged save opens with what can be kept, instead of a blank page or an error', async () => {
+  for (const tool of ['board', 'cantor', 'print']) {
+    const ctx = await context(PHONE);
+    try {
+      const page = await ctx.newPage(), problems = watch(page);
+      if (tool === 'board') {
+        // A square with no card (0), a person with no tablas at all, a game that isn't a list, and calls that aren't cards.
+        await seed(page, {
+          'loteria.v1': { ...people([]), patterns: 'linea', players: [{ id: 'ana', name: 'Ana', boards: [{ id: 'm1', name: 'Mine 1', cards: [0].concat(run(2, 15)) }] }, { id: 'bo', name: 'Bo' }] },
+          'loteria.game': { called: [5, null, 99, 6], announced: null }
+        });
+        await page.goto(base + 'board.html');
+        assert.equal(await page.locator('#boards .tabla .cell').count(), 16);
+        assert.equal(await page.locator('#boards .tabla .cell.marked').count(), 2);
+        assert.equal(await page.textContent('#hist .cnt'), '2 called');
+        assert.equal(await page.textContent('#patBtn'), 'Clásico ▾');
+        await page.click('#tablasBtn');
+        await page.locator('#edb .eg .cell').first().click(); // the empty square can still be given a card
+        await page.fill('#pkq', '1'); await page.press('#pkq', 'Enter');
+        assert.deepEqual((await saved(page, 'loteria.v1')).players[0].boards[0].cards, run(1));
+        await page.click('#tbx');
+        await page.click('#setBtn');
+        await page.locator('#plist .chip', { hasText: 'Bo' }).click(); // Bo has no tablas, and that's all right
+        await page.click('#stx');
+        assert.equal(await page.locator('#boards .tabla').count(), 0);
+      } else if (tool === 'cantor') {
+        await seed(page, { 'loteria.cantor': { wins: [null, { round: 1, who: 'Ana', how: 'Línea', tabla: '', at: 9, t: 1 }] } });
+        await page.goto(base + 'cantor.html');
+        await page.click('#setBtn');
+        assert.match(await page.textContent('#winsCard'), /Ana · 1/);
+        await page.click('#stx');
+        await page.click('#lotBtn');
+        await page.waitForSelector('#winbox .winc');
+        assert.equal(await page.textContent('#clNames .chip'), 'Ana');
+      } else {
+        await seed(page, { 'loteria.print': { tablas: [{ id: 't1', name: 'Tabla 1', cards: run(1) }], set: { doubles: true, per: 3, paper: 'legal', names: true, who: '' } } });
+        await page.goto(base + 'print.html');
+        await page.click('#printBtn');
+        assert.equal(await page.textContent('#psum'), '1 tabla on 1 page — cut along the gap between them.');
+        assert.equal(await page.textContent('#pers .per.on b'), '2 per page');
+        assert.equal(await page.textContent('#paperSeg button.on'), 'Letter');
+      }
+      assert.deepEqual(problems, [], tool);
+    } finally { await ctx.close(); }
+  }
+});
+
 // ---------------------------------------------------------------- Google Drive (a stand-in for it)
 async function driveDevice(g, data) {
   const ctx = await context(PHONE);
