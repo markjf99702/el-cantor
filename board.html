@@ -234,9 +234,14 @@ a{color:var(--teal);font-weight:700}
   var S = fresh(), G = { called: [], announced: {} }, UI = { focus: null, sheet: null, edit: null };
   var firstRun = true;
   try { var raw = localStorage.getItem(LS); if (raw) { var o = loaded(JSON.parse(raw)); if (o) { S = o; firstRun = false; } } } catch (e) { }
-  try { var rg = localStorage.getItem(LSG); if (rg) { var g = JSON.parse(rg); if (g && g.called) G = Object.assign({ called: [], announced: {} }, g); } } catch (e) { }
-  G.called = (Array.isArray(G.called) ? G.called : []).filter(real);
-  if (!G.announced || typeof G.announced !== 'object') G.announced = {};
+  // The round in play: the cards called and the wins already cheered. A damaged save keeps what it can.
+  function readG() {
+    var g = null; try { g = JSON.parse(localStorage.getItem(LSG)); } catch (e) { }
+    G = Object.assign({ called: [], announced: {} }, g && g.called ? g : null);
+    G.called = (Array.isArray(G.called) ? G.called : []).filter(real);
+    if (!G.announced || typeof G.announced !== 'object') G.announced = {};
+  }
+  readG();
   function save() { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) { } if (window.LoteriaSync) LoteriaSync.changed(); }
   function saveG() { try { localStorage.setItem(LSG, JSON.stringify(G)); } catch (e) { } }
   function player() { var p = S.players.filter(function (p) { return p.id === S.current; })[0]; if (!p) { p = S.players[0]; S.current = p.id; } return p; }
@@ -264,14 +269,14 @@ a{color:var(--teal);font-weight:700}
     if (!fixed.length || fixed.length !== S.patterns.length) return null;
     var u = {}; fixed.forEach(function (p) { p.sets[0].forEach(function (c) { u[c] = 1; }); }); return u;
   }
-  function evaluate(announce) {
+  function evaluate(announce, quiet) { // quiet: another window's round, taken as it is and not written back
     var p = player(), newWins = [];
     var live = {};
     p.boards.forEach(function (bd) {
       checkBoard(bd).forEach(function (h) { var k = bd.id + ':' + h.pat.id; live[k] = 1; if (!G.announced[k]) { G.announced[k] = 1; newWins.push({ board: bd, hit: h }); } });
     });
     Object.keys(G.announced).forEach(function (k) { if (!live[k]) delete G.announced[k]; });
-    saveG();
+    if (!quiet) saveG();
     if (announce && newWins.length) showWin(newWins);
   }
 
@@ -579,17 +584,32 @@ a{color:var(--teal);font-weight:700}
     $('wName').addEventListener('keydown', function (e) { if (e.key === 'Enter') go(false); });
   }
 
-  // ---------- Google Drive ----------
+  // ---------- tablas saved elsewhere ----------
+  // Tablas from Google Drive, or from another My tablas window on this device, have landed in the save here.
+  function landed(fromDrive) {
+    try { var o = loaded(JSON.parse(localStorage.getItem(LS))); if (o) { S = o; firstRun = false; } } catch (e) { }
+    if (reopen) { var f = reopen, top = sheetScroll(); closeSheet(); f(); sheetScroll(top); }
+    else if (UI.welcome && !firstRun) { closeSheet(); toast(fromDrive ? 'Your tablas are here from Google Drive' : 'Playing as ' + player().name); }
+    UI.focus = null; evaluate(false); render();
+  }
   if (window.LoteriaSync) {
     LoteriaSync.chip($('syncBtn'));
-    LoteriaSync.onUpdate(function (keys) { // tablas saved on another device have landed here
-      if (keys.indexOf(LS) < 0) return;
-      try { var o = loaded(JSON.parse(localStorage.getItem(LS))); if (o) { S = o; firstRun = false; } } catch (e) { }
-      if (reopen) { var f = reopen, top = sheetScroll(); closeSheet(); f(); sheetScroll(top); }
-      else if (UI.welcome && !firstRun) { closeSheet(); toast('Your tablas are here from Google Drive'); }
-      UI.focus = null; evaluate(false); render();
-    });
+    LoteriaSync.onUpdate(function (keys) { if (keys.indexOf(LS) >= 0) landed(true); }); // tablas saved on another device
   }
+  // The installed app and a browser tab, or two tabs, share one save. Each takes the cards the other calls as they
+  // come, so its next call doesn't put its own older round back over them. At El Cantor's own address sync.js
+  // passes on the other window's tablas; anywhere else this does.
+  function follow() { readG(); evaluate(false, true); render(); }
+  window.addEventListener('storage', function (e) {
+    if (e.key === LSG) follow();
+    else if (e.key === LS && !(window.LoteriaSync && LoteriaSync.ready)) landed(false);
+  });
+  window.addEventListener('pageshow', function (e) { // back from the browser's history, which missed the saves made meanwhile
+    if (!e.persisted) return;
+    var s = null; try { s = localStorage.getItem(LS); } catch (x) { }
+    if (s && s !== JSON.stringify(S)) landed(false);
+    follow();
+  });
 
   // ---------- wiring ----------
   // A card called again stays called; one is taken back with ↶, its square, or the row of called cards.

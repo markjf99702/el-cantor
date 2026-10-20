@@ -455,6 +455,44 @@ check('board: a card picked again in Cantaron… stays called, and taking one ba
   } finally { await ctx.close(); }
 });
 
+check('board: two windows on one device keep the cards each other calls', async () => {
+  // The installed app and a browser tab share one save, and each used to write its own whole round on every call.
+  const ctx = await context(DESKTOP);
+  try {
+    const A = await ctx.newPage(), problems = watch(A);
+    await seed(A, { 'loteria.v1': ANA });
+    await A.goto(base + 'board.html');
+    const B = await ctx.newPage(), problemsB = watch(B);
+    await B.goto(base + 'board.html'); // open before A calls anything
+    const called = async () => (await saved(A, 'loteria.game')).called;
+    const beans = (p, n) => until(p, n => document.querySelectorAll('#boards .cell.marked').length === n, n);
+    await A.click('#callBtn');
+    for (const n of [1, 2]) { await A.fill('#pkq', String(n)); await A.press('#pkq', 'Enter'); }
+    await A.click('#pkx');
+    await beans(B, 2);
+    await B.locator('#boards .tabla').first().locator('.cell').nth(2).click(); // B calls La Dama from her square
+    assert.deepEqual(await called(), [1, 2, 3], 'B put its own older round back');
+    await beans(A, 3);
+    await A.locator('#hist .h', { hasText: 'El Gallo' }).click(); // and A takes El Gallo back off
+    assert.deepEqual(await called(), [2, 3]);
+    await beans(B, 2);
+    await A.reload();
+    await beans(A, 2);
+    // A tabla renamed in one window shows in the other: away from El Cantor's address there's no sync.js to pass it on.
+    await B.click('#tablasBtn');
+    await B.locator('#edb input').first().fill('Mía');
+    await B.locator('#edb input').first().dispatchEvent('change');
+    await until(A, () => document.querySelector('#boards .tabla .lbl .k').textContent.indexOf('Mía') === 0);
+    // Back from the browser's history, a page picks up what was saved while it was away.
+    await A.evaluate(() => { const g = JSON.parse(localStorage.getItem('loteria.game')); g.called.push(4); localStorage.setItem('loteria.game', JSON.stringify(g)); dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true })); });
+    await beans(A, 3);
+    await beans(B, 3);
+    assert.deepEqual(await called(), [2, 3, 4]);
+    assert.deepEqual((await saved(A, 'loteria.v1')).players[0].boards.map(b => b.name), ['Mía', 'Mine 2']);
+    assert.deepEqual(problems.concat(problemsB), []);
+  } finally { await ctx.close(); }
+});
+
 check('board: the Tablas sheet stays where it was after a square is changed', async () => {
   const ctx = await context(PHONE);
   try {
