@@ -237,6 +237,33 @@ check('cantor: two windows on one device follow each other instead of calling a 
   } finally { await ctx.close(); }
 });
 
+check('cantor: Escape on the ¡Lotería! box keeps calling, as Keep calling does, and the next one cheers again', async () => {
+  const ctx = await context(DESKTOP);
+  await ctx.addInitScript(() => { // counts the notes played: a fanfare is six
+    window.__notes = 0; const AC = window.AudioContext; if (!AC) return;
+    const make = AC.prototype.createOscillator; AC.prototype.createOscillator = function () { window.__notes++; return make.apply(this, arguments); };
+  });
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.cantor': { order: run(1, 54), pos: 5, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], juego: '', wins: [], settings: { speak: false, sound: true, awake: false, check: false, pace: 'slow' } } });
+    await page.goto(base + 'cantor.html');
+    const calling = async () => await page.getAttribute('#playBtn', 'aria-label') === 'Pause', fanfares = () => page.evaluate(() => window.__notes / 6);
+    await page.click('#playBtn');
+    assert.ok(await calling());
+    await page.click('#lotBtn');
+    await page.waitForSelector('#winbox .winc #clBack');
+    assert.equal(await fanfares(), 1);
+    assert.ok(!(await calling()), 'calling goes on under the ¡Lotería! box');
+    await page.keyboard.press('Escape');
+    assert.ok(await page.isHidden('#winbox'));
+    assert.ok(await calling(), 'Escape left calling paused');
+    await page.click('#lotBtn'); // somebody else shouts
+    await page.waitForSelector('#winbox .winc #clBack');
+    assert.equal(await fanfares(), 2, 'the second ¡Lotería! was silent');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('cantor: checks a printed tabla by juego and number (CANELA 7 never changes)', async () => {
   // Printed sheets outlive code: tabla 7 of juego CANELA must always be these cards.
   const CANELA7 = [21, 51, 23, 6, 16, 33, 8, 4, 14, 20, 9, 40, 29, 41, 13, 25];
