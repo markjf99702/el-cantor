@@ -109,6 +109,22 @@ check('fonts: every page has Bree Serif and Nunito Sans, served from here', asyn
   } finally { await ctx.close(); }
 });
 
+check('colours: the light palette’s muted text reads at 4.5:1 on every page', async () => {
+  // --ink3 is the eyebrows, BEFORE, the sábana counts, the tabla labels, “Nothing called yet” and the footer.
+  const lum = hex => { const c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255).map(v => v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+  const ratio = (a, b) => { const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x); return (hi + 0.05) / (lo + 0.05); };
+  const ctx = await context(PHONE, { colorScheme: 'light' });
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    for (const p of ['', 'cantor.html', 'board.html', 'print.html']) {
+      await page.goto(base + p);
+      const [ink3, ...under] = await page.evaluate(() => { const s = getComputedStyle(document.documentElement); return ['--ink3', '--bg', '--paper'].map(k => s.getPropertyValue(k).trim()); });
+      for (const bg of under) assert.ok(ratio(ink3, bg) >= 4.5, `${p || 'index.html'}: ${ink3} on ${bg} is ${ratio(ink3, bg).toFixed(2)}:1`);
+    }
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('no JavaScript: every page says what it needs it for', async () => {
   assert.ok(existsSync(join(root, '.nojekyll')), 'no .nojekyll, so GitHub Pages runs Jekyll over the site');
   const ctx = await context(PHONE, { javaScriptEnabled: false });
