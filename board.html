@@ -616,6 +616,7 @@ a{color:var(--teal);font-weight:700}
   // Tablas from Google Drive, or from another My tablas window on this device, have landed in the save here.
   function landed(fromDrive) {
     try { var o = loaded(JSON.parse(localStorage.getItem(LS))); if (o) { S = o; firstRun = false; } } catch (e) { }
+    readG(); // the round as saved, too: evaluate() writes it back, and this window may not have another one's calls yet
     if (reopen) { var f = reopen, top = sheetScroll(); closeSheet(); f(); sheetScroll(top); }
     else if (UI.welcome && !firstRun) { closeSheet(); toast(fromDrive ? 'Your tablas are here from Google Drive' : 'Playing as ' + player().name); }
     UI.focus = null; evaluate(false); render();

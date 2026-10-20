@@ -520,6 +520,27 @@ check('board: two windows on one device keep the cards each other calls', async 
   } finally { await ctx.close(); }
 });
 
+check('board: back from the browser’s history, a window keeps the cards another one called while it changed a tabla', async () => {
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.v1': ANA, 'loteria.game': { called: [1], announced: {} } });
+    await page.goto(base + 'board.html');
+    await until(page, () => document.querySelectorAll('#boards .cell.marked').length === 1);
+    // Meanwhile the other window renamed Mine 2 and called El Diablito and La Dama. Saved from this page, so it hears
+    // nothing, the way a page in the back/forward cache doesn't.
+    await page.evaluate(() => {
+      const o = JSON.parse(localStorage.getItem('loteria.v1')); o.players[0].boards[1].name = 'Mía'; localStorage.setItem('loteria.v1', JSON.stringify(o));
+      localStorage.setItem('loteria.game', JSON.stringify({ called: [1, 2, 3], announced: {} }));
+      dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true }));
+    });
+    assert.deepEqual((await saved(page, 'loteria.game')).called, [1, 2, 3], 'it put its own older round back over the other window’s calls');
+    await until(page, () => document.querySelectorAll('#boards .cell.marked').length === 3);
+    await until(page, () => document.querySelectorAll('#boards .tabla .lbl .k')[1].textContent.indexOf('Mía') === 0);
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('board: the Tablas sheet stays where it was after a square is changed', async () => {
   const ctx = await context(PHONE);
   try {
