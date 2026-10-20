@@ -255,7 +255,7 @@ check('cantor: Escape on the ¡Lotería! box keeps calling, as Keep calling does
     assert.equal(await fanfares(), 1);
     assert.ok(!(await calling()), 'calling goes on under the ¡Lotería! box');
     await page.keyboard.press('Escape');
-    assert.ok(await page.isHidden('#winbox'));
+    assert.ok(await page.evaluate(() => document.getElementById('winbox').hidden), 'the ¡Lotería! box is still up');
     assert.ok(await calling(), 'Escape left calling paused');
     await page.click('#lotBtn'); // somebody else shouts
     await page.waitForSelector('#winbox .winc #clBack');
@@ -916,7 +916,7 @@ check('board: the squares, the Tablas sheet and Cantaron… work from the keyboa
     await page.waitForSelector('#winbox .winc');
     assert.equal(await active(), 'winOk');
     await page.keyboard.press('Enter'); // Keep playing
-    assert.ok(await page.isHidden('#winbox'));
+    assert.ok(await page.evaluate(() => document.getElementById('winbox').hidden), 'the ¡Lotería! box is still up');
     assert.deepEqual(await called(), [1, 2, 3, 4], 'Enter on the ¡Lotería! tapped a square');
     assert.equal(await active(), 'El Catrín, called');
     // The Tablas sheet: Enter on a square opens the picker, Space on a card puts it there, and the focus comes back to the square.
@@ -945,7 +945,7 @@ check('board: the squares, the Tablas sheet and Cantaron… work from the keyboa
     await page.waitForSelector('#winbox .winc');
     await until(page, () => document.activeElement.id === 'winOk');
     await page.keyboard.press('Enter');
-    assert.ok(await page.isHidden('#winbox'));
+    assert.ok(await page.evaluate(() => document.getElementById('winbox').hidden), 'the ¡Lotería! box is still up');
     assert.equal(await active(), 'pkq');
     assert.deepEqual(problems, []);
   } finally { await ctx.close(); }
