@@ -264,6 +264,33 @@ check('cantor: Escape on the ¡Lotería! box keeps calling, as Keep calling does
   } finally { await ctx.close(); }
 });
 
+check('cantor: Space starts and pauses after a sheet closed with the mouse, and presses a button the keyboard is on', async () => {
+  const ctx = await context(DESKTOP);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.cantor': { order: run(1, 54), pos: 3, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], juego: '', wins: [], settings: { speak: false, sound: false, awake: false, check: false, pace: 'slow' } } });
+    await page.goto(base + 'cantor.html');
+    const calling = async () => await page.getAttribute('#playBtn', 'aria-label') === 'Pause';
+    const sheetUp = () => page.evaluate(() => !document.getElementById('sheet').hidden);
+    // A closed sheet gives the focus back to its button; with the mouse, Space still starts and pauses (README).
+    for (const [open, close] of [['#patBtn', '#ptx'], ['#setBtn', 'outside']]) {
+      await page.click(open);
+      if (close === 'outside') await page.mouse.click(640, 6); else await page.click(close);
+      assert.ok(!(await sheetUp()), `${open}'s sheet didn't close`);
+      const was = await calling();
+      await page.keyboard.press(' ');
+      assert.ok(!(await sheetUp()), `Space opened ${open}'s sheet again`);
+      assert.equal(await calling(), !was, `Space didn't ${was ? 'pause' : 'start'} calling after ${open}'s sheet`);
+    }
+    // With the keyboard on a button, Space presses it.
+    await page.focus('#setBtn'); await page.keyboard.press('Shift+Tab'); await page.keyboard.press('Tab');
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'setBtn');
+    await page.keyboard.press(' ');
+    assert.equal(await sheetTitle(page), 'Settings', 'Space on Settings from the keyboard didn’t open it');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('cantor: checks a printed tabla by juego and number (CANELA 7 never changes)', async () => {
   // Printed sheets outlive code: tabla 7 of juego CANELA must always be these cards.
   const CANELA7 = [21, 51, 23, 6, 16, 33, 8, 4, 14, 20, 9, 40, 29, 41, 13, 25];

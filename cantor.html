@@ -679,8 +679,10 @@ a.chip{text-decoration:none}
 
   // ---------- sheets ----------
   // A sheet takes the focus when it opens: the sheet itself, not its first box, which would put a phone's keyboard up.
-  // It gives the focus back to whatever opened it when it closes.
-  function openSheet(html) { var s = $('sheet'); if (s.hidden) UI.opener = document.activeElement; s.innerHTML = '<div class="sheetbg"><div class="sheet" role="dialog" aria-modal="true" tabindex="-1">' + html + '</div></div>'; s.hidden = false; s.querySelector('.sheetbg').addEventListener('click', function (e) { if (e.target === e.currentTarget) closeSheet(); }); UI.sheet = s.querySelector('.sheet'); UI.sheet.focus({ preventScroll: true }); return UI.sheet; }
+  // It gives the focus back to the button the keyboard opened it from when it closes. Not to one the mouse clicked:
+  // Space there would press that button again instead of starting or pausing.
+  function keyed(el) { try { return el.matches(':focus-visible'); } catch (x) { return false; } }
+  function openSheet(html) { var s = $('sheet'); if (s.hidden) UI.opener = keyed(document.activeElement) ? document.activeElement : null; s.innerHTML = '<div class="sheetbg"><div class="sheet" role="dialog" aria-modal="true" tabindex="-1">' + html + '</div></div>'; s.hidden = false; s.querySelector('.sheetbg').addEventListener('click', function (e) { if (e.target === e.currentTarget) closeSheet(); }); UI.sheet = s.querySelector('.sheet'); UI.sheet.focus({ preventScroll: true }); return UI.sheet; }
   function closeSheet() { var s = $('sheet'); if (s.hidden) return; s.hidden = true; s.innerHTML = ''; UI.sheet = null; UI.onVoices = null; var o = UI.opener; UI.opener = null; if (o && o !== document.body && o.isConnected) o.focus({ preventScroll: true }); if (UI.onClose) { var f = UI.onClose; UI.onClose = null; f(); } }
 
   function patternSheet(title) {
