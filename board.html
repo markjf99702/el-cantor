@@ -92,6 +92,8 @@ input:focus-visible,button:focus-visible{outline:2px solid var(--teal);outline-o
 .cell img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
 .cell.dim::before{content:"";position:absolute;inset:0;background:rgba(20,12,8,.62);z-index:2}
 .cell.hit{outline:3px solid var(--gold);outline-offset:-3px;z-index:3}
+.cell[role=button]:focus-visible{outline:none}
+.cell[role=button]:focus-visible::after{content:"";position:absolute;inset:0;z-index:7;box-shadow:inset 0 0 0 3px var(--teal);animation:none;pointer-events:none} /* over the picture, which an outline sits under */
 .cell.marked img{filter:brightness(.55) saturate(.7)}
 .cell .mk{position:absolute;left:50%;top:50%;z-index:4;pointer-events:none;width:78%;aspect-ratio:1;transform:translate(-50%,-50%) rotate(var(--rot,0deg)) scale(1);filter:drop-shadow(0 2px 4px rgba(0,0,0,.6))}
 .cell .mk svg{width:100%;height:100%;display:block}
@@ -127,6 +129,7 @@ input:focus-visible,button:focus-visible{outline:2px solid var(--teal);outline-o
 .pk.called::after{content:"✓";position:absolute;top:6px;right:8px;background:var(--green);color:#fff;border-radius:999px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
 .pk.used{outline:2px solid var(--teal)}
 .pk.taken{opacity:.35}
+.pk:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .row.sp{justify-content:space-between;flex-wrap:nowrap}
 .row.sp>div{flex:1;min-width:0}
@@ -295,8 +298,15 @@ a{color:var(--teal);font-weight:700}
     el.innerHTML = '<img src="' + src(n) + '" alt=""><div class="t"><div class="n"><small>' + c.n + '</small>' + c.name + (onb ? '' : ' <small style="color:var(--red)">not on your tablas</small>') + '</div><div class="v">' + c.verse + '</div></div><button class="undo" type="button" id="undoBtn" aria-label="Undo the last call" title="Undo the last call">↶</button>';
     $('undoBtn').addEventListener('click', function () { G.called.pop(); tick(); evaluate(false); render(); });
   }
+  // Where the keyboard's focus is on the tablas, to put it back once they're drawn again: a square, or a label's button.
+  function boardSpot() { var a = document.activeElement, t = a && a.closest && a.closest('#boards .tabla'); return t ? { id: t.dataset.id, i: a.dataset.i, z: a.classList.contains('z') } : null; }
+  function toSpot(at) {
+    var t = at && [].filter.call($('boards').children, function (x) { return x.dataset.id === at.id; })[0];
+    var el = t && (at.i != null ? t.querySelector('.cell[data-i="' + at.i + '"]') : t.querySelector(at.z ? '.z' : '.k'));
+    if (el) el.focus({ preventScroll: true });
+  }
   function renderBoards() {
-    var p = player(), host = $('boards'), guide = S.settings.guide ? guideCells() : null;
+    var p = player(), host = $('boards'), guide = S.settings.guide ? guideCells() : null, back = boardSpot();
     host.innerHTML = '';
     var list = p.boards.map(function (b, i) { return { b: b, i: i }; }).filter(function (x) { return UI.focus == null || x.b.id === UI.focus; });
     if (UI.focus != null && !list.length) { UI.focus = null; list = p.boards.map(function (b, i) { return { b: b, i: i }; }); }
@@ -308,8 +318,8 @@ a{color:var(--teal);font-weight:700}
       lbl.querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () { if (p.boards.length < 2) return; UI.focus = UI.focus == null ? bd.id : null; renderBoards(); }); });
       var g = document.createElement('div'); g.className = 'grid';
       bd.cards.forEach(function (n, ci) {
-        var cell = document.createElement('div'); cell.className = 'cell' + (guide && !guide[ci] ? ' dim' : '') + (hitCells[ci] ? ' hit' : '');
-        if (real(n)) cell.innerHTML = '<img src="' + src(n) + '" alt="' + esc(card(n).name) + '" loading="lazy" draggable="false">';
+        var cell = document.createElement('div'); cell.className = 'cell' + (guide && !guide[ci] ? ' dim' : '') + (hitCells[ci] ? ' hit' : ''); cell.dataset.i = ci;
+        if (real(n)) { cell.innerHTML = '<img src="' + src(n) + '" alt="" loading="lazy" draggable="false">'; cell.setAttribute('role', 'button'); cell.tabIndex = 0; cell.setAttribute('aria-label', card(n).name + (isCalled(n) ? ', called' : '')); }
         if (isCalled(n)) { cell.classList.add('marked'); var mk = document.createElement('div'); mk.className = 'mk' + (G.called[G.called.length - 1] === n ? ' new' : ''); mk.style.setProperty('--rot', rotFor(x.i, ci) + 'deg'); mk.innerHTML = markerSvg(); cell.appendChild(mk); }
         cell.addEventListener('click', function () { if (real(n)) call(n); });
         g.appendChild(cell);
@@ -317,6 +327,7 @@ a{color:var(--teal);font-weight:700}
       t.appendChild(lbl); t.appendChild(g); host.appendChild(t);
     });
     layout();
+    toSpot(back);
   }
   function layout() {
     var host = $('boards'), n = host.children.length; if (!n) return;
@@ -351,9 +362,18 @@ a{color:var(--teal);font-weight:700}
     var more = wins.length > 1 ? ' — and ' + (wins.length - 1) + ' more' : '';
     box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p><b>' + esc(w.board.name) + '</b> · ' + esc(w.hit.pat.name) + more + '</p><p class="note">Shout it before somebody else does.</p><div class="row"><button class="btn red" type="button" id="winOk">Keep playing</button><button class="btn sec" type="button" id="winClear">New round</button></div></div></div>';
     box.hidden = false;
-    $('winOk').addEventListener('click', function () { box.hidden = true; });
-    $('winClear').addEventListener('click', function () { box.hidden = true; clearRound(); });
-    box.querySelector('.winbg').addEventListener('click', function (e) { if (e.target === e.currentTarget) box.hidden = true; });
+    // Keep playing takes the focus once the key that made the win is done (or that Enter would press it too). Closing
+    // the win gives it back: to the square the win came from, or to Cantaron…'s search box on a computer.
+    var back = boardSpot() || document.activeElement;
+    setTimeout(function () { if (!box.hidden && $('winOk')) $('winOk').focus(); }, 0);
+    function done() {
+      box.hidden = true;
+      if (!back || !back.nodeType) toSpot(back);
+      else if (back !== document.body && back.isConnected && !(back.tagName === 'INPUT' && 'ontouchstart' in window)) back.focus({ preventScroll: true });
+    }
+    $('winOk').addEventListener('click', done);
+    $('winClear').addEventListener('click', function () { done(); clearRound(); });
+    box.querySelector('.winbg').addEventListener('click', function (e) { if (e.target === e.currentTarget) done(); });
   }
 
   // ---------- sheets ----------
@@ -374,12 +394,15 @@ a{color:var(--teal);font-weight:700}
       CARDS.forEach(function (c) {
         if (f && !(c.key.indexOf(f) >= 0 || (num && c.n === num))) return;
         var d = document.createElement('div'); d.className = 'pk' + (mode === 'call' && isCalled(c.n) ? ' called' : '') + (taken && taken.indexOf(c.n) >= 0 ? ' taken' : '');
+        d.setAttribute('role', 'button'); d.tabIndex = 0; d.setAttribute('aria-label', c.name + (mode === 'call' && isCalled(c.n) ? ', called' : '')); d.dataset.n = c.n;
         d.innerHTML = '<span class="num">' + c.n + '</span><img src="' + src(c.n) + '" alt="" loading="lazy"><div class="n">' + c.name + '</div>';
         d.addEventListener('click', function () {
+          var had = document.activeElement === d;
           onPick(c.n); if (mode !== 'call') return;
-          // A phone leaves its keyboard down (it would cover the cards), so the whole deck comes back for the next card;
-          // a computer keeps the card it just called in view, with the box ready to type the next one.
-          if ('ontouchstart' in window) { q.value = ''; draw(); } else { draw(); q.value = ''; q.focus(); }
+          // A phone leaves its keyboard down (it would cover the cards), so the whole deck comes back for the next card,
+          // and a card with the focus keeps it; a computer keeps the card it just called in view, with the box ready to
+          // type the next one.
+          if ('ontouchstart' in window) { q.value = ''; draw(); var again = had && grid.querySelector('[data-n="' + c.n + '"]'); if (again) again.focus({ preventScroll: true }); } else { draw(); q.value = ''; q.focus(); }
         });
         grid.appendChild(d);
       });
@@ -461,12 +484,13 @@ a{color:var(--teal);font-weight:700}
         // Doubles, and how many of a card a tabla saved before the family rule holds: "Twice: El Paraguas · 3×: La Luna".
         var by = {}; Object.keys(counts).forEach(function (n) { if (counts[n] > 1 && real(+n)) (by[counts[n]] = by[counts[n]] || []).push(card(+n).name); });
         var dups = Object.keys(by).map(function (k) { return (k === '2' ? 'Twice' : k + '×') + ': ' + by[k].join(', '); }).join(' · ');
-        var w = document.createElement('div');
+        var w = document.createElement('div'); w.dataset.id = bd.id;
         w.innerHTML = '<input value="' + esc(bd.name) + '" aria-label="Tabla name"><div class="eg"></div>' + (dups ? '<div class="warn">' + dups + '</div>' : '') + '<div class="row" style="margin-top:8px"><button class="btn sec sm" type="button" data-a="rnd">Random tabla</button>' + (p.boards.length > 1 ? '<button class="btn sec sm" type="button" data-a="del">Remove</button>' : '') + '</div>';
         var inp = w.querySelector('input'); inp.addEventListener('change', function () { bd.name = inp.value.trim() || ('Tabla ' + (bi + 1)); save(); render(); });
         var eg = w.querySelector('.eg');
         bd.cards.forEach(function (n, ci) {
-          var cell = document.createElement('div'); cell.className = 'cell'; cell.innerHTML = real(n) ? '<img src="' + src(n) + '" alt="' + esc(card(n).name) + '" draggable="false">' : '';
+          var cell = document.createElement('div'); cell.className = 'cell'; cell.innerHTML = real(n) ? '<img src="' + src(n) + '" alt="" draggable="false">' : '';
+          cell.setAttribute('role', 'button'); cell.tabIndex = 0; cell.setAttribute('aria-label', real(n) ? card(n).name : 'Empty square');
           cell.addEventListener('click', function () {
             var top = sheetScroll();
             pickerSheet('edit', function (pick) {
@@ -477,6 +501,8 @@ a{color:var(--teal);font-weight:700}
               if (now && now.cards[ci] !== pick && now.cards.filter(function (x, k) { return x === pick && k !== ci; }).length >= 2) { toast(card(pick).name + ' is already on ' + now.name + ' twice'); return; }
               if (now) { now.cards[ci] = pick; save(); } else toast(bd.name + ' was removed on another device');
               closeSheet(); tablasSheet(); sheetScroll(top); evaluate(false); render();
+              var again = [].filter.call($('edb').children, function (x) { return x.dataset.id === bd.id; })[0]; // back on the square it changed
+              if (again) again.querySelectorAll('.eg .cell')[ci].focus({ preventScroll: true });
             }, bd.cards.filter(function (x, k) { return k !== ci; }));
           });
           eg.appendChild(cell);
@@ -625,7 +651,12 @@ a{color:var(--teal);font-weight:700}
     $('clOk').addEventListener('click', function () { closeSheet(); clearRound(); });
     $('clNo').addEventListener('click', closeSheet);
   });
-  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { if (!UI.welcome) closeSheet(); $('winbox').hidden = true; } }); // the first-visit sheet waits for a choice
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { if (!UI.welcome) closeSheet(); if (!$('winbox').hidden && $('winOk')) $('winOk').click(); else $('winbox').hidden = true; return; } // the first-visit sheet waits for a choice
+    // Squares and cards are buttons, as in Make tablas: Enter or Space taps one.
+    var b = (e.key === 'Enter' || e.key === ' ') && $('winbox').hidden && e.target.closest && e.target.closest('[role="button"]');
+    if (b) { e.preventDefault(); if (!e.repeat) b.click(); }
+  });
   window.addEventListener('resize', layout);
   if (window.visualViewport) window.visualViewport.addEventListener('resize', layout);
   render();

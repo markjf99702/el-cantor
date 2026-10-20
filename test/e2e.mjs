@@ -844,6 +844,65 @@ check('sheets: a sheet takes the focus when it opens, with no phone keyboard, an
   }
 });
 
+check('board: the squares, the Tablas sheet and Cantaron… work from the keyboard', async () => {
+  const ctx = await context(DESKTOP);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.v1': ANA });
+    await page.goto(base + 'board.html');
+    const active = () => page.evaluate(() => { const a = document.activeElement; return a.getAttribute('aria-label') || a.id || a.className; });
+    const called = async () => ((await saved(page, 'loteria.game')) || { called: [] }).called;
+    // A square on Mine 1 (El Gallo, El Diablito, La Dama, El Catrín along the top): Enter calls it, Space takes it back.
+    await page.locator('#boards .tabla').first().locator('.cell').nth(2).focus();
+    assert.equal(await active(), 'La Dama', 'a square can’t take the focus');
+    await page.keyboard.press('Enter');
+    assert.deepEqual(await called(), [3]);
+    assert.equal(await active(), 'La Dama, called', 'the focus left the square');
+    await page.keyboard.press(' ');
+    assert.deepEqual(await called(), []);
+    await page.keyboard.press('Tab');
+    assert.equal(await active(), 'El Catrín');
+    // The top row from the keyboard: the ¡Lotería! takes the focus, so Enter can't tap the square under it, and gives it back.
+    for (const k of [0, 1, 2]) { await page.locator('#boards .tabla').first().locator('.cell').nth(k).focus(); await page.keyboard.press('Enter'); }
+    await page.locator('#boards .tabla').first().locator('.cell').nth(3).focus(); await page.keyboard.press('Enter');
+    await page.waitForSelector('#winbox .winc');
+    assert.equal(await active(), 'winOk');
+    await page.keyboard.press('Enter'); // Keep playing
+    assert.ok(await page.isHidden('#winbox'));
+    assert.deepEqual(await called(), [1, 2, 3, 4], 'Enter on the ¡Lotería! tapped a square');
+    assert.equal(await active(), 'El Catrín, called');
+    // The Tablas sheet: Enter on a square opens the picker, Space on a card puts it there, and the focus comes back to the square.
+    await page.focus('#tablasBtn'); await page.keyboard.press('Enter');
+    await page.locator('#edb .eg').first().locator('.cell').nth(5).focus();
+    assert.equal(await active(), 'La Sirena');
+    await page.keyboard.press('Enter');
+    assert.equal(await page.getAttribute('#pkq', 'placeholder'), 'Pick a card for this square');
+    await page.locator('#pk .pk', { hasText: 'La Rana' }).focus(); await page.keyboard.press(' ');
+    assert.equal((await saved(page, 'loteria.v1')).players[0].boards[0].cards[5], 54);
+    assert.equal(await page.evaluate(() => document.activeElement === document.querySelectorAll('#edb .eg')[0].querySelectorAll('.cell')[5]), true, 'the focus isn’t on the square that changed');
+    assert.equal(await active(), 'La Rana');
+    await page.keyboard.press('Escape');
+    assert.equal(await active(), 'tablasBtn');
+    // Cantaron…: Tab past the search box and Done to the cards, and Enter calls one.
+    await page.focus('#callBtn'); await page.keyboard.press('Enter');
+    await page.keyboard.press('Tab'); await page.keyboard.press('Tab');
+    assert.equal(await active(), 'El Gallo, called');
+    for (let i = 0; i < 4; i++) await page.keyboard.press('Tab'); // past El Diablito, La Dama and El Catrín, called too
+    assert.equal(await active(), 'El Paraguas');
+    await page.keyboard.press('Enter');
+    assert.deepEqual(await called(), [1, 2, 3, 4, 5]);
+    // A win typed in the search box (Esquinas, with El Gorrito and La Bandera): the same Enter doesn't close it, and
+    // Keep playing goes back to the box for the next card.
+    for (const n of ['13', '16']) { await page.fill('#pkq', n); await page.press('#pkq', 'Enter'); }
+    await page.waitForSelector('#winbox .winc');
+    await until(page, () => document.activeElement.id === 'winOk');
+    await page.keyboard.press('Enter');
+    assert.ok(await page.isHidden('#winbox'));
+    assert.equal(await active(), 'pkq');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 // ---------------------------------------------------------------- damaged saves
 check('saves: a damaged save opens with what can be kept, instead of a blank page or an error', async () => {
   for (const tool of ['board', 'cantor', 'print']) {
