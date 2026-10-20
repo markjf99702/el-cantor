@@ -473,7 +473,8 @@ a{color:var(--teal);font-weight:700}
           });
           eg.appendChild(cell);
         });
-        w.querySelector('[data-a="rnd"]').addEventListener('click', function () { var r = randomBoard(bd.name); bd.cards = r.cards; save(); draw(); evaluate(false); render(); });
+        var rnd = w.querySelector('[data-a="rnd"]'), rndArmed = false; // a hand-made tabla is 16 picks of work
+        rnd.addEventListener('click', function () { if (!rndArmed) { rndArmed = true; this.textContent = 'Tap again to replace ' + bd.name + '’s cards'; return; } var r = randomBoard(bd.name); bd.cards = r.cards; save(); draw(); evaluate(false); render(); });
         var del = w.querySelector('[data-a="del"]'), rmArmed = false;
         if (del) del.addEventListener('click', function () { if (!rmArmed) { rmArmed = true; this.textContent = 'Tap again to remove ' + bd.name; return; } p.boards.splice(bi, 1); save(); UI.focus = null; draw(); evaluate(false); render(); });
         host.appendChild(w);

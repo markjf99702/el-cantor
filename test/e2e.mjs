@@ -648,7 +648,7 @@ check('board: Settings keeps each On/Off beside its words on a phone', async () 
   } finally { await ctx.close(); }
 });
 
-check('board: Restore the original four and Remove a tabla ask for a second tap', async () => {
+check('board: Restore the original four, Remove and Random tabla ask for a second tap', async () => {
   const ctx = await context(PHONE);
   try {
     const page = await ctx.newPage(), problems = watch(page);
@@ -671,6 +671,14 @@ check('board: Restore the original four and Remove a tabla ask for a second tap'
     await del.click();
     assert.deepEqual(await names(), ['Tabla 2', 'Tabla 3', 'Tabla 4']);
     assert.equal(await page.locator('#edb [data-a="del"]').first().textContent(), 'Remove', 'the next Remove asks again');
+    // Random tabla deals Tabla 3 sixteen new cards, which may have been picked by hand.
+    const third = async () => (await saved(page, 'loteria.v1')).players[0].boards[1].cards, was = await third(), rnd = page.locator('#edb [data-a="rnd"]').nth(1);
+    await rnd.click();
+    assert.deepEqual(await third(), was, 'one tap replaced Tabla 3’s cards');
+    assert.equal(await rnd.textContent(), 'Tap again to replace Tabla 3’s cards');
+    await rnd.click();
+    assert.notDeepEqual(await third(), was);
+    assert.equal(await page.locator('#edb [data-a="rnd"]').nth(1).textContent(), 'Random tabla', 'the next Random tabla asks again');
     assert.deepEqual(problems, []);
   } finally { await ctx.close(); }
 });
