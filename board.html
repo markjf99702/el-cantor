@@ -363,9 +363,10 @@ a{color:var(--teal);font-weight:700}
     box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p><b>' + esc(w.board.name) + '</b> · ' + esc(w.hit.pat.name) + more + '</p><p class="note">Shout it before somebody else does.</p><div class="row"><button class="btn red" type="button" id="winOk">Keep playing</button><button class="btn sec" type="button" id="winClear">New round</button></div></div></div>';
     box.hidden = false;
     // Keep playing takes the focus once the key that made the win is done (or that Enter would press it too). Closing
-    // the win gives it back: to the square the win came from, or to Cantaron…'s search box on a computer.
-    var back = boardSpot() || document.activeElement;
-    setTimeout(function () { if (!box.hidden && $('winOk')) $('winOk').focus(); }, 0);
+    // the win gives it back to where it was by then: the square the win came from, or Cantaron…'s search box on a
+    // computer, whether the card was typed or picked.
+    var back = null;
+    setTimeout(function () { if (!box.hidden && $('winOk')) { back = boardSpot() || document.activeElement; $('winOk').focus(); } }, 0);
     function done() {
       box.hidden = true;
       if (!back || !back.nodeType) toSpot(back);

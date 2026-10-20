@@ -951,6 +951,24 @@ check('board: the squares, the Tablas sheet and Cantaron… work from the keyboa
   } finally { await ctx.close(); }
 });
 
+check('board: a ¡Lotería! from a card picked in Cantaron… gives the keyboard back to the search box on a computer', async () => {
+  const ctx = await context(DESKTOP);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.v1': ANA, 'loteria.game': { called: [1, 2, 3], announced: {} } });
+    await page.goto(base + 'board.html');
+    await page.focus('#callBtn'); await page.keyboard.press('Enter');
+    await page.fill('#pkq', 'catr'); // El Catrín, the last of Mine 1's top row
+    await page.locator('#pk .pk').first().focus(); await page.keyboard.press('Enter');
+    await until(page, () => document.activeElement && document.activeElement.id === 'winOk');
+    await page.keyboard.press('Enter'); // Keep playing
+    assert.ok(await page.evaluate(() => document.getElementById('winbox').hidden), 'Keep playing didn’t close the ¡Lotería!');
+    assert.deepEqual((await saved(page, 'loteria.game')).called, [1, 2, 3, 4]);
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'pkq', 'the focus was dropped');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 // ---------------------------------------------------------------- damaged saves
 check('saves: a damaged save opens with what can be kept, instead of a blank page or an error', async () => {
   for (const tool of ['board', 'cantor', 'print']) {
