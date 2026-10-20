@@ -109,6 +109,7 @@ input:focus-visible,button:focus-visible{outline:2px solid var(--teal);outline-o
 /* sheets */
 .sheetbg{position:fixed;inset:0;background:rgba(30,20,14,.5);z-index:40;display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:var(--bg);width:min(760px,100%);max-height:calc(100% - 20px - var(--sat));display:flex;flex-direction:column;border-radius:18px 18px 0 0;border-top:3px solid var(--red);padding-bottom:var(--sab)}
+.sheet:focus{outline:none} /* it takes the focus when it opens, for the keyboard and screen readers */
 .sheet .hd{display:flex;gap:8px;align-items:center;padding:12px 14px 8px;flex:none}
 .sheet .hd h2{margin:0;font:400 20px/1 var(--disp);flex:1}
 .sheet .hd input{flex:1}
@@ -356,9 +357,11 @@ a{color:var(--teal);font-weight:700}
   }
 
   // ---------- sheets ----------
-  function openSheet(html) { reopen = null; UI.welcome = false; var s = $('sheet'); s.innerHTML = '<div class="sheetbg"><div class="sheet">' + html + '</div></div>'; s.hidden = false; s.querySelector('.sheetbg').addEventListener('click', function (e) { if (e.target === e.currentTarget) closeSheet(); }); return s.querySelector('.sheet'); }
+  // A sheet takes the focus when it opens: the sheet itself, not its first box, which would put a phone's keyboard up.
+  // It gives the focus back to whatever opened it when it closes. Who's playing waits for a choice, so a tap outside it does nothing.
+  function openSheet(html) { reopen = null; UI.welcome = false; var s = $('sheet'); if (s.hidden) UI.opener = document.activeElement; s.innerHTML = '<div class="sheetbg"><div class="sheet" role="dialog" aria-modal="true" tabindex="-1">' + html + '</div></div>'; s.hidden = false; s.querySelector('.sheetbg').addEventListener('click', function (e) { if (e.target === e.currentTarget && !UI.welcome) closeSheet(); }); var sh = s.querySelector('.sheet'); sh.focus({ preventScroll: true }); return sh; }
   var reopen = null; // the open sheet that holds a player's tablas, to reopen when synced tablas land
-  function closeSheet() { $('sheet').hidden = true; $('sheet').innerHTML = ''; UI.sheet = null; reopen = null; UI.welcome = false; }
+  function closeSheet() { var was = !$('sheet').hidden, o = UI.opener; $('sheet').hidden = true; $('sheet').innerHTML = ''; UI.sheet = null; reopen = null; UI.welcome = false; UI.opener = null; if (was && o && o !== document.body && o.isConnected) o.focus({ preventScroll: true }); }
   // How far down the open sheet is, to come back to the same place when it's drawn again.
   function sheetScroll(top) { var b = document.querySelector('#sheet .bd'); if (!b) return 0; if (top != null) b.scrollTop = top; return b.scrollTop; }
 
@@ -555,8 +558,8 @@ a{color:var(--teal);font-weight:700}
   // Who's playing. Nothing is saved before one or the other, so the stand-in Mark never sticks.
   function importSheet(imp) {
     var first = firstRun, existing = first ? null : S.players.filter(function (p) { return p.name.toLowerCase() === imp.name.toLowerCase(); })[0];
-    var sh = openSheet('<div class="hd"><h2>Tablas from ' + esc(imp.name) + '</h2></div><div class="bd stack"><p class="note">This link carries ' + imp.boards.length + ' tabla' + (imp.boards.length === 1 ? '' : 's') + ' for “' + esc(imp.name) + '”.' + (existing ? ' You already have a ' + esc(existing.name) + ' on this device — importing replaces their tablas.' : '') + '</p><div class="row"><button class="btn red" type="button" id="imOk">' + (existing ? 'Replace and use' : 'Add and use') + '</button><button class="btn sec" type="button" id="imNo">No thanks</button></div></div>');
-    if (first) { sh.parentElement.replaceWith(sh.parentElement.cloneNode(true)); UI.welcome = true; } // waits for a choice, like Who's playing
+    openSheet('<div class="hd"><h2>Tablas from ' + esc(imp.name) + '</h2></div><div class="bd stack"><p class="note">This link carries ' + imp.boards.length + ' tabla' + (imp.boards.length === 1 ? '' : 's') + ' for “' + esc(imp.name) + '”.' + (existing ? ' You already have a ' + esc(existing.name) + ' on this device — importing replaces their tablas.' : '') + '</p><div class="row"><button class="btn red" type="button" id="imOk">' + (existing ? 'Replace and use' : 'Add and use') + '</button><button class="btn sec" type="button" id="imNo">No thanks</button></div></div>');
+    if (first) UI.welcome = true; // waits for a choice, like Who's playing
     reopen = function () { importSheet(imp); }; // tablas from Google Drive landed: ask again with them in place
     $('imNo').addEventListener('click', function () { if (first) welcomeSheet(); else closeSheet(); });
     $('imOk').addEventListener('click', function () {
@@ -568,10 +571,9 @@ a{color:var(--teal);font-weight:700}
 
   // ---------- first visit ----------
   function welcomeSheet() {
-    var sh = openSheet('<div class="hd"><h2>Who’s playing on this device?</h2></div><div class="bd stack"><p class="note">Asked once. Tablas are saved on this phone or tablet' + (window.LoteriaSync && LoteriaSync.ready ? ', and in your own Google Drive if you turn that on below.' : ' only, so what you set up here is yours and nobody else’s.') + '</p><input id="wName" placeholder="Your name" autocomplete="off"><div class="card"><div class="eyebrow">Start with</div><div class="row" style="margin-top:8px"><button class="btn red" type="button" id="wRandom">Random tablas I’ll edit</button><button class="btn sec" type="button" id="wMark">Mark’s four tablas</button></div><p class="note" style="margin-top:8px">Either way you can change every square later under <b>Tablas</b>.</p></div>' +
+    openSheet('<div class="hd"><h2>Who’s playing on this device?</h2></div><div class="bd stack"><p class="note">Asked once. Tablas are saved on this phone or tablet' + (window.LoteriaSync && LoteriaSync.ready ? ', and in your own Google Drive if you turn that on below.' : ' only, so what you set up here is yours and nobody else’s.') + '</p><input id="wName" placeholder="Your name" autocomplete="off"><div class="card"><div class="eyebrow">Start with</div><div class="row" style="margin-top:8px"><button class="btn red" type="button" id="wRandom">Random tablas I’ll edit</button><button class="btn sec" type="button" id="wMark">Mark’s four tablas</button></div><p class="note" style="margin-top:8px">Either way you can change every square later under <b>Tablas</b>.</p></div>' +
       (window.LoteriaSync && LoteriaSync.ready ? '<p class="note">Already saving tablas to Google Drive on another device? Turn it on here and they come right over.</p><div class="card" id="wSync"></div>' : '') + '</div>');
-    sh.parentElement.replaceWith(sh.parentElement.cloneNode(true)); // drop the tap-outside-to-close handler
-    UI.welcome = true;
+    UI.welcome = true; // waits for a choice: no tap outside, no Escape
     if (window.LoteriaSync) LoteriaSync.card($('wSync'));
     function go(mark) {
       var name = $('wName').value.trim() || (mark ? 'Mark' : 'Player');

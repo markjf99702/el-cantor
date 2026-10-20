@@ -164,6 +164,7 @@ a.chip{text-decoration:none}
 /* sheets */
 .sheetbg{position:fixed;inset:0;background:rgba(30,20,14,.5);z-index:40;display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:var(--bg);width:min(780px,100%);max-height:calc(100% - 20px - var(--sat));display:flex;flex-direction:column;border-radius:18px 18px 0 0;border-top:3px solid var(--red);padding-bottom:var(--sab)}
+.sheet:focus{outline:none} /* it takes the focus when it opens, for the keyboard and screen readers */
 .sheet .hd{display:flex;gap:8px;align-items:center;padding:14px 16px 8px;flex:none}
 .sheet .hd h2{margin:0;font:400 21px/1.1 var(--disp);flex:1}
 .sheet .bd{overflow:auto;padding:4px 16px 18px;flex:1;min-height:0;-webkit-overflow-scrolling:touch}
@@ -677,8 +678,10 @@ a.chip{text-decoration:none}
   }
 
   // ---------- sheets ----------
-  function openSheet(html) { var s = $('sheet'); s.innerHTML = '<div class="sheetbg"><div class="sheet" role="dialog" aria-modal="true">' + html + '</div></div>'; s.hidden = false; s.querySelector('.sheetbg').addEventListener('click', function (e) { if (e.target === e.currentTarget) closeSheet(); }); UI.sheet = s.querySelector('.sheet'); return UI.sheet; }
-  function closeSheet() { var s = $('sheet'); if (s.hidden) return; s.hidden = true; s.innerHTML = ''; UI.sheet = null; UI.onVoices = null; if (UI.onClose) { var f = UI.onClose; UI.onClose = null; f(); } }
+  // A sheet takes the focus when it opens: the sheet itself, not its first box, which would put a phone's keyboard up.
+  // It gives the focus back to whatever opened it when it closes.
+  function openSheet(html) { var s = $('sheet'); if (s.hidden) UI.opener = document.activeElement; s.innerHTML = '<div class="sheetbg"><div class="sheet" role="dialog" aria-modal="true" tabindex="-1">' + html + '</div></div>'; s.hidden = false; s.querySelector('.sheetbg').addEventListener('click', function (e) { if (e.target === e.currentTarget) closeSheet(); }); UI.sheet = s.querySelector('.sheet'); UI.sheet.focus({ preventScroll: true }); return UI.sheet; }
+  function closeSheet() { var s = $('sheet'); if (s.hidden) return; s.hidden = true; s.innerHTML = ''; UI.sheet = null; UI.onVoices = null; var o = UI.opener; UI.opener = null; if (o && o !== document.body && o.isConnected) o.focus({ preventScroll: true }); if (UI.onClose) { var f = UI.onClose; UI.onClose = null; f(); } }
 
   function patternSheet(title) {
     openSheet('<div class="hd"><h2>' + esc(title || 'What are we playing?') + '</h2><button class="btn sec sm" type="button" id="ptx">Done</button></div><div class="bd stack"><p class="note">Tell the table what wins this round. <b>Clásico</b> is the regular game — 4 in a row, 4 corners, or 4 in a square. Hold a shape for a second to add it on top of what’s picked; a tabla wins on any one of them. El Cantor checks winning tablas against this.</p><div class="pats" id="pats"></div></div>');

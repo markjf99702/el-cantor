@@ -435,8 +435,8 @@ check('board: calling a card from Cantaron… doesn’t put a phone’s keyboard
       await seed(page, { 'loteria.v1': ANA });
       await page.goto(base + 'board.html');
       await page.click('#callBtn');
-      const focused = () => page.evaluate(() => document.activeElement && document.activeElement.id);
-      assert.equal(await focused(), phone ? 'callBtn' : 'pkq');
+      const focused = () => page.evaluate(() => document.activeElement && (document.activeElement.id || document.activeElement.className));
+      assert.equal(await focused(), phone ? 'sheet' : 'pkq', phone ? 'the sheet doesn’t have the focus' : 'the search box isn’t ready to type in');
       const first = page.locator('#pk .pk').first();
       if (phone) await first.tap(); else await first.click();
       assert.deepEqual((await saved(page, 'loteria.game')).called, [1]);
@@ -813,6 +813,35 @@ check('print: two per page prints every tabla whole (Letter and A4, names on and
     }
     assert.deepEqual(problems, []);
   } finally { await ctx.close(); }
+});
+
+// ---------------------------------------------------------------- the keyboard and screen readers
+check('sheets: a sheet takes the focus when it opens, with no phone keyboard, and gives it back when it closes', async () => {
+  const CANTOR = { order: run(1, 54), pos: 3, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], juego: '', wins: [], settings: { speak: false, sound: false, awake: false, check: false } };
+  for (const [tool, key, data, openers] of [['cantor.html', 'loteria.cantor', CANTOR, ['setBtn', 'patBtn', 'sabBtn', 'printBtn']], ['board.html', 'loteria.v1', ANA, ['tablasBtn', 'patBtn', 'setBtn', 'callBtn']]]) {
+    for (const kind of [PHONE, DESKTOP]) {
+      const ctx = await context(kind);
+      try {
+        const page = await ctx.newPage(), problems = watch(page), phone = kind === PHONE;
+        await seed(page, { [key]: data });
+        await page.goto(base + tool);
+        const active = () => page.evaluate(() => { const a = document.activeElement; return a.id || a.className; });
+        for (const id of openers) {
+          if (!(await page.isVisible('#' + id))) continue; // the sábana has a button only on a phone
+          const what = `${tool}, ${phone ? 'phone' : 'computer'}, #${id}`;
+          await page.focus('#' + id); await page.keyboard.press('Enter');
+          await until(page, () => !document.getElementById('sheet').hidden);
+          // Cantaron… on a computer goes straight to its search box, to type the card's name.
+          assert.equal(await active(), id === 'callBtn' && !phone ? 'pkq' : 'sheet', what + ': the focus stayed behind the sheet');
+          assert.equal(await page.getAttribute('#sheet .sheet', 'role'), 'dialog', what);
+          await page.keyboard.press('Escape');
+          assert.ok(await page.evaluate(() => document.getElementById('sheet').hidden), what + ': Escape didn’t close it');
+          assert.equal(await active(), id, what + ': the focus didn’t come back');
+        }
+        assert.deepEqual(problems, []);
+      } finally { await ctx.close(); }
+    }
+  }
 });
 
 // ---------------------------------------------------------------- damaged saves
