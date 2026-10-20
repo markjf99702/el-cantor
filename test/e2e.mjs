@@ -125,6 +125,28 @@ check('colours: the light palette’s muted text reads at 4.5:1 on every page', 
   } finally { await ctx.close(); }
 });
 
+check('toasts: on a phone a toast uses the width of the screen before it wraps', async () => {
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    for (const p of ['cantor.html', 'board.html', 'print.html']) {
+      await page.goto(base + p);
+      await page.evaluate(() => document.fonts.ready);
+      const shown = text => page.evaluate(text => {
+        const t = document.getElementById('toast'), r = document.createRange();
+        t.textContent = text; t.classList.add('show');
+        r.selectNodeContents(t);
+        return { lines: new Set([...r.getClientRects()].map(x => Math.round(x.top))).size, width: t.getBoundingClientRect().width };
+      }, text);
+      const short = await shown('Put it back — La Sirena is showing'), long = await shown('Paused — another window turned a card, so this one stopped calling and shows that card');
+      assert.equal(short.lines, 1, `${p}: a short toast wraps (${JSON.stringify(short)})`);
+      assert.ok(long.lines === 2 && long.width > 0.85 * 390 && long.width <= 0.9 * 390 + 0.5, `${p}: a long toast (${JSON.stringify(long)})`);
+      await noSideways(page, p + ' with a toast up');
+    }
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('no JavaScript: every page says what it needs it for', async () => {
   assert.ok(existsSync(join(root, '.nojekyll')), 'no .nojekyll, so GitHub Pages runs Jekyll over the site');
   const ctx = await context(PHONE, { javaScriptEnabled: false });
