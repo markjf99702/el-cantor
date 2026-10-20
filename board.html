@@ -450,9 +450,11 @@ a{color:var(--teal);font-weight:700}
       origArmed = false; $('tbOrig').textContent = 'Restore the original four';
       p.boards.forEach(function (bd, bi) {
         var counts = {}; bd.cards.forEach(function (n) { counts[n] = (counts[n] || 0) + 1; });
-        var dups = Object.keys(counts).filter(function (n) { return counts[n] > 1 && real(+n); }).map(function (n) { return card(+n).name; });
+        // Doubles, and how many of a card a tabla saved before the family rule holds: "Twice: El Paraguas · 3×: La Luna".
+        var by = {}; Object.keys(counts).forEach(function (n) { if (counts[n] > 1 && real(+n)) (by[counts[n]] = by[counts[n]] || []).push(card(+n).name); });
+        var dups = Object.keys(by).map(function (k) { return (k === '2' ? 'Twice' : k + '×') + ': ' + by[k].join(', '); }).join(' · ');
         var w = document.createElement('div');
-        w.innerHTML = '<input value="' + esc(bd.name) + '" aria-label="Tabla name"><div class="eg"></div>' + (dups.length ? '<div class="warn">Twice: ' + dups.join(', ') + '</div>' : '') + '<div class="row" style="margin-top:8px"><button class="btn sec sm" type="button" data-a="rnd">Random tabla</button>' + (p.boards.length > 1 ? '<button class="btn sec sm" type="button" data-a="del">Remove</button>' : '') + '</div>';
+        w.innerHTML = '<input value="' + esc(bd.name) + '" aria-label="Tabla name"><div class="eg"></div>' + (dups ? '<div class="warn">' + dups + '</div>' : '') + '<div class="row" style="margin-top:8px"><button class="btn sec sm" type="button" data-a="rnd">Random tabla</button>' + (p.boards.length > 1 ? '<button class="btn sec sm" type="button" data-a="del">Remove</button>' : '') + '</div>';
         var inp = w.querySelector('input'); inp.addEventListener('change', function () { bd.name = inp.value.trim() || ('Tabla ' + (bi + 1)); save(); render(); });
         var eg = w.querySelector('.eg');
         bd.cards.forEach(function (n, ci) {
@@ -462,8 +464,9 @@ a{color:var(--teal);font-weight:700}
             pickerSheet('edit', function (pick) {
               // Tablas from Google Drive may have landed while the picker was open: change the tabla as it is now.
               var now = player().boards.filter(function (b) { return b.id === bd.id; })[0];
-              // The family rule, as in Make tablas: a card can go on a tabla twice, but not three times.
-              if (now && now.cards.filter(function (x, k) { return x === pick && k !== ci; }).length >= 2) { toast(card(pick).name + ' is already on ' + now.name + ' twice'); return; }
+              // The family rule, as in Make tablas: a card can go on a tabla twice, but not three times. A card picked
+              // for the square it's already in stays, even on a tabla saved with it three times.
+              if (now && now.cards[ci] !== pick && now.cards.filter(function (x, k) { return x === pick && k !== ci; }).length >= 2) { toast(card(pick).name + ' is already on ' + now.name + ' twice'); return; }
               if (now) { now.cards[ci] = pick; save(); } else toast(bd.name + ' was removed on another device');
               closeSheet(); tablasSheet(); sheetScroll(top); evaluate(false); render();
             }, bd.cards.filter(function (x, k) { return k !== ci; }));

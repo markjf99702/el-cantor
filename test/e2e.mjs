@@ -505,6 +505,31 @@ check('board: a card goes on a tabla twice but not three times, as in Make tabla
   } finally { await ctx.close(); }
 });
 
+check('board: a tabla saved with a card three times stays as it is, and says how many', async () => {
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    const old = run(1); old[0] = old[1] = old[2] = 23; old[5] = 5; // from before the family rule: La Luna three times, El Paraguas twice
+    await seed(page, { 'loteria.v1': people([{ id: 'm1', name: 'Mine 1', cards: old }]) });
+    await page.goto(base + 'board.html');
+    await page.click('#tablasBtn');
+    assert.equal(await page.textContent('#edb .warn'), 'Twice: El Paraguas · 3×: La Luna');
+    const cards = async () => (await saved(page, 'loteria.v1')).players[0].boards[0].cards;
+    const put = async (square, n) => { await page.locator('#edb .eg .cell').nth(square).click(); await page.fill('#pkq', String(n)); await page.press('#pkq', 'Enter'); };
+    await page.evaluate(() => { document.getElementById('toast').textContent = ''; });
+    await put(1, 23); // La Luna for one of its own squares: nothing to refuse
+    assert.equal(await sheetTitle(page), null);
+    assert.equal(await page.isVisible('#edb .warn'), true, 'the Tablas sheet came back');
+    assert.equal(await page.textContent('#toast'), '', 'La Luna was refused for the square it was already in');
+    assert.deepEqual(await cards(), old);
+    await put(3, 23); // a fourth La Luna
+    await until(page, () => document.getElementById('toast').textContent === 'La Luna is already on Mine 1 twice');
+    await page.click('#pkx');
+    assert.deepEqual(await cards(), old, 'the saved tabla changed');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('board: the game picker works from the keyboard as well as by tapping', async () => {
   const ctx = await context(DESKTOP);
   try {
