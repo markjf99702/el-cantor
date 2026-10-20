@@ -841,6 +841,25 @@ check('drive: a second device gets the tablas, and a rename comes back to the fi
   } finally { await A.ctx.close(); await B.ctx.close(); }
 });
 
+check('drive: a new phone that set up “ana” keeps the family’s “Ana”, with the tablas from both', async () => {
+  const g = fakeGoogle();
+  const A = await driveDevice(g, { 'loteria.v1': ANA });
+  const B = await driveDevice(g, { 'loteria.v1': { ...ANA, players: [{ id: 'b', name: 'ana', boards: [{ id: 'b1', name: 'Mía', cards: run(30) }] }], current: 'b' } });
+  const who = async d => (await saved(d.page, 'loteria.v1')).players.map(p => p.name + ': ' + p.boards.map(b => b.name).sort().join(', '));
+  try {
+    await A.page.goto(base + 'board.html'); await synced(A.page);
+    await B.page.goto(base + 'board.html'); await synced(B.page); // B's first sync: its “ana” is A's Ana
+    assert.deepEqual(await who(B), ['Ana: Mine 1, Mine 2, Mía'], 'the new phone’s spelling won');
+    await until(B.page, () => document.getElementById('who').textContent === 'Ana');
+    const file = JSON.parse(g.files().filter(f => (f.appProperties || {}).loteria === 'sync')[0].body);
+    assert.deepEqual(Object.values(file.cols.people.items).map(i => i.v.name), ['Ana'], 'Drive has the new phone’s spelling');
+    const t = (await saved(A.page, 'loteria.sync')).last;
+    await A.page.evaluate(() => LoteriaSync.now()); await synced(A.page, t);
+    assert.deepEqual(await who(A), ['Ana: Mine 1, Mine 2, Mía']);
+    assert.deepEqual(A.problems, []); assert.deepEqual(B.problems, []);
+  } finally { await A.ctx.close(); await B.ctx.close(); }
+});
+
 check('drive: a shared link on a new phone that saves to Drive asks again once the Drive tablas land', async () => {
   const g = fakeGoogle();
   const A = await driveDevice(g, { 'loteria.v1': ANA });

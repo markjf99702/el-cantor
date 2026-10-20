@@ -55,7 +55,8 @@
           o.current = same ? same.id : o.players.length ? o.players[0].id : undefined;
         }
         return o;
-      }
+      },
+      firstRemote: true // someone set up as "mark" on a device joining keeps the family's "Mark"
     },
     boards: { // …and each of their tablas, merged one tabla at a time
       key: 'loteria.v1',
