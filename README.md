@@ -101,7 +101,7 @@ To put it online with GitHub Pages: **Settings → Pages → Build and deploymen
 - `print.html` — Make tablas.
 - `carry.js` — the first time it opens at el-cantor.junkdrawer.works, brings the tablas saved at its old address, junkdrawer.works/el-cantor/.
 - `manifest.webmanifest`, `icon.svg` and the `icon-*.png` sizes — installing it as an app. `node tools/make-icons.mjs` redraws the PNGs from `icon.svg` and `tools/icon-full-bleed.svg`.
-- `sw.js` — the offline copy: the pages, the fonts, the card pictures, and each voice clip once it has played.
+- `sw.js` — the offline copy: the pages, the fonts, the card pictures, and each voice clip once it has played. On a connection that isn't answering, a page opens from that copy after four seconds. `FILES` in it is a fingerprint of the files it keeps: change one and `npm test` says what to set it to, so a release never leaves the copy half old.
 - `sync.js` — saving to Google Drive: signing in, the Drive file, and merging changes from every device.
 - `deck.js` — the cards, their verses, the winning shapes, Mark's four tablas, and the juego generator. Every page loads it.
   - The generator is frozen: changing it would change every tabla already printed.
