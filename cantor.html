@@ -702,16 +702,15 @@ a.chip{text-decoration:none}
     function draw() {
       var host = $('pats'); host.innerHTML = '';
       PATS.forEach(function (p) {
-        var on = p.combo ? L.isClasico(C.patterns) : (C.patterns.indexOf(p.id) >= 0 && !L.isClasico(C.patterns)), show = p.show || p.sets[0];
+        var both = L.hasClasico(C.patterns), on = p.combo ? both : C.patterns.indexOf(p.id) >= 0 && !(both && L.CLASICO.indexOf(p.id) >= 0), show = p.show || p.sets[0];
         var b = document.createElement('button'); b.type = 'button'; b.className = 'pat' + (on ? ' on' : '');
         b.innerHTML = '<span class="mini">' + ALL.map(function (i) { return '<i class="' + (show.indexOf(i) >= 0 ? (p.combo || p.min || (p.sets && p.sets.length > 1) ? 'q' : 'f') : '') + '"></i>'; }).join('') + '</span><span><b>' + p.name + '</b><small>' + p.sub + '</small></span>';
         function pick(add) {
-          if (p.combo) C.patterns = L.CLASICO.slice();
-          else if (add) { if (L.isClasico(C.patterns)) C.patterns = [p.id]; else if (C.patterns.indexOf(p.id) < 0) C.patterns.push(p.id); }
-          else C.patterns = [p.id];
+          if (add) toast(L.holdShape(C.patterns, p.id)); // on top of the game, saying what it did
+          else C.patterns = p.combo ? L.CLASICO.slice() : [p.id];
           save(); draw(); renderTop(); if (!C.pos) renderCaption();
         }
-        b.addEventListener('pointerdown', function () { clearTimeout(press.t); press.held = false; press.t = setTimeout(function () { press.held = true; pick(true); toast(p.name + ' added'); }, 550); });
+        b.addEventListener('pointerdown', function () { clearTimeout(press.t); press.held = false; press.t = setTimeout(function () { press.held = true; pick(true); }, 550); });
         b.addEventListener('pointerup', function () { clearTimeout(press.t); if (press.held) press.held = false; else pick(false); });
         b.addEventListener('pointerleave', function () { clearTimeout(press.t); });
         b.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(e.shiftKey); } });

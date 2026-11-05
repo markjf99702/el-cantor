@@ -114,6 +114,25 @@ check('deck: the juego generator never changes', async () => {
   assert.equal(createHash('sha256').update(JSON.stringify(L.juego('CANELA', 100))).digest('hex'), '21071b06ce6c859639716856ffe35117501be108b4d13880e561ae3b3e4d62b3', 'CANELA 1–100');
 });
 
+check('deck: Clásico already wins with every shape but Siete Loco, and a game’s name says when it has both', async () => {
+  const L = await loadDeck();
+  // Each way to make each shape holds a Clásico four (a row, column or diagonal, the corners, or a 2×2), except Siete
+  // Loco's any seven. So holding a shape on Clásico keeps the game as it is, and only Siete Loco goes on top.
+  const fours = ['linea', 'esquinas', 'cuadro'].flatMap(id => L.pat(id).sets);
+  for (const p of L.PATS) {
+    if (p.combo) continue;
+    assert.equal(!!p.sets && p.sets.every(set => fours.some(f => f.every(c => set.includes(c)))), p.id !== 'siete', p.name);
+    const ids = L.CLASICO.slice();
+    L.holdShape(ids, p.id);
+    assert.deepEqual(plain(ids), p.id === 'siete' ? ['linea', 'esquinas', 'cuadro', 'siete'] : ['linea', 'esquinas', 'cuadro'], 'holding ' + p.name + ' on Clásico');
+  }
+  assert.equal(L.gameName(['linea', 'esquinas', 'cuadro']), 'Clásico');
+  assert.equal(L.gameName(L.CLASICO.concat('siete')), 'Clásico + Siete Loco');
+  assert.equal(L.gameName(['esquinas', 'centro']), 'Esquinas · Centro');
+  assert.equal(L.gameName(['equis', 'marco', 'ele']), 'La Equis +2');
+  assert.equal(L.gameName([]), 'Pick a game');
+});
+
 // ---------------------------------------------------------------- the home screen
 check('home: the three tools, at phone and desktop width', async () => {
   for (const kind of [PHONE, DESKTOP]) {
@@ -796,15 +815,35 @@ check('games: holding a shape adds it to the game, with a mouse or a finger, in 
         await page.click('#patBtn');
         assert.match(await page.textContent('#sheet .note'), /add it on top of what’s (selected|picked)(, and|;) a tabla wins on any one of them\./, what + ': the sheet doesn’t say either shape wins');
         const shape = name => page.locator('#pats .pat', { has: page.locator('b', { hasText: new RegExp('^' + name + '$') }) });
-        const box = await shape('Centro').boundingBox(), x = box.x + box.width / 2, y = box.y + box.height / 2;
         const cdp = kind === PHONE ? await ctx.newCDPSession(page) : null;
-        if (cdp) await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] }); else { await page.mouse.move(x, y); await page.mouse.down(); }
-        await until(page, () => document.getElementById('toast').textContent === 'Centro added');
-        if (cdp) await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); else await page.mouse.up();
-        assert.deepEqual((await saved(page, key)).patterns, ['esquinas', 'centro'], what + ': letting go left only the held shape');
+        // Holds a shape until the toast says what it did, then lets go.
+        async function hold(name, says) {
+          await page.evaluate(() => { document.getElementById('toast').textContent = ''; });
+          const box = await shape(name).boundingBox(), x = box.x + box.width / 2, y = box.y + box.height / 2;
+          if (cdp) await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] }); else { await page.mouse.move(x, y); await page.mouse.down(); }
+          await until(page, s => document.getElementById('toast').textContent === s, says);
+          if (cdp) await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); else await page.mouse.up();
+        }
+        const tap = name => cdp ? shape(name).tap() : shape(name).click();
+        const game = async () => (await saved(page, key)).patterns;
+        const lit = () => page.$$eval('#pats .pat.on b', bs => bs.map(b => b.textContent));
+        await hold('Centro', 'Centro added');
+        assert.deepEqual(await game(), ['esquinas', 'centro'], what + ': letting go left only the held shape');
         assert.equal(await page.textContent('#patBtn'), 'Esquinas · Centro ▾', what);
-        if (cdp) await shape('La Ele').tap(); else await shape('La Ele').click(); // a quick tap still picks one shape
-        assert.deepEqual((await saved(page, key)).patterns, ['ele'], what + ': a tap after a hold');
+        await tap('La Ele'); // a quick tap still picks one shape
+        assert.deepEqual(await game(), ['ele'], what + ': a tap after a hold');
+        // Clásico already wins with every shape but Siete Loco, so holding one keeps Clásico; Siete Loco goes on top.
+        await tap('Clásico');
+        await hold('Centro', 'Clásico already wins with Centro');
+        assert.deepEqual(await game(), ['linea', 'esquinas', 'cuadro'], what + ': holding Centro on Clásico');
+        assert.deepEqual(await lit(), ['Clásico'], what);
+        await hold('Siete Loco', 'Siete Loco added');
+        assert.deepEqual(await game(), ['linea', 'esquinas', 'cuadro', 'siete'], what + ': holding Siete Loco on Clásico');
+        assert.deepEqual(await lit(), ['Clásico', 'Siete Loco'], what);
+        assert.equal(await page.textContent('#patBtn'), 'Clásico + Siete Loco ▾', what);
+        await hold('Siete Loco', 'Siete Loco is already in the game');
+        await hold('Línea', 'Clásico already wins with Línea');
+        assert.deepEqual(await game(), ['linea', 'esquinas', 'cuadro', 'siete'], what + ': holding a shape already in the game');
         assert.deepEqual(problems, [], what);
       } finally { await ctx.close(); }
     }
@@ -812,7 +851,7 @@ check('games: holding a shape adds it to the game, with a mouse or a finger, in 
 });
 
 check('board: a long game name in the header doesn’t paint over the Lotería title', async () => {
-  for (const [w, pats] of [[360, ['equis', 'marco']], [390, ['equis', 'marco']], [360, ['llena']], [390, ['linea', 'esquinas', 'cuadro']]]) {
+  for (const [w, pats] of [[360, ['equis', 'marco']], [390, ['equis', 'marco']], [360, ['llena']], [390, ['linea', 'esquinas', 'cuadro']], [360, ['linea', 'esquinas', 'cuadro', 'siete']]]) {
     const ctx = await context({ ...PHONE, viewport: { width: w, height: 780 } });
     try {
       const page = await ctx.newPage(), problems = watch(page), what = `${w}px, ${pats.join('+')}`;

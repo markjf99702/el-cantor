@@ -33,7 +33,7 @@ Every page has a ⌂ button back to the home screen. They all load the same `dec
   - Tables that check can switch that in Settings, or tap **Check a tabla first**, which brings the name along. The checker keeps **Who won?**, the past winners and **¡Buena! New round** at the bottom of the screen. When a tabla isn't good yet, **Keep calling** is the main button there, and **Count it anyway** still counts the win.
   - To check a printed tabla, type its juego and tabla number. El Cantor shows the tabla with beans on the called cards, whether it wins the current game (the winning line outlined in gold), and when it first did. It remembers the juego, so the next check opens on it, ready for a number.
   - For store-bought tablas, tap the cards the player reads out instead.
-- **Games:** Clásico (4 in a row, 4 corners, or 4 in a square), or a single shape. The shapes are Línea, Esquinas, Centro, Cuadrito, La Ele, La Equis, El Marco, Rieles, Escalera, Siete Loco and Tabla Llena. Hold a shape for a second to add it to the game; then a tabla wins on any one of them.
+- **Games:** Clásico (4 in a row, 4 corners, or 4 in a square), or a single shape. The shapes are Línea, Esquinas, Centro, Cuadrito, La Ele, La Equis, El Marco, Rieles, Escalera, Siete Loco and Tabla Llena. Hold a shape for a second to add it to the game; then a tabla wins on any one of them. Clásico already wins with every shape but Siete Loco, so on Clásico only Siete Loco goes on top (**Clásico + Siete Loco**), and holding another one says so.
 - **Keeps a tally** of who won each round. A name counts once whatever its capitals: typed the way a past winner's was, "abuela" is saved as "Abuela".
 
 Keyboard: Space starts or pauses · → next card · ← puts the last card back · L checks a ¡Lotería!

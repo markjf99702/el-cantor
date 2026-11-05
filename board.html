@@ -210,7 +210,6 @@ a{color:var(--teal);font-weight:700}
 
   // ---------- patterns ----------
   var PATS = L.PATS, ALL = L.ALL, CLASICO = L.CLASICO, pat = L.pat;
-  function isClasico() { return L.isClasico(S.patterns); }
   function gameName() { return L.gameName(S.patterns); }
 
   // ---------- state ----------
@@ -425,16 +424,15 @@ a{color:var(--teal);font-weight:700}
     function draw() {
       var host = $('pats'); host.innerHTML = '';
       PATS.forEach(function (p) {
-        var on = p.combo ? isClasico() : (S.patterns.indexOf(p.id) >= 0 && !isClasico()), show = p.show || p.sets[0];
+        var both = L.hasClasico(S.patterns), on = p.combo ? both : S.patterns.indexOf(p.id) >= 0 && !(both && CLASICO.indexOf(p.id) >= 0), show = p.show || p.sets[0];
         var b = document.createElement('button'); b.type = 'button'; b.className = 'pat' + (on ? ' on' : '');
         b.innerHTML = '<span class="mini">' + ALL.map(function (i) { return '<i class="' + (show.indexOf(i) >= 0 ? (p.combo || p.min || (p.sets && p.sets.length > 1) ? 'q' : 'f') : '') + '"></i>'; }).join('') + '</span><span><b>' + p.name + '</b><small>' + p.sub + '</small></span>';
         function pick(add) {
-          if (p.combo) S.patterns = CLASICO.slice();
-          else if (add) { if (isClasico()) S.patterns = [p.id]; else if (S.patterns.indexOf(p.id) < 0) S.patterns.push(p.id); }
-          else S.patterns = [p.id];
+          if (add) toast(L.holdShape(S.patterns, p.id)); // on top of the game, saying what it did
+          else S.patterns = p.combo ? CLASICO.slice() : [p.id];
           save(); draw(); G.announced = {}; evaluate(true); render();
         }
-        b.addEventListener('pointerdown', function () { clearTimeout(press.t); press.held = false; press.t = setTimeout(function () { press.held = true; pick(true); toast(p.name + ' added'); }, 550); });
+        b.addEventListener('pointerdown', function () { clearTimeout(press.t); press.held = false; press.t = setTimeout(function () { press.held = true; pick(true); }, 550); });
         b.addEventListener('pointerup', function () { clearTimeout(press.t); if (press.held) press.held = false; else pick(false); });
         b.addEventListener('pointerleave', function () { clearTimeout(press.t); });
         b.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(e.shiftKey); } }); // Shift adds a shape, like holding it
