@@ -135,9 +135,9 @@ check('deck: Clásico already wins with every shape but Siete Loco, and a game�
 });
 
 // ---------------------------------------------------------------- the words, without a browser
-// The keys whose Spanish reads the same as the English (the language switch's labels by design); every other key's
+// The keys whose Spanish reads the same as the English (the language switch's labels by design, and names); every other key's
 // Spanish is a translation.
-const SAME = ['lang.label', 'lang.en', 'lang.es', 'tablas', 'pace.normal', 'cantor.rate.normal', 'cantor.goodLine', 'print.mini'];
+const SAME = ['lang.label', 'lang.en', 'lang.es', 'tablas', 'pace.normal', 'cantor.rate.normal', 'cantor.goodLine', 'print.mini', 'sync.errH'];
 // strings.js as a page loads it on a device in this language, with this choice saved (or none).
 async function loadStrings(language = 'en-US', chosen = null) {
   const box = { navigator: { language, languages: [language] }, document: { documentElement: {} }, localStorage: { getItem: k => k === 'loteria.lang' ? chosen : null } };
@@ -2661,17 +2661,19 @@ check('espanol: the day Drive last synced is written in the language shown, not 
   }
 });
 
-check('drive: on a phone, a tap on ☁ or Sync now says what went wrong, in English and in Spanish', async () => {
+check('drive: on a phone, a tap on ☁ or Sync now says what went wrong, in English and in Spanish, and “try again” only once', async () => {
   // Drive's answer when the account's storage is full, as Google's guide "Resolve errors" gives it (403 errors,
   // storageQuotaExceeded); a busy Drive answers 503, and Google says to try those again a little later.
   const FULL = { error: { errors: [{ domain: 'global', reason: 'storageQuotaExceeded', message: 'The user\'s Drive storage quota has been exceeded.' }], code: 403, message: 'The user\'s Drive storage quota has been exceeded.' } };
   const SAYS = {
-    en: { offline: 'No connection — your tablas are saved on this device and will sync when you’re back online.', full: 'Your Google Drive is full, so nothing new was saved there. Free some space and tap Sync now.', busy: 'Google Drive is busy — trying again in a minute.', gis: 'Google sign-in didn’t load. Check the connection.' },
-    es: { offline: 'Sin conexión — tus tablas están guardadas en este dispositivo y se sincronizan cuando vuelvas a tener conexión.', full: 'Tu Google Drive está lleno, así que no se guardó nada nuevo ahí. Libera espacio y toca Sincronizar ahora.', busy: 'Google Drive está ocupado — se vuelve a intentar en un minuto.', gis: 'No cargó el inicio de sesión de Google. Revisa la conexión.' }
+    en: { offline: 'No connection — your tablas are saved on this device and will sync when you’re back online.', full: 'Your Google Drive is full, so nothing new was saved there. Free some space and tap Sync now.', busy: 'Google Drive is busy — trying again in a minute.', gis: 'Google sign-in didn’t load. Check the connection.', reach: 'Couldn’t reach Google Drive. Check the connection.' },
+    es: { offline: 'Sin conexión — tus tablas están guardadas en este dispositivo y se sincronizan cuando vuelvas a tener conexión.', full: 'Tu Google Drive está lleno, así que no se guardó nada nuevo ahí. Libera espacio y toca Sincronizar ahora.', busy: 'Google Drive está ocupado — se vuelve a intentar en un minuto.', gis: 'No cargó el inicio de sesión de Google. Revisa la conexión.', reach: 'No se pudo conectar con Google Drive. Revisa la conexión.' }
   };
+  // What the ☁ button's title (a screen reader's label) and the Settings card add to a note that doesn't say what's next.
+  const AGAIN = { en: { title: ' Tap to try again.', card: ' Tap Sync now to try again.', head: 'Google Drive' }, es: { title: ' Toca para intentarlo otra vez.', card: ' Toca Sincronizar ahora para intentarlo otra vez.', head: 'Google Drive' } };
   const answer = (route, status, body) => route.request().method() === 'OPTIONS' ? route.fallback() : route.fulfill({ status, headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   const said = (page, text) => until(page, t => { const e = document.getElementById('toast'); return e.textContent === t && e.classList.contains('show'); }, text, 8000);
-  for (const lang of ['en', 'es']) for (const what of ['offline', 'full', 'busy', 'gis']) {
+  for (const lang of ['en', 'es']) for (const what of ['offline', 'full', 'busy', 'gis', 'reach']) {
     const g = fakeGoogle(), expired = what === 'gis', says = SAYS[lang][what], where = lang + ', ' + what + ': ';
     const A = await driveDevice(g, { 'loteria.v1': ANA, 'loteria.print': { tablas: [{ id: 't1', name: 'Tabla 1', cards: run(1) }] }, ...(expired ? { 'junkdrawer.google': { token: 'tok-mark', exp: Date.now() - 60e3, scope: 'https://www.googleapis.com/auth/drive.file', email: 'mark@gmail.com' } } : {}) }, { locale: lang === 'es' ? 'es-MX' : 'en-US' });
     const { ctx, page } = A;
@@ -2681,6 +2683,7 @@ check('drive: on a phone, a tap on ☁ or Sync now says what went wrong, in Engl
       if (what === 'full') await ctx.route('https://www.googleapis.com/upload/**', r => answer(r, 403, FULL));
       if (what === 'busy') { await ctx.route('https://www.googleapis.com/**', busy); await page.clock.install(); }
       if (what === 'gis') await ctx.route('https://accounts.google.com/gsi/client', r => r.abort());
+      if (what === 'reach') await ctx.route('https://www.googleapis.com/**', r => answer(r, 400, { error: { code: 400, message: 'Bad Request' } }));
       const gisFailed = expired && page.waitForEvent('requestfailed', r => r.url().includes('gsi/client'));
       await page.goto(base + (what === 'full' ? 'print.html' : 'board.html'));
       // The sync as the page opens goes wrong quietly; a tap on ☁ says what happened.
@@ -2688,8 +2691,16 @@ check('drive: on a phone, a tap on ☁ or Sync now says what went wrong, in Engl
       assert.equal(await page.evaluate(() => document.getElementById('toast').classList.contains('show')), false, where + 'a toast without a tap');
       await page.click('#syncBtn');
       await said(page, says).catch(async e => { throw new Error(where + 'the toast says “' + await page.textContent('#toast') + '”, not “' + says + '”'); });
+      if (what === 'reach') { // the note says what happened once, and the title and the card say "try again" once each
+        assert.equal(await page.getAttribute('#syncBtn', 'title'), says + AGAIN[lang].title, where + 'the ☁ button’s title');
+        assert.equal(await page.getAttribute('#syncBtn', 'aria-label'), says + AGAIN[lang].title, where + 'the ☁ button’s label');
+        await page.click('#setBtn');
+        assert.equal(await page.textContent('#syncCard .eyebrow'), AGAIN[lang].head, where + 'the card’s heading says it saved');
+        assert.ok((await page.textContent('#syncCard .note')).endsWith(says + AGAIN[lang].card), where + 'the card says “' + await page.textContent('#syncCard .note') + '”');
+      }
       if (what === 'full') {
         assert.ok(!g.files().some(f => (f.appProperties || {}).loteria === 'sync'), 'a full Drive got the file');
+        assert.equal(await page.getAttribute('#syncBtn', 'title'), says, where + 'a note that says what’s next gets no “try again”');
         assert.ok((await page.textContent('#syncCard .note')).endsWith(says), where + 'the card doesn’t say so');
       }
       if (what === 'offline') { // Sync now says it too; back online, it syncs by itself

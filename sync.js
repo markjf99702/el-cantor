@@ -370,7 +370,7 @@
     return T('sync.onDate', { date: new Date(t).toLocaleDateString(T.locale, { month: 'short', day: 'numeric' }) });
   }
   function line() {
-    return status === 'busy' ? esc(T('sync.syncing')) : status === 'tap' ? (note ? esc(T(note)) + ' ' : '') + T.html('sync.tapNow_html') : status === 'error' ? esc(T(note)) : st.last ? esc(T('sync.last', { ago: ago(st.last) })) : '';
+    return status === 'busy' ? esc(T('sync.syncing')) : status === 'tap' ? (note ? esc(T(note)) + ' ' : '') + T.html('sync.tapNow_html') : status === 'error' ? esc(T(note)) + (WHOLE[note] ? '' : ' ' + esc(T('sync.tryNow'))) : st.last ? esc(T('sync.last', { ago: ago(st.last) })) : '';
   }
   var CLOUD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18.5h10.5a4 4 0 0 0 .7-7.94A6 6 0 0 0 6.7 9.1 4.7 4.7 0 0 0 7 18.5z"/></svg>';
   function css() {
@@ -384,7 +384,9 @@
       '.lsync-card .row{margin-top:8px}.lsync-card p{margin:6px 0 0}';
     document.head.appendChild(s);
   }
-  var WHOLE = { 'sync.full': 1, 'sync.busy': 1, 'sync.stillLoading': 1 }; // notes that already say what comes next
+  // The notes say what happened; "try again" is added once, by the ☁ button's title and the card, unless a note
+  // already says what comes next.
+  var WHOLE = { 'sync.full': 1, 'sync.busy': 1, 'sync.stillBusy': 1, 'sync.stillLoading': 1 };
   function title() {
     if (status === 'busy') return T('sync.t.busy');
     if ((status === 'tap' || status === 'error') && note) return WHOLE[note] ? T(note) : T('sync.t.error', { note: T(note) });
@@ -406,8 +408,9 @@
     var armed = false;
     function draw() {
       if (!host.isConnected) return false; // the sheet it was in has closed
+      var wrong = status === 'error'; // then it doesn't say "Saved to"
       host.innerHTML = st.on
-        ? '<div class="eyebrow">' + T('sync.savedH') + '</div><p class="note">' + T.html('sync.savedTo_html', { email: st.email || T('sync.yourDrive') }) + ' ' + line() + '</p>' +
+        ? '<div class="eyebrow">' + T(wrong ? 'sync.errH' : 'sync.savedH') + '</div><p class="note">' + T.html('sync.savedTo_html', { email: st.email || T('sync.yourDrive') }) + ' ' + line() + '</p>' +
           '<div class="row"><button class="btn sm" type="button" data-a="now"' + (status === 'busy' ? ' disabled' : '') + '>' + T('sync.now') + '</button><button class="btn sec sm" type="button" data-a="off">' + T(armed ? 'sync.stopAgain' : 'sync.stop') + '</button></div>'
         : '<div class="eyebrow">' + T('sync.offH') + '</div><p class="note">' + esc(T('sync.offNote')) + (note ? ' ' + esc(T(note)) : '') + '</p>' +
           '<div class="row"><button class="btn red sm" type="button" data-a="on">' + T('sync.on') + '</button></div>';
