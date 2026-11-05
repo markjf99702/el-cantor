@@ -1144,8 +1144,8 @@ check('board: a shared link on a new device makes that person its player, and sa
         await page.click('#imOk');
         assert.deepEqual(await who(page), ['Mark:1']);
       } else {
-        assert.equal(await page.textContent('#imOk'), 'Replace and use', 'a device that has Ana replaces her tablas');
-        await page.click('#imOk');
+        assert.equal(await page.textContent('#imOk'), 'Add to Ana’s tablas', 'a device that has Ana doesn’t offer to add to hers');
+        await page.click('#imAlt'); await page.click('#imAlt'); // Replace, on a second tap
         assert.deepEqual(await who(page), ['Ana:1']);
       }
       assert.deepEqual(problems, []);
@@ -1205,6 +1205,72 @@ check('board: a shared link on a new phone shows its tablas, and asks whose they
       assert.deepEqual(problems, [], step);
     } finally { await ctx.close(); }
   }
+});
+
+check('board: a link for someone already on the phone adds to their tablas, up to six, and replaces them only on a second tap', async () => {
+  const mk = k => Array.from({ length: 16 }, (_, i) => (k * 5 + i * 3) % 54 + 1);
+  const link = (name, tablas) => base + 'board.html#t=' + name + '~' + tablas.map(([t, k]) => encodeURIComponent(t) + ':' + mk(k).map(n => n.toString(36)).join('.')).join('~');
+  const HOME = { ...ANA, players: [ANA.players[0], { id: 'ab', name: 'Abuela', boards: [1, 2, 3].map(k => ({ id: 'a' + k, name: 'Mine ' + k, cards: mk(k) })) }] }; // Ana is up
+  const abuela = async page => (await saved(page, 'loteria.v1')).players[1].boards.map(b => b.name);
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    const offer = async (url, note) => {
+      await page.goto(url);
+      await until(page, () => /^Tablas from /.test((document.querySelector('#sheet h2') || {}).textContent));
+      assert.equal(await page.textContent('#imNote'), note);
+    };
+    const tapped = async (id, said) => {
+      await page.click(id);
+      await until(page, t => document.getElementById('toast').textContent === t, said);
+      assert.ok(await page.evaluate(() => document.getElementById('sheet').hidden));
+    };
+    await seed(page, { 'loteria.v1': HOME });
+    // Two new tablas for "abuela": added after her three.
+    await offer(link('abuela', [['New 1', 7], ['New 2', 8]]), 'This link carries 2 tablas for “abuela”. Abuela is already on this device with 3 tablas.');
+    assert.deepEqual(await page.$$eval('#imBtns button', bs => bs.map(b => b.textContent)), ['Add to Abuela’s tablas', 'Replace Abuela’s 3 tablas', 'No thanks']);
+    assert.equal(await page.locator('#imName').count(), 0, 'a device already set up asks for a name');
+    await noSideways(page, 'the offer for someone already here');
+    await tapped('#imOk', 'Added 2 tablas to Abuela');
+    assert.deepEqual(await abuela(page), ['Mine 1', 'Mine 2', 'Mine 3', 'New 1', 'New 2']);
+    assert.equal((await saved(page, 'loteria.v1')).current, 'ab', 'Abuela isn’t up');
+    // The same link again adds none.
+    await offer(link('abuela', [['New 1', 7], ['New 2', 8]]), 'This link carries 2 tablas for “abuela”. Abuela is already on this device with 5 tablas.');
+    await tapped('#imOk', 'Abuela already has these tablas');
+    assert.deepEqual(await abuela(page), ['Mine 1', 'Mine 2', 'Mine 3', 'New 1', 'New 2']);
+    // One she has, then two new ones: the first new one makes six, and the other stays out.
+    await offer(link('Abuela', [['New 2', 8], ['New 3', 9], ['New 4', 10]]), 'This link carries 3 tablas for “Abuela”. Abuela is already on this device with 5 tablas.');
+    await tapped('#imOk', 'Added 1 — Abuela has six now, the most');
+    assert.deepEqual(await abuela(page), ['Mine 1', 'Mine 2', 'Mine 3', 'New 1', 'New 2', 'New 3']);
+    await offer(link('ABUELA', [['New 4', 10]]), 'This link carries 1 tabla for “ABUELA”. Abuela is already on this device with 6 tablas.');
+    await tapped('#imOk', 'Abuela already has six tablas, the most');
+    // Replace asks for a second tap, and nothing changes before it.
+    await offer(link('abuela', [['New 1', 7], ['New 2', 8]]), 'This link carries 2 tablas for “abuela”. Abuela is already on this device with 6 tablas.');
+    await page.click('#imAlt');
+    assert.equal(await page.textContent('#imAlt'), 'Tap again to replace Abuela’s 6 tablas');
+    assert.equal((await abuela(page)).length, 6, 'one tap replaced her tablas');
+    await tapped('#imAlt', 'Playing as Abuela');
+    assert.deepEqual(await abuela(page), ['New 1', 'New 2']);
+    assert.deepEqual((await saved(page, 'loteria.v1')).players.map(p => p.name), ['Ana', 'Abuela']);
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+  // The same offer in Spanish.
+  const es = await context(PHONE, { locale: 'es-MX' });
+  try {
+    const page = await es.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.v1': { ...HOME, players: [ANA.players[0], { ...HOME.players[1], name: 'Tía Lupe' }] } });
+    await page.goto(link('t%C3%ADa%20lupe', [['Nueva 1', 7]]));
+    await until(page, () => (document.querySelector('#sheet h2') || {}).textContent === 'Tablas de tía lupe');
+    assert.equal(await page.textContent('#imNote'), 'Esta liga trae 1 tabla para “tía lupe”. Tía Lupe ya está en este dispositivo con 3 tablas.');
+    assert.deepEqual(await page.$$eval('#imBtns button', bs => bs.map(b => b.textContent)), ['Agregar a las tablas de Tía Lupe', 'Reemplazar las 3 tablas de Tía Lupe', 'No, gracias']);
+    assert.deepEqual(await english(page), [], 'English in the offer');
+    await noSideways(page, 'the offer in Spanish');
+    await page.click('#imAlt');
+    assert.equal(await page.textContent('#imAlt'), 'Toca otra vez para reemplazar las 3 tablas de Tía Lupe');
+    await page.click('#imOk');
+    await until(page, () => document.getElementById('toast').textContent === 'Se le agregó 1 tabla a Tía Lupe');
+    assert.deepEqual(problems, []);
+  } finally { await es.close(); }
 });
 
 check('espanol: on a first visit, English | Español on the shared-link sheet keeps the link, and on Who’s playing the name typed', async () => {
@@ -2277,9 +2343,11 @@ check('drive: a shared link on a new phone that saves to Drive asks again once t
     assert.equal(await B.page.inputValue('#imName'), 'Beto', 'the name typed was dropped when Drive landed');
     assert.equal(await B.page.textContent('#imOk'), 'Add and use');
     await B.page.fill('#imName', ''); // the link's own name, which Drive has now brought here
-    assert.equal(await B.page.textContent('#imOk'), 'Replace and use');
+    assert.equal(await B.page.textContent('#imNote'), 'This link carries 1 tabla for “Ana”. Ana is already on this device with 2 tablas.');
+    assert.equal(await B.page.textContent('#imOk'), 'Add to Ana’s tablas');
     await B.page.click('#imOk');
-    assert.deepEqual((await saved(B.page, 'loteria.v1')).players.map(p => p.name + ':' + p.boards.length), ['Ana:1']);
+    await until(B.page, () => document.getElementById('toast').textContent === 'Ana already has this tabla'); // it's her Mine 1
+    assert.deepEqual((await saved(B.page, 'loteria.v1')).players.map(p => p.name + ':' + p.boards.length), ['Ana:2']);
     assert.deepEqual(A.problems, []); assert.deepEqual(B.problems, []);
   } finally { await A.ctx.close(); await B.ctx.close(); }
 });

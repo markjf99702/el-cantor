@@ -339,8 +339,14 @@
       'board.importH': 'Tablas from {name}',
       'board.importNote': { one: 'This link carries 1 tabla for “{name}”.', other: 'This link carries {n} tablas for “{name}”.' },
       'board.importYours': { one: 'Change the name if this tabla is for you.', other: 'Change the name if these tablas are for you.' },
-      'board.importHave': 'You already have a {name} on this device — importing replaces their tablas.',
-      'board.replaceUse': 'Replace and use',
+      'board.importHave': { one: '{name} is already on this device with 1 tabla.', other: '{name} is already on this device with {n} tablas.' },
+      'board.addTo': 'Add to {name}’s tablas',
+      'board.replaceThem': { one: 'Replace {name}’s tabla', other: 'Replace {name}’s {n} tablas' },
+      'board.replaceThemAgain': { one: 'Tap again to replace {name}’s tabla', other: 'Tap again to replace {name}’s {n} tablas' },
+      'board.addedTo': { one: 'Added 1 tabla to {name}', other: 'Added {n} tablas to {name}' },
+      'board.addedFull': { one: 'Added 1 — {name} has six now, the most', other: 'Added {n} — {name} has six now, the most' }, // some didn't fit
+      'board.sixAlready': '{name} already has six tablas, the most',
+      'board.haveThese': { one: '{name} already has this tabla', other: '{name} already has these tablas' },
       'board.addUse': 'Add and use',
       'board.noThanks': 'No thanks',
       'board.playingAs': 'Playing as {name}',
@@ -432,7 +438,7 @@
       'print.whose': 'Whose tablas are these?',
       'print.family': 'Family', // the name sent in the link when none is typed
       'print.openApp': 'Open in the app',
-      'print.appAsks': 'If the app already has someone by that name, it asks before replacing their tablas.',
+      'print.appAsks': 'If My tablas already has someone by that name, it asks whether to add to their tablas or replace them.',
       'print.copyPrompt': 'Copy this link:',
 
       // Google Drive (sync.js): the card in Settings, and the ☁ button's title
@@ -778,8 +784,14 @@
       'board.importH': 'Tablas de {name}',
       'board.importNote': { one: 'Esta liga trae 1 tabla para “{name}”.', other: 'Esta liga trae {n} tablas para “{name}”.' },
       'board.importYours': { one: 'Cambia el nombre si esta tabla es para ti.', other: 'Cambia el nombre si estas tablas son para ti.' },
-      'board.importHave': 'Ya hay alguien llamado {name} en este dispositivo; con esta liga se reemplazan sus tablas.',
-      'board.replaceUse': 'Reemplazar y usar',
+      'board.importHave': { one: '{name} ya está en este dispositivo con 1 tabla.', other: '{name} ya está en este dispositivo con {n} tablas.' },
+      'board.addTo': 'Agregar a las tablas de {name}',
+      'board.replaceThem': { one: 'Reemplazar la tabla de {name}', other: 'Reemplazar las {n} tablas de {name}' },
+      'board.replaceThemAgain': { one: 'Toca otra vez para reemplazar la tabla de {name}', other: 'Toca otra vez para reemplazar las {n} tablas de {name}' },
+      'board.addedTo': { one: 'Se le agregó 1 tabla a {name}', other: 'Se le agregaron {n} tablas a {name}' },
+      'board.addedFull': { one: 'Se agregó 1 — {name} ya tiene seis, el máximo', other: 'Se agregaron {n} — {name} ya tiene seis, el máximo' },
+      'board.sixAlready': '{name} ya tiene seis tablas, el máximo',
+      'board.haveThese': { one: '{name} ya tiene esta tabla', other: '{name} ya tiene estas tablas' },
       'board.addUse': 'Agregar y usar',
       'board.noThanks': 'No, gracias',
       'board.playingAs': 'Juegas como {name}',
@@ -871,7 +883,7 @@
       'print.whose': '¿De quién son estas tablas?',
       'print.family': 'Familia',
       'print.openApp': 'Abrir en la app',
-      'print.appAsks': 'Si la app ya tiene a alguien con ese nombre, pregunta antes de reemplazar sus tablas.',
+      'print.appAsks': 'Si Mis tablas ya tiene a alguien con ese nombre, te pregunta si las agregas a sus tablas o si reemplazas las suyas.',
       'print.copyPrompt': 'Copia esta liga:',
 
       // Google Drive (sync.js): the card in Settings, and the ☁ button's title
