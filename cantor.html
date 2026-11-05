@@ -27,7 +27,7 @@
 <style>
 :root{
   --bg:#F3E7CF;--paper:#FBF4E4;--paper2:#EFE1C5;--ink:#2B221C;--ink2:#6A5A4C;--ink3:#746453;--line:#DCCBA9;--line2:#C4AE84;
-  --red:#B7332F;--red-ink:#FFF7EA;--red-soft:#F3D3CB;--teal:#1F6F6D;--teal-soft:#CFE4E0;--gold:#D99A2B;--gold-soft:#F6E3B4;--green:#3E7D4A;--green-soft:#D7E8D3;
+  --red:#B7332F;--red-ink:#FFF7EA;--red-soft:#F3D3CB;--teal:#1F6F6D;--teal-soft:#CFE4E0;--on-teal:#fff;--gold:#D99A2B;--gold-soft:#F6E3B4;--green:#3E7D4A;--green-soft:#D7E8D3;
   --fa:#B7332F;--fb:#1F6F6D;--fc:#D99A2B;--fd:#3E7D4A;--fe:#C2477A;--dim:.3;
   --disp:"Bree Serif",Georgia,serif;--body:"Nunito Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --shadow:0 1px 0 rgba(43,34,28,.05),0 10px 24px -14px rgba(43,34,28,.35);
@@ -37,7 +37,7 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   color-scheme:dark;
   --bg:#1D1714;--paper:#27201B;--paper2:#231C18;--ink:#F3E9DA;--ink2:#C9B9A4;--ink3:#8D7E6C;--line:#3F332B;--line2:#5A4B3F;
-  --red:#E2554F;--red-ink:#1D1714;--red-soft:#4A2521;--teal:#5FB3AE;--teal-soft:#1D3835;--gold:#E8B24A;--gold-soft:#4A3712;--green:#6DBB7C;--green-soft:#1F3A25;
+  --red:#E2554F;--red-ink:#1D1714;--red-soft:#4A2521;--teal:#5FB3AE;--teal-soft:#1D3835;--on-teal:#1D1714;--gold:#E8B24A;--gold-soft:#4A3712;--green:#6DBB7C;--green-soft:#1F3A25;
   --fa:#C94A44;--fb:#3E9591;--fc:#D9A640;--fd:#5B9D67;--fe:#C95F8C;--dim:.24;
   --shadow:0 1px 0 rgba(0,0,0,.4),0 12px 28px -14px rgba(0,0,0,.85);
   --lift:0 2px 0 rgba(0,0,0,.5),0 30px 50px -18px rgba(0,0,0,.95);
@@ -45,7 +45,7 @@
 :root[data-theme="dark"]{
   color-scheme:dark;
   --bg:#1D1714;--paper:#27201B;--paper2:#231C18;--ink:#F3E9DA;--ink2:#C9B9A4;--ink3:#8D7E6C;--line:#3F332B;--line2:#5A4B3F;
-  --red:#E2554F;--red-ink:#1D1714;--red-soft:#4A2521;--teal:#5FB3AE;--teal-soft:#1D3835;--gold:#E8B24A;--gold-soft:#4A3712;--green:#6DBB7C;--green-soft:#1F3A25;
+  --red:#E2554F;--red-ink:#1D1714;--red-soft:#4A2521;--teal:#5FB3AE;--teal-soft:#1D3835;--on-teal:#1D1714;--gold:#E8B24A;--gold-soft:#4A3712;--green:#6DBB7C;--green-soft:#1F3A25;
   --fa:#C94A44;--fb:#3E9591;--fc:#D9A640;--fd:#5B9D67;--fe:#C95F8C;--dim:.24;
   --shadow:0 1px 0 rgba(0,0,0,.4),0 12px 28px -14px rgba(0,0,0,.85);
   --lift:0 2px 0 rgba(0,0,0,.5),0 30px 50px -18px rgba(0,0,0,.95);
@@ -78,7 +78,7 @@ a{color:var(--teal);font-weight:700}
 .top h1 small{font:700 11px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chip{background:var(--paper);border:1px solid var(--line2);border-radius:999px;padding:6px 11px;font:700 12.5px var(--body);color:var(--ink2);white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
 .chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-.chip.teal{background:var(--teal);color:#fff;border-color:var(--teal)}
+.chip.teal{background:var(--teal);color:var(--on-teal);border-color:var(--teal)}
 .chip.ic{width:34px;height:34px;padding:0;justify-content:center;font-size:16px}
 .chip svg{width:15px;height:15px;flex:none}
 a.chip{text-decoration:none}
@@ -221,11 +221,11 @@ a.chip{text-decoration:none}
 .pk{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:4px 4px 5px;text-align:center;cursor:pointer;position:relative;font:inherit;color:inherit}
 .pk img{width:100%;aspect-ratio:2/3.26;object-fit:cover;border-radius:5px;display:block;background:#fff}
 .pk .n{font:400 12px/1.15 var(--disp);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pk .st{position:absolute;top:7px;right:7px;border-radius:999px;min-width:22px;height:22px;padding:0 6px;display:flex;align-items:center;justify-content:center;font:800 11px var(--body);color:#fff}
+.pk .st{position:absolute;top:7px;right:7px;border-radius:999px;min-width:22px;height:22px;padding:0 6px;display:flex;align-items:center;justify-content:center;font:800 11px var(--body);color:var(--on-teal)}
 .pk.yes{border-color:var(--green);box-shadow:0 0 0 2px var(--green)}
 .pk.yes .st{background:var(--green)}
 .pk.no{border-color:var(--red);box-shadow:0 0 0 2px var(--red)}
-.pk.no .st{background:var(--red)}
+.pk.no .st{background:var(--red);color:var(--red-ink)}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chips .ok{background:var(--green-soft);border-color:var(--green);color:var(--ink)}
 .chips .bad{background:var(--red-soft);border-color:var(--red);color:var(--ink)}

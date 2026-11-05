@@ -612,6 +612,38 @@ check('colours: the light palette’s muted text reads at 4.5:1 on every page', 
   } finally { await ctx.close(); }
 });
 
+check('colours: in dark, the words on teal, green and red read at 4.5:1, and every page’s scrollbars are dark', async () => {
+  // The dark theme lightens the teal, green and red, so what's written on them turns dark (WCAG 2.1, 1.4.3: 4.5:1
+  // for text this size). The game chip, the checker's ✓ and ✕, Cantaron…'s ✓, the deck's ×1 and a refused drag.
+  const lum = rgb => { const c = rgb.match(/\d+/g).slice(0, 3).map(v => +v / 255).map(v => v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+  const ratio = (a, b) => { const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x); return (hi + 0.05) / (lo + 0.05); };
+  const ON = {
+    'cantor.html': [['#patBtn'], ['.pk.yes .st', '<div class="pk yes"><span class="st">✓</span></div>'], ['.pk.no .st', '<div class="pk no"><span class="st">✕</span></div>']],
+    'board.html': [['#patBtn'], ['.pk.called', '<div class="pk called"></div>', '::after']],
+    'print.html': [['.dk.has .x', '<div class="dk has"><span class="x">×1</span></div>'], ['.ghost.bad .gt', '<div class="ghost bad"><span class="gt">3×</span></div>']]
+  };
+  for (const scheme of ['dark', 'light']) {
+    const ctx = await context(PHONE, { colorScheme: scheme });
+    try {
+      const page = await ctx.newPage(), problems = watch(page);
+      await seed(page, { 'loteria.v1': ANA });
+      for (const p of ['', 'cantor.html', 'board.html', 'print.html']) {
+        await page.goto(base + p);
+        assert.equal(await page.evaluate(() => getComputedStyle(document.documentElement).colorScheme), scheme === 'dark' ? 'dark' : 'normal', (p || 'index.html') + ' in ' + scheme + ': its scrollbars and controls');
+        for (const [sel, html, pseudo] of ON[p] || []) {
+          const [fg, bg] = await page.evaluate(([sel, html, pseudo]) => {
+            if (html) document.body.insertAdjacentHTML('beforeend', html);
+            const s = getComputedStyle(document.querySelector(sel), pseudo || null);
+            return [s.color, s.backgroundColor];
+          }, [sel, html, pseudo]);
+          assert.ok(ratio(fg, bg) >= 4.5, `${p}, ${scheme}: ${sel}${pseudo || ''} is ${fg} on ${bg}, ${ratio(fg, bg).toFixed(2)}:1`);
+        }
+      }
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
+});
+
 check('toasts: on a phone a toast uses the width of the screen before it wraps', async () => {
   const ctx = await context(PHONE);
   try {
