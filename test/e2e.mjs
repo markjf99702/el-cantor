@@ -445,6 +445,7 @@ check('espanol: My tablas in Spanish, from the first visit and a shared link to 
       assert.equal(await page.textContent('#winbox .note'), '¡Grítala antes que nadie!');
       await clean('the ¡Lotería! box');
       await page.click('#winOk');
+      if (kind === PHONE) await page.click('#callBtn'); // a phone closed Cantaron… to show the winning tabla
       await page.fill('#pkq', '1'); await page.press('#pkq', 'Enter');
       await toast('El Gallo ya salió');
       await page.fill('#pkq', 'zz');
@@ -1039,7 +1040,7 @@ check('board: a first visit picks a player, then plays a round to a ¡Lotería!'
     assert.equal(await page.textContent('#winbox h2'), '¡Lotería!');
     assert.match(await page.textContent('#winbox p'), /Tabla 1 · Línea/);
     await page.click('#winOk');
-    await page.click('#pkx');
+    assert.ok(await page.evaluate(() => document.getElementById('sheet').hidden), 'Cantaron… stayed open under the ¡Lotería!');
     assert.equal(await page.locator('#boards .tabla').first().locator('.cell.marked').count(), 4);
     await page.reload();
     assert.equal(await page.locator('#boards .tabla').first().locator('.cell.marked').count(), 4, 'the called cards survive a reload');
@@ -1238,6 +1239,7 @@ check('board: a card picked again in Cantaron… stays called, and taking one ba
     for (const n of [1, 2, 3, 4]) { await page.fill('#pkq', String(n)); await page.press('#pkq', 'Enter'); }
     await page.waitForSelector('#winbox .winc'); // Mine 1's top row
     await page.click('#winOk');
+    await page.click('#callBtn'); // the ¡Lotería! closed Cantaron… on a phone, to show the winning tabla
     await page.fill('#pkq', '3'); await page.press('#pkq', 'Enter'); // the caller says La Dama again
     await toast('La Dama is already called');
     assert.deepEqual(await called(), [1, 2, 3, 4], 'picking La Dama again took it back off');
@@ -1819,6 +1821,37 @@ check('board: a ¡Lotería! from a card picked in Cantaron… gives the keyboard
     assert.equal(await page.evaluate(() => document.activeElement.id), 'pkq', 'the focus was dropped');
     assert.deepEqual(problems, []);
   } finally { await ctx.close(); }
+});
+
+check('board: on a phone, a ¡Lotería! picked in Cantaron… closes the cards, so Keep playing or a tap outside lands on the winning tabla', async () => {
+  for (const how of ['Keep playing', 'a tap outside', 'enlarged']) {
+    const ctx = await context(PHONE);
+    try {
+      const page = await ctx.newPage(), problems = watch(page);
+      await seed(page, { 'loteria.v1': ANA, 'loteria.game': { called: [1, 2, 3], announced: {} } });
+      await page.goto(base + 'board.html');
+      if (how === 'enlarged') await page.locator('#boards .tabla[data-id="m2"] .z').tap(); // Mine 2 enlarged, and Mine 1 wins
+      await page.tap('#callBtn');
+      await page.locator('#pk .pk[data-n="4"]').tap(); // El Catrín, the last of Mine 1's top row
+      await page.waitForSelector('#winbox .winc');
+      assert.ok(await page.evaluate(() => document.getElementById('sheet').hidden), how + ': the ¡Lotería! box is over Cantaron…’s cards');
+      if (how === 'a tap outside') await page.touchscreen.tap(10, 10); else await page.tap('#winOk');
+      assert.ok(await page.evaluate(() => document.getElementById('winbox').hidden), how + ': the ¡Lotería! box is still up');
+      assert.ok(await page.evaluate(() => document.getElementById('sheet').hidden), how + ': Cantaron… is still open over the tablas');
+      const win = await page.evaluate(() => {
+        const t = document.querySelector('#boards .tabla[data-id="m1"]'), r = t && t.getBoundingClientRect();
+        return t && { win: t.classList.contains('win'), hits: t.querySelectorAll('.cell.hit').length, seen: r.top >= 0 && r.bottom <= innerHeight && r.width > 0 };
+      });
+      assert.deepEqual(win, { win: true, hits: 4, seen: true }, how + ': the winning tabla isn’t showing, outlined');
+      assert.equal(await page.evaluate(() => document.activeElement.id), 'callBtn', how + ': the focus didn’t go back to Cantaron…');
+      // The next card is picked as before, and the picker stays open for the one after.
+      await page.tap('#callBtn');
+      await page.locator('#pk .pk[data-n="5"]').tap();
+      assert.deepEqual((await saved(page, 'loteria.game')).called, [1, 2, 3, 4, 5]);
+      assert.ok(!(await page.evaluate(() => document.getElementById('sheet').hidden)), how + ': Cantaron… closed after a card that didn’t win');
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
 });
 
 // ---------------------------------------------------------------- damaged saves

@@ -362,12 +362,16 @@ a{color:var(--teal);font-weight:700}
   function showWin(wins) {
     fanfare();
     var w = wins[0], box = $('winbox');
+    // On a phone the box sits over the tablas, not over Cantaron…'s cards, so Keep playing lands on the winning tabla
+    // to show the caller; the focus goes back to Cantaron…. A computer keeps the picker open, the search box ready.
+    if (UI.sheet === 'call' && 'ontouchstart' in window) closeSheet();
+    if (UI.focus != null && UI.focus !== w.board.id) UI.focus = w.board.id; // another tabla was enlarged
     var more = wins.length > 1 ? T('board.andMore', { n: wins.length - 1 }) : '';
     box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p><b>' + esc(w.board.name) + '</b> · ' + esc(w.hit.pat.name) + more + '</p><p class="note">' + T('board.shout') + '</p><div class="row"><button class="btn red" type="button" id="winOk">' + T('board.keepPlaying') + '</button><button class="btn sec" type="button" id="winClear">' + T('newRound') + '</button></div></div></div>';
     box.hidden = false;
     // Keep playing takes the focus once the key that made the win is done (or that Enter would press it too). Closing
-    // the win gives it back to where it was by then: the square the win came from, or Cantaron…'s search box on a
-    // computer, whether the card was typed or picked.
+    // the win gives it back to where it was by then: the square the win came from, Cantaron…'s search box on a
+    // computer, whether the card was typed or picked, or the Cantaron… button on a phone.
     var back = null;
     setTimeout(function () { if (!box.hidden && $('winOk')) { back = boardSpot() || document.activeElement; $('winOk').focus(); } }, 0);
     function done() {
@@ -383,7 +387,7 @@ a{color:var(--teal);font-weight:700}
   // ---------- sheets ----------
   // A sheet takes the focus when it opens: the sheet itself, not its first box, which would put a phone's keyboard up.
   // It gives the focus back to whatever opened it when it closes. Who's playing waits for a choice, so a tap outside it does nothing.
-  function openSheet(html) { reopen = null; UI.welcome = false; var s = $('sheet'); if (s.hidden) UI.opener = document.activeElement; s.innerHTML = '<div class="sheetbg"><div class="sheet" role="dialog" aria-modal="true" tabindex="-1">' + html + '</div></div>'; s.hidden = false; s.querySelector('.sheetbg').addEventListener('click', function (e) { if (e.target === e.currentTarget && !UI.welcome) closeSheet(); }); var sh = s.querySelector('.sheet'); sh.focus({ preventScroll: true }); return sh; }
+  function openSheet(html) { reopen = null; UI.welcome = false; UI.sheet = null; var s = $('sheet'); if (s.hidden) UI.opener = document.activeElement; s.innerHTML = '<div class="sheetbg"><div class="sheet" role="dialog" aria-modal="true" tabindex="-1">' + html + '</div></div>'; s.hidden = false; s.querySelector('.sheetbg').addEventListener('click', function (e) { if (e.target === e.currentTarget && !UI.welcome) closeSheet(); }); var sh = s.querySelector('.sheet'); sh.focus({ preventScroll: true }); return sh; }
   var reopen = null; // the open sheet that holds a player's tablas, to reopen when synced tablas land
   function closeSheet() { var was = !$('sheet').hidden, o = UI.opener; $('sheet').hidden = true; $('sheet').innerHTML = ''; UI.sheet = null; reopen = null; UI.welcome = false; UI.opener = null; if (was && o && o !== document.body && o.isConnected) o.focus({ preventScroll: true }); }
   // How far down the open sheet is, to come back to the same place when it's drawn again.
@@ -392,6 +396,7 @@ a{color:var(--teal);font-weight:700}
   function pickerSheet(mode, onPick, taken) {
     var calling = mode === 'call'; // Cantaron…, or a card for a square
     var sh = openSheet('<div class="hd"><input id="pkq" type="search" enterkeyhint="search" placeholder="' + esc(T(calling ? 'board.searchCall' : 'board.searchSquare')) + '" autocomplete="off"><button class="btn sec sm" type="button" id="pkx">' + T('done') + '</button></div><div class="bd"><div class="pick" id="pk"></div></div>');
+    UI.sheet = mode; // 'call' is Cantaron…, which a ¡Lotería! on a phone closes
     var q = $('pkq'), grid = $('pk');
     function draw() {
       var f = fold(q.value.trim()), num = parseInt(f, 10);
@@ -403,7 +408,7 @@ a{color:var(--teal);font-weight:700}
         d.innerHTML = '<span class="num">' + c.n + '</span><img src="' + src(c.n) + '" alt="" loading="lazy"><div class="n">' + c.name + '</div>';
         d.addEventListener('click', function () {
           var had = document.activeElement === d;
-          onPick(c.n); if (mode !== 'call') return;
+          onPick(c.n); if (mode !== 'call' || !grid.isConnected) return; // a ¡Lotería! on a phone closed the picker
           // A phone leaves its keyboard down (it would cover the cards), so the whole deck comes back for the next card,
           // and a card with the focus keeps it; a computer keeps the card it just called in view, with the box ready to
           // type the next one.
@@ -414,7 +419,8 @@ a{color:var(--teal);font-weight:700}
       if (!grid.children.length) grid.innerHTML = '<div class="note">' + esc(T('noMatch', { q: q.value })) + '</div>';
     }
     q.addEventListener('input', draw);
-    q.addEventListener('keydown', function (e) { if (e.key === 'Enter') { var first = grid.querySelector('.pk'); if (first && grid.querySelectorAll('.pk').length === 1) first.click(); } });
+    // Enter goes no further: a ¡Lotería! on a phone puts the focus on Cantaron…, which the same key would press again.
+    q.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); var first = grid.querySelector('.pk'); if (first && grid.querySelectorAll('.pk').length === 1) first.click(); } });
     $('pkx').addEventListener('click', closeSheet);
     draw();
     if (!('ontouchstart' in window)) q.focus();
