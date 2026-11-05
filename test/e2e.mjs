@@ -364,6 +364,33 @@ check('cantor: checks a printed tabla by juego and number (CANELA 7 never change
   } finally { await ctx.close(); }
 });
 
+check('cantor: the juego of a tabla checked once is ready at the next ¡Lotería!', async () => {
+  // The usual table: the tablas were printed on the laptop, and the caller's phone has never made a PDF.
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.cantor': { order: run(1, 54), pos: 6, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], juego: '', wins: [], settings: { speak: false, sound: false, check: true } } });
+    await page.goto(base + 'cantor.html');
+    const mode = () => page.textContent('#vfSeg button.on');
+    await page.click('#lotBtn');
+    assert.equal(await mode(), 'Card by card');
+    await page.click('#vfSeg [data-v=printed]');
+    assert.match(await page.textContent('#vfV'), /make a set under Print tablas/);
+    await page.fill('#vfJ', 'canela');
+    await page.fill('#vfN', '3');
+    assert.equal(await page.textContent('#vfV h3'), 'Not yet');
+    await page.click('#vfx');
+    assert.equal((await saved(page, 'loteria.cantor')).juego, 'CANELA');
+    await page.click('#lotBtn');
+    assert.equal(await mode(), 'Printed tabla', 'the next check opened on Card by card');
+    assert.equal(await page.inputValue('#vfJ'), 'CANELA');
+    assert.equal(await page.inputValue('#vfN'), '');
+    assert.doesNotMatch(await page.textContent('#vfV'), /make a set/);
+    assert.equal(await page.evaluate(() => document.activeElement.tagName), 'DIV', 'a box took the focus and put the phone’s keyboard up');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('cantor: checking card by card keeps a card read out twice, and a chip takes a card back off', async () => {
   // Mark's Tabla 2 has La Corona twice in its second row, read out square by square: El Cazo, La Corona, La Corona, El Negrito.
   const ctx = await context(PHONE);

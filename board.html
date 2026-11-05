@@ -543,7 +543,7 @@ a{color:var(--teal);font-weight:700}
       host.innerHTML = pick ? '<div class="tabla" style="--bw:100%"><div class="lbl"><span class="k">' + esc(pick.name) + '</span></div><div class="eg">' + pick.cards.map(function (n) { return '<div class="cell"><img src="' + src(n) + '" alt="' + esc(card(n).name) + '" draggable="false"></div>'; }).join('') + '</div></div>' : '';
     }
     var last = ''; try { var c = JSON.parse(localStorage.getItem('loteria.cantor') || 'null'); last = (c && c.juego) || ''; } catch (e) { }
-    $('ptJ').value = typed.j != null ? typed.j : last; // to start, the juego El Cantor last printed on this device
+    $('ptJ').value = typed.j != null ? typed.j : last; // to start, the juego El Cantor last printed or checked on this device
     $('ptN').value = typed.n;
     $('ptJ').addEventListener('input', draw);
     $('ptN').addEventListener('input', function () { this.value = this.value.replace(/\D/g, ''); draw(); });

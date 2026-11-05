@@ -884,6 +884,8 @@ a.chip{text-decoration:none}
       if (!name) { host.innerHTML = ''; v.className = 'verdict'; v.innerHTML = '<p class="note" style="margin:0">Type the juego name printed along the bottom of the tabla' + (C.juego ? '' : ' (make a set under <b>Print tablas</b>)') + ', then its number from the top corner.</p>'; return; }
       if (!(k >= 1 && k <= 999)) { host.innerHTML = ''; v.className = 'verdict'; v.innerHTML = '<p class="note" style="margin:0">Now the tabla number — it’s the big number at the top right of their tabla.</p>'; return; }
       var t = L.juegoTabla(name, k), hit = {}, need = {}, best = null;
+      // Remembered, so the next check opens on this juego (and My tablas' + A printed tabla starts with it).
+      if (C.juego !== name) { C.juego = name; save(); }
       C.patterns.forEach(function (pid) { var p = L.pat(pid); if (!p) return; var w = wonAt(t, p); if (w && (!best || w.when < best.when)) best = { when: w.when, cells: w.cells, pat: p }; });
       if (best) {
         best.cells.forEach(function (c) { hit[c] = 1; }); V.how = best.pat.name; V.tabla = name + ' ' + k; // a win counted anyway has no tabla

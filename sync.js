@@ -97,7 +97,7 @@
       },
       write: function (o, c) { o = o || {}; o.wins = c.order.map(function (id) { return c.items[id]; }).sort(function (a, b) { return a.t - b.t; }); return o; }
     },
-    juego: { // the juego El Cantor last printed, so any phone can add those tablas by number
+    juego: { // the juego El Cantor last printed or checked, so any phone can add those tablas by number
       key: 'loteria.cantor',
       read: function (o) { return o && o.juego ? { items: { juego: { name: String(o.juego) } }, order: ['juego'] } : { items: {}, order: [] }; },
       write: function (o, c) { o = o || {}; o.juego = c.items.juego ? c.items.juego.name : ''; return o; },

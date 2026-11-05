@@ -31,7 +31,7 @@ Every page has a ⌂ button back to the home screen. They all load the same `dec
 - **Print tablas** makes a PDF of numbered tablas to print at home, one large or two per page, Letter or A4. A set — a *juego* — is built from its name, so `CANELA` tabla 7 is always the same tabla.
 - **¡Lotería!** takes the winner's word by default: a cheer, the winner's name (one tap for past winners), and the next round.
   - Tables that check can switch that in Settings, or tap **Check a tabla first**.
-  - To check a printed tabla, type its juego and tabla number. El Cantor shows the tabla with beans on the called cards, whether it wins the current game, and when it first did.
+  - To check a printed tabla, type its juego and tabla number. El Cantor shows the tabla with beans on the called cards, whether it wins the current game, and when it first did. It remembers the juego, so the next check opens on it, ready for a number.
   - For store-bought tablas, tap the cards the player reads out instead.
 - **Games:** Clásico (4 in a row, 4 corners, or 4 in a square), or a single shape. The shapes are Línea, Esquinas, Centro, Cuadrito, La Ele, La Equis, El Marco, Rieles, Escalera, Siete Loco and Tabla Llena. Hold a shape for a second to add it to the game; then a tabla wins on any one of them.
 - **Keeps a tally** of who won each round.
@@ -45,7 +45,7 @@ Someone calls the cards; you tap **Cantaron…**, pick the card, and it marks it
 - Pick the game each round: Clásico, or a single shape, the same list El Cantor uses.
 - Edit tablas square by square. Doubles are fine (family rule) — when that card is called, both squares get a bean — but not three of a card. Up to six tablas per person.
 - **Random tabla** deals 16 different cards, with no double, as a start to edit from. Make tablas' **Random** makes one like Mark's four instead.
-- **+ A printed tabla** adds a tabla from El Cantor's printed juegos by its name and number. It starts with the juego El Cantor last printed on this device.
+- **+ A printed tabla** adds a tabla from El Cantor's printed juegos by its name and number. It starts with the juego El Cantor last printed or checked on this device.
 - Several people on one device, each with their own tablas. **Share** makes a link that carries a set of tablas to another phone.
 
 ### Make tablas — by hand, to print
@@ -61,7 +61,7 @@ Someone calls the cards; you tap **Cantaron…**, pick the card, and it marks it
 
 Anyone can turn this on from the home screen, from Settings in My tablas or El Cantor, or from the bottom of Make tablas. It needs a Google account, and each person's tablas go to their own Drive. Everyone who signs in with the same account shares one set.
 
-- **What's saved:** the people and tablas in My tablas, the tablas in Make tablas, El Cantor's winners and the juego it last printed. Called cards, voices and other settings stay with each device.
+- **What's saved:** the people and tablas in My tablas, the tablas in Make tablas, El Cantor's winners and the juego it last printed or checked. Called cards, voices and other settings stay with each device.
 - **Where:** one file, `Lotería tablas.json`, in a `Lotería` folder in the person's Google Drive. The app asks only for `drive.file`, Google's narrowest Drive permission: the junkdrawer.works apps can open only the files they made, and nothing else in Drive. Deleting the folder removes the Drive copy; the next sync makes a new one from whatever the device has.
 - **How changes combine:** each device keeps working from its own copy and syncs when a page opens, a few seconds after a change, and when **Sync now** is tapped. Changes merge one tabla at a time, so edits on two devices both survive; if the same tabla changed on both, the newer change wins. The first time a device joins, nothing is thrown away: someone set up under the same name on both devices becomes one person with the tablas from both, spelled the way Drive already has it ("Mark", even if the new phone said "mark").
 - **The one-hour rule:** Google lets a website with no server of its own use Drive for an hour after signing in. After that, the ☁ button in My tablas and Make tablas shows a red dot. Tap it once to sync again; it usually goes by without asking anything.
