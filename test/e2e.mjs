@@ -500,6 +500,19 @@ check('cantor: checking card by card keeps a card read out twice, and a chip tak
   } finally { await ctx.close(); }
 });
 
+check('cantor: Print tablas starts on Letter for a phone in plain or Latin American Spanish, and A4 for Spain', async () => {
+  for (const [locale, paper] of [['es', 'letter'], ['es-419', 'letter'], ['es-MX', 'letter'], ['es-ES', 'a4'], ['en-GB', 'a4'], ['en-US', 'letter']]) {
+    const ctx = await context(PHONE, { locale });
+    try {
+      const page = await ctx.newPage(), problems = watch(page);
+      await page.goto(base + 'cantor.html');
+      await page.click('#printBtn');
+      assert.equal((await saved(page, 'loteria.cantor')).print.paper, paper, locale);
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
+});
+
 check('cantor: one card called reads as one, in ↺ and when checking card by card', async () => {
   const ctx = await context(PHONE);
   try {
