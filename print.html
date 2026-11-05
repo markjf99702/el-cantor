@@ -614,7 +614,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       // A lone tabla has nothing to cut it from; a tabla not full says how many squares print blank.
       $('psum').textContent = list.length ? T(P.set.per === 1 || list.length < 2 ? 'print.sum' : 'print.sumCut', { tablas: T('tablas', { n: list.length }), pages: T('pages', { n: pages }) }) : T('print.pickOne');
       var gaps = list.filter(function (t) { return filled(t) < 16; }).map(function (t) { return T('print.emptyN', { name: t.name, n: 16 - filled(t) }); });
-      $('pwarn').hidden = !gaps.length; $('pwarn').textContent = gaps.length ? T('print.notFull', { list: gaps.join(', ') }) : '';
+      $('pwarn').hidden = !gaps.length; $('pwarn').textContent = gaps.length ? T('print.notFull', { n: gaps.length, list: gaps.join(', ') }) : '';
       $('pdo').disabled = !list.length;
     }
     document.querySelectorAll('#paperSeg button').forEach(function (b) { b.addEventListener('click', function () { P.set.paper = b.dataset.v; save(); renderPrint(); draw(); }); });

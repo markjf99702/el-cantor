@@ -215,6 +215,17 @@ check('strings: Spanish for a device in Spanish until a language is chosen, and 
   assert.deepEqual([E('cantor.wonNobody', { r: 2, n: 1 }), S('cantor.wonNobody', { r: 2, n: 1 }), S.html('cantor.won_html', { who: 'Tía Lupe', r: 2, n: 6 })], ['Round 2 is won after 1 card.', 'Se ganó la ronda 2 con 1 carta cantada.', '<b>Tía Lupe</b> gana la ronda 2 con 6 cartas cantadas.']);
   assert.deepEqual([1, 2, 3, 4, 11, 12, 13, 21, 22, 23, 54, 101, 111].map(E.ord), ['1st', '2nd', '3rd', '4th', '11th', '12th', '13th', '21st', '22nd', '23rd', '54th', '101st', '111th']);
   assert.deepEqual([1, 5, 22].map(S.ord), ['1.ª', '5.ª', '22.ª']);
+  // The Spanish read through by a native ear: everyday word order, the shapes named as the picker names them, tú
+  // and one person where it's one person.
+  assert.deepEqual([S('newRound'), S('cantor.shuffleNew'), S('cantor.buenaNew'), S('board.newRoundWhat')], ['Nueva ronda', 'Barajar — nueva ronda', '¡Buena! Nueva ronda', 'Nueva ronda — ¿a qué jugamos?']);
+  assert.deepEqual([S('shapeAdded', { shape: 'Esquinas' }), S('pat.siete'), S('pat.clasico'), S('pat.cuadro')], ['Ahora también se gana con Esquinas', 'siete casillas, las que sean', 'línea, esquinas o cuadrito', 'cualquier cuadrito de 2×2']);
+  for (const k of ['cantor.patsNote_html', 'board.patsNote_html']) assert.match(S(k), /<b>Clásico<\/b> es lo de siempre — (una tabla gana con )?línea, esquinas o cuadrito\./, k);
+  assert.deepEqual([S('cantor.startRoundNote', { n: 1 }), S('cantor.startRoundNote', { n: 6 })].map(t => t.split('. ')[0]), ['La carta que ya salió regresa a la baraja y se vuelve a barajar', 'Las 6 cartas que ya salieron regresan a la baraja y se vuelve a barajar']);
+  assert.deepEqual([S('cantor.checkIt'), S('cantor.trust'), S('cantor.check'), S('cantor.prMaking'), S('cantor.prHowMany')], ['¡Lotería! — a ver', 'Le creemos', 'Revisamos la tabla', 'Haciendo el PDF…', '¿Cuántas?']);
+  for (const k of ['board.aboutDrive', 'board.aboutLocal']) assert.match(S(k), /^Todo se guarda en este dispositivo/, k);
+  assert.equal(S('board.soundsNote'), 'Suena un frijol al marcar y una fanfarria cuando ganas.');
+  // A tabla not full, one or two of them, in each language.
+  assert.deepEqual([E('print.notFull', { n: 1, list: 'T' }), E('print.notFull', { n: 2, list: 'T' }), S('print.notFull', { n: 1, list: 'T' }), S('print.notFull', { n: 2, list: 'T' })], ['Not full yet, its empty squares print blank: T', 'Not full yet, empty squares print blank: T', 'Todavía no está llena; sus casillas vacías salen en blanco: T', 'Todavía no están llenas; las casillas vacías salen en blanco: T']);
 });
 
 // A page's words a person can see or hear, swept for English: visible text, the options in a list, and every
@@ -339,7 +350,7 @@ check('espanol: El Cantor in Spanish, every sheet and the ¡Lotería! box, and t
       assert.deepEqual(await english(page), [], where + 'English in the ¡Lotería! box');
       await page.click('#clCheck');
       await until(page, () => !document.getElementById('sheet').hidden);
-      assert.equal(await sheetTitle(page), '¡Lotería! — a revisar');
+      assert.equal(await sheetTitle(page), '¡Lotería! — a ver');
       await page.fill('#vfN', '7');
       assert.equal(await page.textContent('#vfV h3'), 'Todavía no');
       assert.match(await page.textContent('#vfV p'), /^(CANELA|CAPIROTADA) No\. 7 va más cerca de \S.* y le faltan? .+\. Las casillas con borde rojo todavía no salen\.$/);
@@ -351,9 +362,12 @@ check('espanol: El Cantor in Spanish, every sheet and the ¡Lotería! box, and t
       const pick = name => page.locator('#vfPick .pk', { has: page.locator('.n', { hasText: new RegExp('^' + name + '$') }) }).click();
       await pick('El Gallo'); await pick('La Luna');
       assert.deepEqual([await page.textContent('#vfV h3'), await page.textContent('#vfV p')], ['Todavía no', 'La Luna todavía no sale.']);
+      // A called card's place in the order, the Spanish way: la 1.ª, not #1.
+      assert.deepEqual(await page.$$eval('#vfChips .chip', bs => bs.map(b => b.textContent)), ['El Gallo · 1.ª ✕', 'La Luna · todavía no ✕']);
+      assert.deepEqual(await page.$$eval('#vfPick .pk .st', ss => ss.map(s => s.textContent)), ['1.ª', '✕']);
       await page.locator('#vfChips .chip', { hasText: 'La Luna' }).click();
       assert.deepEqual([await page.textContent('#vfV h3'), await page.textContent('#vfV p')], ['Ya salió', 'Si forman la figura — Clásico — es buena. Ya estaba completa desde hace 4 cartas: El Gallo, la 1.ª en salir.']);
-      assert.equal(await page.textContent('#vfWin'), '¡Buena! Ronda nueva');
+      assert.equal(await page.textContent('#vfWin'), '¡Buena! Nueva ronda');
       assert.deepEqual(await english(page), [], where + 'English on ¡Buena!');
       await page.fill('#vfWho', 'Tía Lupe');
       await page.click('#vfWin');
@@ -462,7 +476,7 @@ check('espanol: My tablas in Spanish, from the first visit and a shared link to 
       assert.equal(await sheetTitle(page), '¿Limpiar la ronda?');
       await clean('Clear the round?');
       await page.click('#clOk');
-      assert.equal(await sheetTitle(page), 'Ronda nueva — ¿a qué jugamos?');
+      assert.equal(await sheetTitle(page), 'Nueva ronda — ¿a qué jugamos?');
       await page.locator('#pats .pat', { hasText: 'La Ele' }).press('Shift+Enter');
       await toast('Clásico ya gana con La Ele');
       await clean('the game picker');
@@ -519,7 +533,7 @@ check('espanol: Make tablas in Spanish, with Print… and Play these in My tabla
       await page.click('#printBtn');
       assert.equal(await page.textContent('#dlg h2'), 'Imprimir tablas');
       assert.match(await page.textContent('#pers .per.on small'), /^Normal · cartas de \d\.\d\d × \d\.\d\d\u00a0pulg\.$/);
-      assert.equal(await page.textContent('#pwarn'), 'Con casillas vacías, que salen en blanco: Tabla 2 (faltan\u00a07)');
+      assert.equal(await page.textContent('#pwarn'), 'Todavía no está llena; sus casillas vacías salen en blanco: Tabla 2 (faltan\u00a07)');
       const right = await page.$$eval('#paperSeg, #nameSeg', ss => ss.map(s => Math.round(s.getBoundingClientRect().right)));
       assert.equal(right[0], right[1], 'Sí / No isn’t on the right of its row');
       await clean('Print…');
@@ -2092,7 +2106,7 @@ check('print: Print… says how many squares of a tabla print blank, and has not
     assert.equal(await page.textContent('#psum'), '1 tabla on 1 page.');
     await page.click('#pers .per[data-v="4"]');
     assert.equal(await page.textContent('#psum'), '1 tabla on 1 page.');
-    assert.equal(await page.textContent('#pwarn'), 'Not full yet, empty squares print blank: Tabla 2 (7\u00a0empty)');
+    assert.equal(await page.textContent('#pwarn'), 'Not full yet, its empty squares print blank: Tabla 2 (7\u00a0empty)');
     await page.locator('#tchips .chip', { hasText: 'Tabla 1' }).click();
     assert.equal(await page.textContent('#psum'), '2 tablas on 1 page — cut along the gap between them.');
     assert.deepEqual(problems, []);
@@ -2103,7 +2117,7 @@ check('print: Print… says how many squares of a tabla print blank, and has not
     await seed(page, { 'loteria.print': { tablas: [{ id: 't1', name: 'Tabla 1', cards: run(1, 15).concat([0]) }], set: { doubles: true, per: 2, paper: 'letter', names: true, who: '' } } });
     await page.goto(base + 'print.html');
     await page.click('#printBtn');
-    assert.deepEqual([await page.textContent('#psum'), await page.textContent('#pwarn')], ['1 tabla en 1 hoja.', 'Con casillas vacías, que salen en blanco: Tabla 1 (falta\u00a01)']);
+    assert.deepEqual([await page.textContent('#psum'), await page.textContent('#pwarn')], ['1 tabla en 1 hoja.', 'Todavía no está llena; sus casillas vacías salen en blanco: Tabla 1 (falta\u00a01)']);
     assert.deepEqual(problems, []);
   } finally { await es.close(); }
 });
