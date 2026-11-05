@@ -352,7 +352,8 @@
       'board.wMark': 'Mark’s four tablas',
       'board.eitherWay_html': 'Either way you can change every square later under <b>Tablas</b>.',
       'board.alreadyDrive': 'Already saving tablas to Google Drive on another device? Turn it on here and they come right over.',
-      'board.tapTablas': '{name}, tap Tablas to set up your cards',
+      'board.nameFirst': 'Your name first',
+      'board.tapTablas': 'Playing as {name} — tap Tablas to change any square',
       'board.fromDrive': 'Your tablas are here from Google Drive',
 
       // Make tablas
@@ -788,7 +789,8 @@
       'board.wMark': 'Las cuatro tablas de Mark',
       'board.eitherWay_html': 'Como sea, después puedes cambiar cada casilla en <b>Tablas</b>.',
       'board.alreadyDrive': '¿Ya guardas tablas en Google Drive en otro dispositivo? Actívalo aquí y llegan solitas.',
-      'board.tapTablas': '{name}, toca Tablas para armar tus cartas',
+      'board.nameFirst': 'Primero tu nombre',
+      'board.tapTablas': 'Juegas como {name} — toca Tablas para cambiar cualquier casilla',
       'board.fromDrive': 'Tus tablas llegaron de Google Drive',
 
       // Make tablas

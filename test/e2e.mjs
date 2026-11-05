@@ -398,6 +398,8 @@ check('espanol: My tablas in Spanish, from the first visit and a shared link to 
       assert.equal(await page.getAttribute('html', 'lang'), 'es-MX');
       assert.equal(await page.title(), 'Lotería · Mis tablas');
       assert.equal(await sheetTitle(page), '¿Quién juega en este dispositivo?');
+      await page.click('#wRandom'); // no name yet
+      assert.equal(await page.textContent('#wNeed'), 'Primero tu nombre');
       await clean('the first visit');
       // A shared link with one tabla, El Gallo on it twice.
       await page.goto(base + 'board.html#t=Mam%C3%A1~Tabla%201:1.1.3.4.5.6.7.8.9.a.b.c.d.e.f.g');
@@ -1062,6 +1064,37 @@ check('board: Escape leaves the first-visit sheet up, and saves nobody', async (
     await page.mouse.click(640, 30); // outside the sheet
     assert.equal(await sheetTitle(page), 'Who’s playing on this device?');
     assert.equal(await saved(page, 'loteria.v1'), null);
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
+check('board: Who’s playing waits for a name, so nobody is saved as Mark or as Player', async () => {
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await page.goto(base + 'board.html');
+    // Either start button, or Enter, with the box empty or only spaces: the box takes the focus and says why.
+    for (const [how, typed] of [['#wMark', ''], ['#wRandom', ''], ['Enter', ''], ['#wMark', '   ']]) {
+      await page.fill('#wName', typed);
+      await page.evaluate(() => document.activeElement.blur());
+      if (how === 'Enter') await page.press('#wName', 'Enter'); else await page.click(how);
+      assert.equal(await sheetTitle(page), 'Who’s playing on this device?', how);
+      assert.equal(await saved(page, 'loteria.v1'), null, how + ' saved someone');
+      assert.equal(await page.evaluate(() => document.activeElement.id), 'wName', how + ' left the focus off the name box');
+      assert.ok(await page.isVisible('#wNeed'), how + ' didn’t say a name is needed');
+      assert.equal(await page.textContent('#wNeed'), 'Your name first');
+    }
+    await page.fill('#wName', 'Lupe');
+    assert.ok(await page.isHidden('#wNeed'), 'the note stayed once a name was typed');
+    await page.click('#wRandom');
+    await until(page, () => document.getElementById('toast').textContent === 'Playing as Lupe — tap Tablas to change any square');
+    assert.deepEqual((await saved(page, 'loteria.v1')).players.map(p => p.name + ':' + p.boards.length), ['Lupe:2']);
+    // Set up now: a link for someone else, opened in the same page, adds them beside Lupe.
+    await page.evaluate(() => { location.hash = '#t=Mom~Tabla%201:1.2.3.4.5.6.7.8.9.a.b.c.d.e.f.g'; });
+    await until(page, () => (document.querySelector('#sheet h2') || {}).textContent === 'Tablas from Mom');
+    assert.equal(await page.locator('#shLang').count(), 0, 'the link was offered as if nobody were set up');
+    await page.click('#imOk');
+    assert.deepEqual((await saved(page, 'loteria.v1')).players.map(p => p.name + ':' + p.boards.length), ['Lupe:2', 'Mom:1']);
     assert.deepEqual(problems, []);
   } finally { await ctx.close(); }
 });
@@ -1824,7 +1857,7 @@ check('keyboard: name boxes start each word with a capital, and the search boxes
     assert.equal(await attrs('#vfQ'), 'search  search');
     await page.goto(base + 'board.html');
     assert.equal(await attrs('#wName'), 'text words ');
-    await page.click('#wRandom');
+    await page.fill('#wName', 'Ana'); await page.click('#wRandom');
     await page.click('#setBtn');
     assert.equal(await attrs('#pnew'), 'text words done');
     await page.keyboard.press('Escape');

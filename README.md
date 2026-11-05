@@ -49,6 +49,7 @@ Someone calls the cards; you tap **Cantaron…**, pick the card, and it marks it
 - Edit tablas square by square. Doubles are fine (family rule) — when that card is called, both squares get a bean — but not three of a card. Up to six tablas per person.
 - **Random tabla** deals 16 different cards, with no double, as a start to edit from. Make tablas' **Random** makes one like Mark's four instead.
 - **+ A printed tabla** adds a tabla from El Cantor's printed juegos by its name and number. It starts with the juego El Cantor last printed or checked on this device.
+- **The first visit** asks who's playing on the device: a name, which it waits for, and two random tablas to edit or Mark's four to start with.
 - Several people on one device, each with their own tablas. The name of whoever is playing takes the place of the Lotería title at the top, and a tap on it switches to someone else. **Share** makes a link that carries a set of tablas to another phone.
 
 ### Make tablas — by hand, to print
