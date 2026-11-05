@@ -575,7 +575,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   }
   function sizeText(g) {
     var inch = g.pp.inch, f = inch ? 1 : 2.54, d = inch ? 2 : 1; // inches on Letter, centimetres on A4
-    return (g.cw * f).toFixed(d) + ' × ' + (g.ch * f).toFixed(d) + ' ' + (inch ? T('print.unitIn') : 'cm');
+    return (g.cw * f).toFixed(d) + ' × ' + (g.ch * f).toFixed(d) + '\u00a0' + (inch ? T('print.unitIn') : 'cm'); // the unit stays with its number
   }
   function pageIcon(per) {
     var r = per === 1 ? '<rect x="8" y="6" width="18" height="32" rx="1.5"/>'

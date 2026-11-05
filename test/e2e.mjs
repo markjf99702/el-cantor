@@ -511,7 +511,7 @@ check('espanol: Make tablas in Spanish, with Print… and Play these in the app�
       // Print…: the sizes in pulgadas, and each Sí / No on the right of its row, even when its label wraps.
       await page.click('#printBtn');
       assert.equal(await page.textContent('#dlg h2'), 'Imprimir tablas');
-      assert.match(await page.textContent('#pers .per.on small'), /^Normal · cartas de \d\.\d\d × \d\.\d\d pulg\.$/);
+      assert.match(await page.textContent('#pers .per.on small'), /^Normal · cartas de \d\.\d\d × \d\.\d\d\u00a0pulg\.$/);
       assert.equal(await page.textContent('#pwarn'), 'Con casillas vacías, que salen en blanco: Tabla 2 (7)');
       const right = await page.$$eval('#paperSeg, #nameSeg', ss => ss.map(s => Math.round(s.getBoundingClientRect().right)));
       assert.equal(right[0], right[1], 'Sí / No isn’t on the right of its row');
