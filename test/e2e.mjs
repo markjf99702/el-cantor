@@ -1054,6 +1054,30 @@ check('cantor: Print tablas starts on Letter for a phone in plain or Latin Ameri
   }
 });
 
+check('badges: the sábana’s call order and a double’s ×2 sit at the top right, off the card’s printed name', async () => {
+  // The cards print their number in a tag at the top left and their name along the bottom.
+  const high = (page, sel, box) => page.$$eval(sel, (els, box) => els.map(e => { const c = e.closest(box).getBoundingClientRect(), r = e.getBoundingClientRect(); return (r.bottom - c.top) / c.height; }), box);
+  const ctx = await context(DESKTOP);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    const first = [1, 2, 3, 23, 27];
+    await seed(page, { 'loteria.cantor': { order: first.concat(run(1, 54).filter(n => first.indexOf(n) < 0)), pos: 5, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], juego: '', wins: [], settings: { speak: false, sound: false } } });
+    await page.goto(base + 'cantor.html');
+    const sab = await high(page, '#sbgrid .sb .o', '.sb');
+    assert.equal(sab.length, 5);
+    for (const h of sab) assert.ok(h < 0.35, 'the sábana’s call order reaches ' + Math.round(h * 100) + '% down the card');
+    await seed(page, { 'loteria.print': { tablas: [{ id: 't1', name: 'Tabla 1', cards: [31, 31].concat(run(1, 14)) }], set: { doubles: true, per: 1, paper: 'letter', names: true, who: '' } } });
+    await page.goto(base + 'print.html');
+    const two = await high(page, '#tablas .sq .two', '.sq');
+    assert.equal(two.length, 2);
+    for (const h of two) assert.ok(h < 0.35, 'a double’s ×2 reaches ' + Math.round(h * 100) + '% down the card');
+    await page.goto(base);
+    const home = await page.$eval('.mini .d', d => { const c = d.getBoundingClientRect(), s = getComputedStyle(d, '::after'); return (parseFloat(s.top) + parseFloat(s.height)) / c.height; });
+    assert.ok(home < 0.35, 'the home screen’s ×2 reaches ' + Math.round(home * 100) + '% down the card');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('cantor: one card called reads as one, in ↺ and when checking card by card', async () => {
   const ctx = await context(PHONE);
   try {
