@@ -428,7 +428,8 @@ check('espanol: My tablas in Spanish, from the first visit and a shared link to 
       await page.click('#stx');
       // Tablas: the double, a second tap, a printed tabla, and Share.
       await page.click('#tablasBtn');
-      assert.equal(await page.textContent('#edb .warn'), 'Dos veces: El Gallo');
+      assert.equal(await page.textContent('#edb .dups'), 'Dos veces: El Gallo');
+      assert.match(await page.textContent('#sheet .bd > .note'), /\(regla de la familia\)/);
       await page.click('#tbOrig');
       assert.equal(await page.textContent('#tbOrig'), 'Toca otra vez para reemplazar tu tabla');
       await clean('Tablas');
@@ -1657,7 +1658,11 @@ check('board: a card goes on a tabla twice but not three times, as in Make tabla
     await page.click('#tablasBtn');
     await put(4, 5); // the same card on its own square changes nothing
     assert.deepEqual((await cards()).slice(0, 6), [23, 23, 3, 4, 5, 5]);
-    assert.equal(await page.textContent('#edb .warn'), 'Twice: El Paraguas, La Luna');
+    assert.equal(await page.textContent('#edb .dups'), 'Twice: El Paraguas, La Luna');
+    assert.match(await page.textContent('#sheet .bd > .note'), /^Tap any square to change its card\. Doubles are fine \(family rule\)/, 'the rule is named as Make tablas names it');
+    // A double is allowed, so it's said in the plain grey of the notes, not in red as if it were a mistake.
+    assert.equal(await page.$eval('#edb .dups', e => getComputedStyle(e).color), 'rgb(106, 90, 76)', 'the doubles line isn’t in --ink2');
+    assert.equal(await page.locator('#edb .dups .warn').count(), 0, 'a double is marked as a warning');
     assert.deepEqual(problems, []);
   } finally { await ctx.close(); }
 });
@@ -1670,13 +1675,15 @@ check('board: a tabla saved with a card three times stays as it is, and says how
     await seed(page, { 'loteria.v1': people([{ id: 'm1', name: 'Mine 1', cards: old }]) });
     await page.goto(base + 'board.html');
     await page.click('#tablasBtn');
-    assert.equal(await page.textContent('#edb .warn'), 'Twice: El Paraguas · 3×: La Luna');
+    assert.equal(await page.textContent('#edb .dups'), 'Twice: El Paraguas · 3×: La Luna');
+    assert.equal(await page.textContent('#edb .dups .warn'), '3×: La Luna', 'only three of a card is said in red');
+    assert.deepEqual(await page.$$eval('#edb .dups, #edb .dups .warn', es => es.map(e => getComputedStyle(e).color)), ['rgb(106, 90, 76)', 'rgb(183, 51, 47)'], 'Twice in --ink2, 3× in --red');
     const cards = async () => (await saved(page, 'loteria.v1')).players[0].boards[0].cards;
     const put = async (square, n) => { await page.locator('#edb .eg .cell').nth(square).click(); await page.fill('#pkq', String(n)); await page.press('#pkq', 'Enter'); };
     await page.evaluate(() => { document.getElementById('toast').textContent = ''; });
     await put(1, 23); // La Luna for one of its own squares: nothing to refuse
     assert.equal(await sheetTitle(page), null);
-    assert.equal(await page.isVisible('#edb .warn'), true, 'the Tablas sheet came back');
+    assert.equal(await page.isVisible('#edb .dups'), true, 'the Tablas sheet came back');
     assert.equal(await page.textContent('#toast'), '', 'La Luna was refused for the square it was already in');
     assert.deepEqual(await cards(), old);
     await put(3, 23); // a fourth La Luna

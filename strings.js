@@ -307,7 +307,7 @@
       // My tablas: Tablas, and a printed tabla
       'board.playerName': 'Player name',
       'board.share': 'Share',
-      'board.editNote': 'Tap any square to change its card. Doubles are fine (house rules) — when that card is called, both squares get a bean — but not three of a card. Names are editable.',
+      'board.editNote': 'Tap any square to change its card. Doubles are fine (family rule) — when that card is called, both squares get a bean — but not three of a card. Names are editable.',
       'board.addTabla': '+ Add a tabla',
       'board.addPrinted': '+ A printed tabla',
       'board.restore': 'Restore the original four',
@@ -755,7 +755,7 @@
       // My tablas: Tablas, and a printed tabla
       'board.playerName': 'Nombre de quien juega',
       'board.share': 'Compartir',
-      'board.editNote': 'Toca cualquier casilla para cambiar su carta. Se vale repetir una carta (regla de la casa) — cuando la cantan, las dos casillas llevan frijol — pero no tres veces. Los nombres se pueden cambiar.',
+      'board.editNote': 'Toca cualquier casilla para cambiar su carta. Se vale repetir una carta (regla de la familia) — cuando la cantan, las dos casillas llevan frijol — pero no tres veces. Los nombres se pueden cambiar.',
       'board.addTabla': '+ Otra tabla',
       'board.addPrinted': '+ Una tabla impresa',
       'board.restore': 'Volver a las cuatro originales',

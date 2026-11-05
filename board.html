@@ -183,7 +183,9 @@ a{color:var(--teal);font-weight:700}
 .edb.ims{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px} /* a shared link's tablas: two to a row on a phone */
 .edb .tabla .lbl .k{display:flex}
 .edb .tabla .cell{cursor:default}
-.edb .warn{color:var(--red);font-size:12.5px;margin-top:6px;font-weight:600}
+.edb .dups{color:var(--ink2);font-size:12.5px;margin-top:6px}
+.edb .dups b{font-weight:700;color:var(--ink)}
+.edb .dups .warn,.edb .dups .warn b{color:var(--red)} /* three of a card: only a tabla saved before the family rule */
 .seg{display:inline-flex;border:1px solid var(--line2);border-radius:999px;overflow:hidden;background:var(--paper)}
 .seg button{background:none;border:0;padding:6px 12px;font:600 13px var(--body);color:var(--ink2)}
 .seg button.on{background:var(--ink);color:var(--bg)}
@@ -555,9 +557,9 @@ a{color:var(--teal);font-weight:700}
         var counts = {}; bd.cards.forEach(function (n) { counts[n] = (counts[n] || 0) + 1; });
         // Doubles, and how many of a card a tabla saved before the family rule holds: "Twice: El Paraguas · 3×: La Luna".
         var by = {}; Object.keys(counts).forEach(function (n) { if (counts[n] > 1 && real(+n)) (by[counts[n]] = by[counts[n]] || []).push(card(+n).name); });
-        var dups = Object.keys(by).map(function (k) { return (k === '2' ? T('twice') : T('timesN', { k: k })) + ': ' + by[k].join(', '); }).join(' · ');
+        var dups = Object.keys(by).map(function (k) { var t = esc(k === '2' ? T('twice') : T('timesN', { k: k })) + ': <b>' + esc(by[k].join(', ')) + '</b>'; return k === '2' ? t : '<span class="warn">' + t + '</span>'; }).join(' · ');
         var w = document.createElement('div'); w.dataset.id = bd.id;
-        w.innerHTML = '<input value="' + esc(bd.name) + '" aria-label="' + esc(T('tablaName')) + '"><div class="eg"></div>' + (dups ? '<div class="warn">' + esc(dups) + '</div>' : '') + '<div class="row" style="margin-top:8px"><button class="btn sec sm" type="button" data-a="rnd">' + T('board.randomTabla') + '</button>' + (p.boards.length > 1 ? '<button class="btn sec sm" type="button" data-a="del">' + T('remove') + '</button>' : '') + '</div>';
+        w.innerHTML = '<input value="' + esc(bd.name) + '" aria-label="' + esc(T('tablaName')) + '"><div class="eg"></div>' + (dups ? '<div class="dups">' + dups + '</div>' : '') + '<div class="row" style="margin-top:8px"><button class="btn sec sm" type="button" data-a="rnd">' + T('board.randomTabla') + '</button>' + (p.boards.length > 1 ? '<button class="btn sec sm" type="button" data-a="del">' + T('remove') + '</button>' : '') + '</div>';
         var inp = w.querySelector('input'); inp.addEventListener('change', function () { bd.name = inp.value.trim() || ('Tabla ' + (bi + 1)); save(); render(); });
         var eg = w.querySelector('.eg');
         bd.cards.forEach(function (n, ci) {
