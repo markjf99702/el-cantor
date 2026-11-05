@@ -279,6 +279,9 @@
       'board.patsNote_html': 'Tap the game for this round. <b>Clásico</b> is the regular game — a tabla wins on 4 in a row, 4 corners, or 4 in a square. The others are single shapes; hold one for a second to add it on top of what’s selected, and a tabla wins on any one of them.',
       'board.andMore': ' — and {n} more',
       'board.shout': 'Shout it before somebody else does.',
+      'board.tellJuego_html': 'Tell the caller: <b>juego {juego}, tabla {n}</b>', // a tabla from El Cantor's printed juegos, which it checks by number
+      'board.readOut_html': 'Read them out: <b>{cards}</b>', // the winning cards, for El Cantor's Card by card
+      'board.readBeans': 'Read out the cards with a bean', // more than 8 to list: Tabla Llena, El Marco, Siete Loco
       'board.keepPlaying': 'Keep playing',
       'board.clearH': 'Clear the round?',
       'board.clearNote': 'Takes the beans off all {n} called cards so you can start the next round.',
@@ -711,6 +714,9 @@
       'board.patsNote_html': 'Toca a qué se juega esta ronda. <b>Clásico</b> es lo de siempre — una tabla gana con 4 en línea, 4 esquinas o 4 en cuadro. Las demás son figuras sueltas; mantén presionada una un segundo para sumarla a lo elegido, y una tabla gana con cualquiera de ellas.',
       'board.andMore': ' — y {n} más',
       'board.shout': '¡Grítala antes que nadie!',
+      'board.tellJuego_html': 'Dile a quien canta: <b>juego {juego}, tabla {n}</b>',
+      'board.readOut_html': 'Léelas en voz alta: <b>{cards}</b>',
+      'board.readBeans': 'Lee en voz alta las cartas con frijol',
       'board.keepPlaying': 'Seguir jugando',
       'board.clearH': '¿Limpiar la ronda?',
       'board.clearNote': 'Quita los frijoles de las {n} cartas cantadas para empezar la siguiente ronda.',

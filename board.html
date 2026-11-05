@@ -172,6 +172,8 @@ a{color:var(--teal);font-weight:700}
 @keyframes pop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
 .winc h2{margin:0;font:400 46px/1 var(--disp);color:var(--red);letter-spacing:.01em}
 .winc p{margin:10px 0 0;color:var(--ink2);font-size:15px}
+.winc p.tell{margin-top:12px;padding:9px 12px;background:var(--paper2);border-radius:12px;color:var(--ink);font-size:14px;line-height:1.35}
+.winc p.tell b{font:400 16px/1.3 var(--disp)}
 .winc .row{justify-content:center;margin-top:18px}
 .toast{position:fixed;left:50%;width:max-content;bottom:calc(20px + var(--sab));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:10px;font:600 13px var(--body);opacity:0;transition:.2s;pointer-events:none;z-index:80;max-width:90vw;text-align:center}
 .toast.show{opacity:1;transform:translateX(-50%)}
@@ -367,6 +369,15 @@ a{color:var(--teal);font-weight:700}
   }
 
   // ---------- win ----------
+  // What to tell the caller: a tabla from El Cantor's printed juegos by its juego and number, which El Cantor checks
+  // by number; any other tabla by its winning cards, in tabla order and a double once, or the beans for a big shape.
+  function tellCaller(w) {
+    var bd = w.board, m = /^([A-Z0-9]{1,12}) ([1-9]\d{0,2})$/.exec(bd.name), t = m && L.juegoName(m[1]) === m[1] && L.juegoTabla(m[1], +m[2]);
+    if (t && t.join() === bd.cards.join()) return T.html('board.tellJuego_html', { juego: m[1], n: m[2] });
+    var seen = {}, names = w.hit.cells.slice().sort(function (a, b) { return a - b; }).map(function (i) { return bd.cards[i]; })
+      .filter(function (n) { var dup = seen[n]; seen[n] = 1; return real(n) && !dup; }).map(function (n) { return card(n).name.replace(/ /g, '\u00a0'); }); // a name stays on one line
+    return names.length > 8 ? esc(T('board.readBeans')) : T.html('board.readOut_html', { cards: names.join(' · ') });
+  }
   function showWin(wins) {
     fanfare();
     var w = wins[0], box = $('winbox');
@@ -374,8 +385,8 @@ a{color:var(--teal);font-weight:700}
     // to show the caller; the focus goes back to Cantaron…. A computer keeps the picker open, the search box ready.
     if (UI.sheet === 'call' && 'ontouchstart' in window) closeSheet();
     if (UI.focus != null && UI.focus !== w.board.id) UI.focus = w.board.id; // another tabla was enlarged
-    var more = wins.length > 1 ? T('board.andMore', { n: wins.length - 1 }) : '';
-    box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p><b>' + esc(w.board.name) + '</b> · ' + esc(w.hit.pat.name) + more + '</p><p class="note">' + T('board.shout') + '</p><div class="row"><button class="btn red" type="button" id="winOk">' + T('board.keepPlaying') + '</button><button class="btn sec" type="button" id="winClear">' + T('newRound') + '</button></div></div></div>';
+    var more = wins.length > 1 ? T('board.andMore', { n: wins.length - 1 }) : '', who = S.players.length > 1 ? esc(player().name) + ' · ' : '';
+    box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p><b>' + who + esc(w.board.name) + '</b> · ' + esc(w.hit.pat.name) + more + '</p><p class="note">' + T('board.shout') + '</p><p class="tell">' + tellCaller(w) + '</p><div class="row"><button class="btn red" type="button" id="winOk">' + T('board.keepPlaying') + '</button><button class="btn sec" type="button" id="winClear">' + T('newRound') + '</button></div></div></div>';
     box.hidden = false;
     // Keep playing takes the focus once the key that made the win is done (or that Enter would press it too). Closing
     // the win gives it back to where it was by then: the square the win came from, Cantaron…'s search box on a

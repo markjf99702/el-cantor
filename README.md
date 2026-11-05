@@ -45,6 +45,7 @@ Keyboard: Space starts or pauses · → next card · ← puts the last card back
 Someone calls the cards; you tap **Cantaron…**, pick the card, and it marks itself on every tabla where it appears. A card picked again stays marked. To take one back, tap its square or its name in the row of called cards, or ↶ for the last one.
 
 - Pick the game each round: Clásico, or a single shape, the same list El Cantor uses.
+- A win cheers, outlines the tabla and says what to tell the caller: *juego CANELA, tabla 7* for a tabla added with **+ A printed tabla**, so El Cantor can check it by number, or else the winning cards to read out (just "the cards with a bean" for a big shape like Tabla Llena). Its **New round** asks before it takes the beans off, as ↺ does.
 - Edit tablas square by square. Doubles are fine (family rule) — when that card is called, both squares get a bean — but not three of a card. Up to six tablas per person.
 - **Random tabla** deals 16 different cards, with no double, as a start to edit from. Make tablas' **Random** makes one like Mark's four instead.
 - **+ A printed tabla** adds a tabla from El Cantor's printed juegos by its name and number. It starts with the juego El Cantor last printed or checked on this device.

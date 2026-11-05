@@ -1885,6 +1885,61 @@ check('board: the ¡Lotería! box’s New round asks “Clear the round?” firs
   }
 });
 
+check('board: the ¡Lotería! box says who won and what to tell the caller: a printed tabla’s juego and number, or the winning cards', async () => {
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    const box = () => page.evaluate(() => [...document.querySelectorAll('#winbox p')].map(p => p.textContent.replace(/ /g, ' ')));
+    // Cards picked one after another in Cantaron…; the last one wins.
+    async function win(cards) {
+      await page.click('#callBtn');
+      for (const n of cards) await page.locator(`#pk .pk[data-n="${n}"]`).tap();
+      await page.waitForSelector('#winbox .winc');
+      const said = await box();
+      await page.tap('#winOk');
+      return said;
+    }
+    // A first visit with Mark's four, and CANELA 7 added with + A printed tabla: La Mano, La Palma, La Luna and La
+    // Sirena along its top.
+    await page.goto(base + 'board.html');
+    await page.fill('#wName', 'Ana'); await page.click('#wMark');
+    await page.click('#tablasBtn'); await page.click('#tbPrinted');
+    await page.fill('#ptJ', 'canela'); await page.fill('#ptN', '7'); await page.click('#ptAdd');
+    await page.click('#tbx');
+    assert.deepEqual(await win([21, 51, 23, 6]), ['CANELA 7 · Línea', 'Shout it before somebody else does.', 'Tell the caller: juego CANELA, tabla 7']);
+    // Mark's Tabla 1 by its cards, in tabla order: its top row, then its third row, where Las Jaras is twice.
+    await page.click('#clearBtn'); await page.click('#clOk'); await page.click('#ptx');
+    assert.deepEqual((await win([33, 43, 24, 11]))[2], 'Read them out: El Melón · El Cotorro · La Campana · La Araña');
+    await page.click('#clearBtn'); await page.click('#clOk'); await page.click('#ptx');
+    assert.deepEqual((await win([49, 31, 26]))[2], 'Read them out: El Negrito · Las Jaras · El Pino', 'a double named twice, or out of order');
+    // A tabla named like a printed one, but with other cards, is read out card by card.
+    const v1 = await saved(page, 'loteria.v1');
+    v1.players[0].boards[0].name = 'CANELA 8';
+    await page.evaluate(v => localStorage.setItem('loteria.v1', JSON.stringify(v)), v1);
+    await page.evaluate(() => localStorage.setItem('loteria.game', JSON.stringify({ called: [], announced: {} })));
+    await page.reload();
+    assert.deepEqual((await win([11, 24, 43, 33]))[2], 'Read them out: El Melón · El Cotorro · La Campana · La Araña', 'a hand-made tabla was taken for CANELA 8');
+    // Tabla Llena is too many to list; with two people on the device, the winner's name comes first.
+    v1.players.push({ id: 'mt', name: 'Mateo', boards: [{ id: 'mm', name: 'Tabla 1', cards: run(1) }] });
+    v1.current = 'mt'; v1.patterns = ['llena'];
+    await page.evaluate(v => { localStorage.setItem('loteria.v1', JSON.stringify(v)); localStorage.setItem('loteria.game', JSON.stringify({ called: Array.from({ length: 15 }, (_, i) => i + 2), announced: {} })); }, v1);
+    await page.reload();
+    assert.deepEqual(await win([1]), ['Mateo · Tabla 1 · Tabla Llena', 'Shout it before somebody else does.', 'Read out the cards with a bean']);
+    // In Spanish.
+    v1.current = v1.players[0].id; v1.patterns = ['linea', 'esquinas', 'cuadro'];
+    await page.evaluate(v => { localStorage.setItem('loteria.v1', JSON.stringify(v)); localStorage.setItem('loteria.lang', 'es'); localStorage.setItem('loteria.game', JSON.stringify({ called: [], announced: {} })); }, v1);
+    await page.reload();
+    assert.deepEqual(await win([21, 51, 23, 6]), ['Ana · CANELA 7 · Línea', '¡Grítala antes que nadie!', 'Dile a quien canta: juego CANELA, tabla 7']);
+    await page.click('#clearBtn'); await page.click('#clOk'); await page.click('#ptx');
+    assert.deepEqual((await win([11, 24, 43, 33]))[2], 'Léelas en voz alta: El Melón · El Cotorro · La Campana · La Araña');
+    await page.click('#clearBtn'); await page.click('#clOk'); await page.click('#ptx');
+    await page.evaluate(() => { const v = JSON.parse(localStorage.getItem('loteria.v1')); v.patterns = ['llena']; v.current = 'mt'; localStorage.setItem('loteria.v1', JSON.stringify(v)); localStorage.setItem('loteria.game', JSON.stringify({ called: Array.from({ length: 15 }, (_, i) => i + 2), announced: {} })); });
+    await page.reload();
+    assert.deepEqual((await win([1]))[2], 'Lee en voz alta las cartas con frijol');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 // ---------------------------------------------------------------- damaged saves
 check('saves: a damaged save opens with what can be kept, instead of a blank page or an error', async () => {
   for (const tool of ['board', 'cantor', 'print']) {
