@@ -344,6 +344,9 @@ check('cantor: checks a printed tabla by juego and number (CANELA 7 never change
     await page.fill('#vfN', '7');
     assert.equal(await page.textContent('#vfV h3'), '¡Buena! Línea');
     assert.match(await page.textContent('#vfV p'), /CANELA No\. 7 — It finished on the card just called, La Sirena\./);
+    // The winning line is outlined in gold over the card pictures, as a square still needed is in red.
+    assert.deepEqual(await page.$$eval('#vfTabla .cell', cs => cs.flatMap((c, i) => c.classList.contains('hit') ? [i] : [])), [0, 1, 2, 3]);
+    assert.notEqual(await page.$eval('#vfTabla .cell.hit', c => getComputedStyle(c, '::after').boxShadow), 'none', 'the winning line has no outline over its pictures');
     const names = await page.$$eval('#vfTabla .cell img', ims => ims.map(i => i.alt.replace(', called', '')));
     assert.deepEqual(names, await page.evaluate(t => t.map(n => Loteria.card(n).name), CANELA7));
     await page.fill('#vfN', '8');

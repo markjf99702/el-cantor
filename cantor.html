@@ -187,8 +187,8 @@ a.chip{text-decoration:none}
 .cell{position:relative;background:#fff;overflow:hidden}
 .cell img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
 .cell.marked img{filter:brightness(.55) saturate(.7)}
-.cell.hit{box-shadow:inset 0 0 0 3px var(--gold);z-index:3}
-.cell.need::after{content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 3px var(--red);z-index:5}
+.cell.hit::after,.cell.need::after{content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 3px var(--gold);z-index:5} /* over the card picture */
+.cell.need::after{box-shadow:inset 0 0 0 3px var(--red)}
 .cell .mk{position:absolute;left:50%;top:50%;z-index:4;width:74%;aspect-ratio:1;transform:translate(-50%,-50%) rotate(var(--rot,0deg));filter:drop-shadow(0 2px 3px rgba(0,0,0,.55))}
 .cell .mk svg{width:100%;height:100%;display:block}
 .vf{display:grid;grid-template-columns:minmax(0,210px) minmax(0,1fr);gap:18px;align-items:start}
