@@ -569,12 +569,29 @@ check('home: the three tools, at phone and desktop width', async () => {
   }
 });
 
-check('home: the footer says El Cantor prints numbered tablas, and My tablas’ About that a refresh keeps the round', async () => {
+check('home: El Cantor is the one that prints numbered tablas and Make tablas is by hand, and My tablas’ About says a refresh keeps the round', async () => {
   const ctx = await context(PHONE);
   try {
     const page = await ctx.newPage(), problems = watch(page);
     await page.goto(base);
-    assert.equal(await page.textContent('footer:has(#privacy)'), 'Everything stays on this device: no accounts, nothing sent anywhere. El Cantor also prints numbered tablas it can check by number.');
+    // Someone who wants tablas for tonight finds the numbered set, not a blank tabla to fill by hand.
+    assert.deepEqual(await page.$$eval('.tile h2 small', s => s.map(e => e.textContent)), ['Call the game', 'Play along', 'By hand']);
+    assert.equal(await page.textContent('.tile[href="cantor.html"] p'), 'Shuffles the deck and calls each card aloud in Spanish, prints numbered tablas, and checks a ¡Lotería!');
+    assert.equal(await page.textContent('footer:has(#privacy)'), 'Everything stays on this device: no accounts, nothing sent anywhere. Need tablas for tonight? El Cantor’s Print tablas makes a numbered set it can check by number.');
+    assert.equal(await page.textContent('footer:has(#privacy) b'), 'Print tablas');
+    await page.click('#langSw [lang="es"]');
+    await page.waitForLoadState();
+    await until(page, () => document.documentElement.lang === 'es-MX');
+    assert.deepEqual(await page.$$eval('.tile h2 small', s => s.map(e => e.textContent)), ['Canta la lotería', 'Juega', 'A mano']);
+    assert.equal(await page.textContent('.tile[href="cantor.html"] p'), 'Baraja las cartas, canta cada una en voz alta, imprime tablas numeradas y revisa una ¡Lotería!');
+    assert.equal(await page.textContent('footer:has(#privacy) b'), 'Imprimir tablas');
+    await page.click('#langSw [lang="en"]');
+    await page.waitForLoadState();
+    await until(page, () => document.documentElement.lang === 'en');
+    // El Cantor's pace note names → for the next card, as a phone shows it (it hides the words Next card).
+    await page.goto(base + 'cantor.html');
+    await page.click('#setBtn');
+    assert.equal(await page.locator('#paceSeg').locator('xpath=../..').locator('.note').textContent(), 'Counted after the card is read. ▶ turns the next card automatically; → turns it now.');
     await seed(page, { 'loteria.v1': ANA });
     await page.goto(base + 'board.html');
     await page.click('#setBtn');
