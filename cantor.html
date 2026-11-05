@@ -380,7 +380,7 @@ a.chip{text-decoration:none}
   var PACE = { slow: 7000, normal: 4000, fast: 2000 };
   function paceName(v) { return T('pace.' + v); }
 
-  var toastT; function toast(m) { var t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove('show'); }, 2400); }
+  var toastT; function toast(m, ms) { var t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove('show'); }, ms || 2400); }
 
   // ---------- sound ----------
   var AC = null;
@@ -1223,6 +1223,7 @@ a.chip{text-decoration:none}
   }
 
   // ---------- Google Drive ----------
+  if (window.LoteriaSync) LoteriaSync.onNote(function (m) { toast(m, 6000); }); // what went wrong after a tap on Sync now, long enough to read
   if (window.LoteriaSync) LoteriaSync.onUpdate(function (keys) { // winners and the juego from another device
     if (keys.indexOf(LS) < 0) return;
     try { var o = JSON.parse(localStorage.getItem(LS)); if (o) { if (Array.isArray(o.wins)) C.wins = goodWins(o.wins); if (typeof o.juego === 'string') C.juego = o.juego; } } catch (e) { }

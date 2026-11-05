@@ -454,7 +454,11 @@
       'sync.gisLoad': 'Google sign-in didn’t load. Check the connection.',
       'sync.gisDone': 'Google sign-in didn’t finish.',
       'sync.denied': 'Google Drive wasn’t allowed, so nothing was saved there.',
-      'sync.stillLoading': 'Google sign-in is still loading — tap again in a second.'
+      'sync.stillLoading': 'Google sign-in is still loading — tap again in a second.',
+      'sync.offline': 'No connection — your tablas are saved on this device and will sync when you’re back online.',
+      'sync.full': 'Your Google Drive is full, so nothing new was saved there. Free some space and tap Sync now.',
+      'sync.busy': 'Google Drive is busy — trying again in a minute.',
+      'sync.stillBusy': 'Google Drive is still busy — try again in a few minutes.'
     },
     es: {
       'lang.label': 'Idioma · Language',
@@ -881,7 +885,11 @@
       'sync.gisLoad': 'No cargó el inicio de sesión de Google. Revisa la conexión.',
       'sync.gisDone': 'No se terminó de iniciar sesión con Google.',
       'sync.denied': 'No se dio permiso para Google Drive, así que no se guardó nada ahí.',
-      'sync.stillLoading': 'El inicio de sesión de Google todavía está cargando — toca otra vez en un segundo.'
+      'sync.stillLoading': 'El inicio de sesión de Google todavía está cargando — toca otra vez en un segundo.',
+      'sync.offline': 'Sin conexión — tus tablas están guardadas en este dispositivo y se sincronizan cuando vuelvas a tener conexión.',
+      'sync.full': 'Tu Google Drive está lleno, así que no se guardó nada nuevo ahí. Libera espacio y toca Sincronizar ahora.',
+      'sync.busy': 'Google Drive está ocupado — se vuelve a intentar en un minuto.',
+      'sync.stillBusy': 'Google Drive sigue ocupado — inténtalo otra vez en unos minutos.'
     }
   };
 

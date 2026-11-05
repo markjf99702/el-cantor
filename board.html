@@ -254,7 +254,7 @@ a{color:var(--teal);font-weight:700}
   function player() { var p = S.players.filter(function (p) { return p.id === S.current; })[0]; if (!p) { p = S.players[0]; S.current = p.id; } return p; }
   function isCalled(n) { return G.called.indexOf(n) >= 0; }
 
-  var toastT; function toast(m) { var t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove('show'); }, 2200); }
+  var toastT; function toast(m, ms) { var t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove('show'); }, ms || 2200); }
 
   // ---------- sound ----------
   var AC = null;
@@ -640,6 +640,7 @@ a{color:var(--teal);font-weight:700}
   }
   if (window.LoteriaSync) {
     LoteriaSync.chip($('syncBtn'));
+    LoteriaSync.onNote(function (m) { toast(m, 6000); }); // what went wrong after a tap on ☁ or Sync now, long enough to read
     LoteriaSync.onUpdate(function (keys) { if (keys.indexOf(LS) >= 0) landed(true); }); // tablas saved on another device
   }
   // The installed app and a browser tab, or two tabs, share one save. Each takes the cards the other calls as they

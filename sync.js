@@ -186,19 +186,44 @@
 
   // ---------- Google Drive ----------
   var st = Object.assign({ on: false, email: '', name: '', last: 0 }, get(KS) || {}), tok = get(KT);
-  var status = 'off', note = '', busy = null, again = false, client = null, gisLoading = false, pushT = null, ups = [], watchers = [];
+  var status = 'off', note = '', busy = null, again = false, client = null, gisLoading = false, gisFailed = false, pushT = null, ups = [], watchers = [], says = [];
+  var asked = false, busyT = null, busyTried = false;
   function saveSt() { put(KS, st); }
   function live() { return !!(tok && tok.token && tok.exp - 60000 > Date.now() && String(tok.scope || '').indexOf(SCOPE) >= 0); }
-  // note is a key in strings.js, so it's said in the language the page is in when it's drawn.
-  function setStatus(s, n) { status = s; note = n || ''; watchers = watchers.filter(function (f) { try { return f() !== false; } catch (e) { return false; } }); }
+  // note is a key in strings.js, so it's said in the language the page is in when it's drawn. When a tap (☁, Sync
+  // now, Save to Google Drive) ends with something gone wrong, the page says it too: a phone never shows the ☁
+  // button's title. Sign-in still loading is said, and the tap waits for what comes of it.
+  function setStatus(s, n) {
+    status = s; note = n || '';
+    watchers = watchers.filter(function (f) { try { return f() !== false; } catch (e) { return false; } });
+    if (!asked || s === 'busy') return;
+    if (note && s !== 'ok') says.forEach(function (f) { try { f(T(note)); } catch (e) { } });
+    if (note !== 'sync.stillLoading') asked = false;
+  }
   function api(method, path, body, type) {
     if (!tok) return Promise.reject({ auth: true });
     var h = { Authorization: 'Bearer ' + tok.token }; if (type) h['Content-Type'] = type;
     return fetch(API + path, { method: method, headers: h, body: body }).then(function (r) {
       if (r.status === 401) { tok = null; put(KT, null); throw { auth: true }; }
-      if (!r.ok) throw { http: r.status };
+      if (!r.ok) return r.json().then(null, function () { return null; }).then(function (b) { throw { http: r.status, reason: reason(b) }; });
       return r.status === 204 ? null : r.json();
-    });
+    }, function () { throw { net: true }; }); // no answer at all: no connection
+  }
+  // Why Drive said no, as Google's guide "Resolve errors" lists it: {error: {errors: [{reason: 'storageQuotaExceeded'}]}}.
+  function reason(b) { var e = b && b.error, x = e && e.errors && e.errors[0]; return x && x.reason || e && e.status || ''; }
+  // A sync that went wrong says what happened. A busy Drive (429, a 5xx, or a 403 rate limit; Google's guide says
+  // to try those again a little later) gets one more try by itself, a minute on.
+  function failed(e) {
+    if (e && e.auth) return setStatus('tap');
+    if (e === RETRY) return setStatus('error', 'sync.busyAgain');
+    if (e && e.net) return setStatus('error', 'sync.offline');
+    if (e && e.http === 403 && e.reason === 'storageQuotaExceeded') return setStatus('error', 'sync.full');
+    if (e && (e.http === 429 || e.http >= 500 || e.http === 403 && /^(user)?[rR]ateLimitExceeded$/.test(e.reason))) {
+      if (busyTried) return setStatus('error', 'sync.stillBusy');
+      if (!busyT) busyT = setTimeout(function () { busyT = null; busyTried = true; sync(); }, 60000);
+      return setStatus('error', 'sync.busy');
+    }
+    setStatus('error', 'sync.noReach');
   }
   function find(meta, fields) {
     var k = Object.keys(meta.appProperties)[0], q = "appProperties has { key='" + k + "' and value='" + meta.appProperties[k] + "' } and trashed=false";
@@ -272,12 +297,12 @@
     if (busy) { again = true; return busy; }
     setStatus('busy');
     busy = run(0).then(function (changed) {
+      clearTimeout(busyT); busyT = null; busyTried = false;
       setStatus('ok');
       if (changed.length) ups.forEach(function (f) { try { f(changed); } catch (e) { if (window.console) console.error("Loteria sync: applying synced data failed", e); } });
       return changed;
     }, function (e) {
-      if (e && e.auth) setStatus('tap');
-      else setStatus('error', e === RETRY ? 'sync.busyAgain' : 'sync.noReach');
+      failed(e);
       return [];
     }).then(function (changed) {
       busy = null;
@@ -295,7 +320,7 @@
     gisLoading = true;
     var s = document.createElement('script');
     s.src = 'https://accounts.google.com/gsi/client'; s.async = true;
-    s.onload = init; s.onerror = function () { gisLoading = false; setStatus(st.on ? 'tap' : 'off', 'sync.gisLoad'); };
+    s.onload = init; s.onerror = function () { gisLoading = false; gisFailed = true; setStatus(st.on ? 'tap' : 'off', 'sync.gisLoad'); };
     document.head.appendChild(s);
   }
   function init() {
@@ -304,7 +329,8 @@
       client_id: CLIENT_ID, scope: SCOPE, callback: gotToken,
       error_callback: function (e) { var closed = e && e.type === 'popup_closed'; setStatus(st.on ? 'tap' : 'off', closed ? '' : 'sync.gisDone'); } // closed by hand: nothing to say
     });
-    setStatus(status, note);
+    gisFailed = false;
+    setStatus(status, note === 'sync.gisLoad' || note === 'sync.stillLoading' ? '' : note); // it has loaded now
   }
   function gotToken(r) {
     if (!r || r.error || !google.accounts.oauth2.hasGrantedAllScopes(r, SCOPE)) { setStatus(st.on ? 'tap' : 'off', 'sync.denied'); return; }
@@ -315,6 +341,7 @@
   // Turn it on. With a sign-in from any junkdrawer.works app still good, no Google window at all.
   function start() {
     if (!CLIENT_ID) return;
+    asked = true;
     if (!live()) { signIn(); return; }
     st.on = true; if (!st.email && tok.email) st.email = tok.email; saveSt();
     (st.email ? Promise.resolve() : whoami()).then(sync);
@@ -322,7 +349,8 @@
   // Google only opens its window from a tap, so this has to run inside a click handler.
   function signIn() {
     if (!CLIENT_ID) return;
-    if (!client) { loadGis(); setStatus(status, 'sync.stillLoading'); return; }
+    // Not loaded yet: it's still on its way, or it didn't come at all (and is asked for again).
+    if (!client) { var lost = gisFailed; loadGis(); setStatus(status, lost ? 'sync.gisLoad' : 'sync.stillLoading'); return; }
     var hint = st.email || (tok && tok.email) || '', o = { prompt: hint ? '' : 'select_account' }; if (hint) o.login_hint = hint;
     client.requestAccessToken(o);
   }
@@ -342,7 +370,7 @@
     return T('sync.onDate', { date: new Date(t).toLocaleDateString(T.locale, { month: 'short', day: 'numeric' }) });
   }
   function line() {
-    return status === 'busy' ? esc(T('sync.syncing')) : status === 'tap' ? T.html('sync.tapNow_html') : status === 'error' ? esc(T(note)) : st.last ? esc(T('sync.last', { ago: ago(st.last) })) : '';
+    return status === 'busy' ? esc(T('sync.syncing')) : status === 'tap' ? (note ? esc(T(note)) + ' ' : '') + T.html('sync.tapNow_html') : status === 'error' ? esc(T(note)) : st.last ? esc(T('sync.last', { ago: ago(st.last) })) : '';
   }
   var CLOUD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18.5h10.5a4 4 0 0 0 .7-7.94A6 6 0 0 0 6.7 9.1 4.7 4.7 0 0 0 7 18.5z"/></svg>';
   function css() {
@@ -356,8 +384,11 @@
       '.lsync-card .row{margin-top:8px}.lsync-card p{margin:6px 0 0}';
     document.head.appendChild(s);
   }
+  var WHOLE = { 'sync.full': 1, 'sync.busy': 1, 'sync.stillLoading': 1 }; // notes that already say what comes next
   function title() {
-    return status === 'busy' ? T('sync.t.busy') : status === 'tap' ? T('sync.t.tap') : status === 'error' ? T('sync.t.error', { note: T(note) }) : st.last ? T('sync.t.okAgo', { ago: ago(st.last) }) : T('sync.t.ok');
+    if (status === 'busy') return T('sync.t.busy');
+    if ((status === 'tap' || status === 'error') && note) return WHOLE[note] ? T(note) : T('sync.t.error', { note: T(note) });
+    return status === 'tap' ? T('sync.t.tap') : st.last ? T('sync.t.okAgo', { ago: ago(st.last) }) : T('sync.t.ok');
   }
   // A header button: a cloud with a dot (green synced, gold syncing, red needs a tap).
   function chip(btn) {
@@ -393,7 +424,7 @@
     watch(draw);
   }
   function watch(f) { watchers.push(f); f(); }
-  function now() { if (!st.on) start(); else if (!live()) signIn(); else sync(); } // inside a tap
+  function now() { if (!st.on) { start(); return; } asked = true; if (!live()) signIn(); else sync(); } // inside a tap
   function changed() { // a page saved something
     if (!CLIENT_ID || !st.on || !track()) return;
     clearTimeout(pushT);
@@ -405,6 +436,7 @@
     isOn: function () { return !!CLIENT_ID && st.on; },
     connect: start, now: now, changed: changed, chip: chip, card: card,
     onUpdate: function (f) { ups.push(f); }, // f(keys): synced data landed in these localStorage keys
+    onNote: function (f) { says.push(f); }, // f(text): what went wrong after a tap, to show for a few seconds
     _merge: mergeCol, _cols: COLS // for tests
   };
 
@@ -415,6 +447,7 @@
     if (live()) setTimeout(sync, 0);
   }
   document.addEventListener('visibilitychange', function () { if (!document.hidden && st.on && live() && Date.now() - st.last > 30000) sync(); });
+  window.addEventListener('online', function () { if (st.on && live() && status === 'error') sync(); }); // back from no connection
   window.addEventListener('storage', function (e) { // another tab saved: pick it up here too
     if (e.key === KS || e.key === KT) { st = Object.assign({ on: false, email: '', name: '', last: 0 }, get(KS) || {}); tok = get(KT); setStatus(st.on ? (live() ? 'ok' : 'tap') : 'off'); return; }
     if (KEYS.indexOf(e.key) >= 0) ups.forEach(function (f) { try { f([e.key]); } catch (x) { } });

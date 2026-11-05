@@ -276,7 +276,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     P.tablas = JSON.parse(H.pop()); UI.sel = null; save(); render(); toast(T('print.undone'));
   }
 
-  var toastT; function toast(m) { var t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove('show'); }, 2600); }
+  var toastT; function toast(m, ms) { var t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove('show'); }, ms || 2600); }
 
   // ---------- the doubles rule ----------
   // Family rule: a card may go on a tabla twice (never three times). With doubles off, each card once.
@@ -658,6 +658,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   // ---------- Google Drive ----------
   if (window.LoteriaSync) {
     LoteriaSync.chip($('syncBtn')); LoteriaSync.card($('syncCard'));
+    LoteriaSync.onNote(function (m) { toast(m, 6000); }); // what went wrong after a tap on ☁ or Sync now, long enough to read
     LoteriaSync.onUpdate(function (keys) { // tablas made on another device have landed here
       if (keys.indexOf(LSP) < 0) return;
       try { var o = JSON.parse(localStorage.getItem(LSP)); if (o && Array.isArray(o.tablas)) P.tablas = savedTablas(o); } catch (e) { }
