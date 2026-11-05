@@ -13,9 +13,9 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-180.png">
-<title>Lotería · Play along</title>
+<title>Lotería · My tablas</title>
 <meta name="description" content="Play lotería along with El Cantor on your own phone: tap the card that was called and it marks itself, with a cheer when you win.">
-<meta property="og:title" content="Lotería · Play along">
+<meta property="og:title" content="Lotería · My tablas">
 <meta property="og:description" content="Your tablas on your own phone: tap the card that was called and it marks itself.">
 <meta property="og:image" content="https://el-cantor.junkdrawer.works/og.png">
 <meta property="og:url" content="https://el-cantor.junkdrawer.works/board.html">
@@ -573,7 +573,7 @@ a{color:var(--teal);font-weight:700}
   function shareUrl(p) { return location.href.split('#')[0] + encodeShare(p); }
   function shareSheet() {
     var p = player(), url = shareUrl(p);
-    openSheet('<div class="hd"><h2>Share ' + esc(p.name) + '’s tablas</h2><button class="btn sec sm" type="button" id="shx">Done</button></div><div class="bd stack"><p class="note">Anyone who opens this link gets a copy of these ' + p.boards.length + ' tablas on their own device, under the name “' + esc(p.name) + '”. The link is the whole thing — nothing is stored anywhere else.</p><input id="shUrl" readonly value="' + esc(url) + '"><div class="row"><button class="btn red" type="button" id="shCopy">Copy link</button>' + (navigator.share ? '<button class="btn sec" type="button" id="shNative">Send…</button>' : '') + '</div></div>');
+    openSheet('<div class="hd"><h2>Share ' + esc(p.name) + '’s tablas</h2><button class="btn sec sm" type="button" id="shx">Done</button></div><div class="bd stack"><p class="note">Anyone who opens this link gets a copy of ' + (p.boards.length === 1 ? 'this tabla' : 'these ' + p.boards.length + ' tablas') + ' on their own device, under the name “' + esc(p.name) + '”. The link is the whole thing — nothing is stored anywhere else.</p><input id="shUrl" readonly value="' + esc(url) + '"><div class="row"><button class="btn red" type="button" id="shCopy">Copy link</button>' + (navigator.share ? '<button class="btn sec" type="button" id="shNative">Send…</button>' : '') + '</div></div>');
     $('shx').addEventListener('click', closeSheet);
     $('shCopy').addEventListener('click', function () { var i = $('shUrl'); i.select(); var ok = false; try { if (navigator.clipboard) { navigator.clipboard.writeText(url); ok = true; } else ok = document.execCommand('copy'); } catch (e) { } toast(ok ? 'Link copied' : 'Select the link and copy it'); });
     var nb = $('shNative'); if (nb) nb.addEventListener('click', function () { navigator.share({ title: 'Lotería tablas', text: p.name + '’s tablas', url: url }).catch(function () { }); });

@@ -500,6 +500,46 @@ check('cantor: checking card by card keeps a card read out twice, and a chip tak
   } finally { await ctx.close(); }
 });
 
+check('cantor: one card called reads as one, in ↺ and when checking card by card', async () => {
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.cantor': { order: run(1, 54), pos: 1, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], juego: '', wins: [], settings: { speak: false, sound: false, awake: false, check: true } } });
+    await page.goto(base + 'cantor.html');
+    await page.click('#newBtn');
+    assert.equal(await page.textContent('#sheet .note'), 'The 1 card called so far goes back in the deck and it gets shuffled. Tell everyone to clear their tablas.');
+    await page.click('#nrNo');
+    await page.click('#lotBtn');
+    await page.click('#vfSeg [data-v="cards"]');
+    await page.locator('#vfPick .pk', { has: page.locator('.n', { hasText: /^El Gallo$/ }) }).click();
+    assert.equal(await page.textContent('#vfV h3'), 'It’s out');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
+check('names: El Cantor and Make tablas call My tablas by its name, and its Share says “this tabla” for one', async () => {
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.cantor': { order: run(1, 54), pos: 0, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], juego: '', wins: [], settings: { speak: false, sound: false } }, 'loteria.v1': people([{ id: 'm1', name: 'Mine 1', cards: run(1) }]), 'loteria.print': { tablas: [{ id: 't1', name: 'Tabla 1', cards: run(1) }], set: { doubles: true, per: 2, paper: 'letter', names: true, who: '' } } });
+    await page.goto(base + 'cantor.html');
+    await page.click('#setBtn');
+    // A plain link, in the same window: a second window would take the caller out of the installed app.
+    const link = page.locator('#sheet a', { hasText: 'My tablas' });
+    assert.equal(await link.count(), 1, 'Settings has no link named My tablas');
+    assert.deepEqual([await link.getAttribute('href'), await link.getAttribute('target')], ['board.html', null]);
+    assert.doesNotMatch(await page.textContent('#sheet'), /Lotería board/);
+    await page.goto(base + 'print.html');
+    await page.click('#appBtn');
+    assert.match(await page.textContent('#dlg .note'), /^Makes a link that opens My tablas with this tabla for whoever you name\./);
+    await page.goto(base + 'board.html');
+    assert.equal(await page.title(), 'Lotería · My tablas');
+    await page.click('#tablasBtn'); await page.click('#tbShare');
+    assert.match(await page.textContent('#sheet .note'), /^Anyone who opens this link gets a copy of this tabla on their own device/);
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 // ---------------------------------------------------------------- My tablas
 check('board: a first visit picks a player, then plays a round to a ¡Lotería!', async () => {
   const ctx = await context(PHONE);

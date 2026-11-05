@@ -325,7 +325,6 @@ a.chip{text-decoration:none}
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
   var L = window.Loteria, CARDS = L.CARDS, card = L.card, src = L.src, PATS = L.PATS, ALL = L.ALL;
-  var BOARD_URL = 'board.html'; // the play-along board, beside this page; Settings links to it
   var reduced = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function list(names) { return names.length < 2 ? names.join('') : names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1]; }
@@ -546,7 +545,7 @@ a.chip{text-decoration:none}
   function newRoundAsk() {
     if (!C.pos) { patternSheet('What are we playing?'); return; }
     var was = R.playing; pause();
-    openSheet('<div class="hd"><h2>Start round ' + (C.round + 1) + '?</h2></div><div class="bd stack"><p class="note">The ' + plural(C.pos, 'card', 'cards') + ' called so far go back in the deck and it gets shuffled. Tell everyone to clear their tablas.</p><div class="row"><button class="btn red" type="button" id="nrOk">Shuffle — new round</button><button class="btn sec" type="button" id="nrNo">Keep this round</button></div></div>');
+    openSheet('<div class="hd"><h2>Start round ' + (C.round + 1) + '?</h2></div><div class="bd stack"><p class="note">The ' + plural(C.pos, 'card', 'cards') + ' called so far ' + (C.pos === 1 ? 'goes' : 'go') + ' back in the deck and it gets shuffled. Tell everyone to clear their tablas.</p><div class="row"><button class="btn red" type="button" id="nrOk">Shuffle — new round</button><button class="btn sec" type="button" id="nrNo">Keep this round</button></div></div>');
     $('nrOk').addEventListener('click', function () { closeSheet(); newRound(); patternSheet('Round ' + C.round + ' — what are we playing?'); });
     $('nrNo').addEventListener('click', function () { closeSheet(); if (was) play(); });
   }
@@ -746,10 +745,9 @@ a.chip{text-decoration:none}
       '<div class="card"><div class="row sp"><div><b>Keep the screen on</b><p class="note">While a round is going, if this device allows it.</p></div><button class="chip" type="button" id="awBtn"></button></div></div>' +
       '<div class="card" id="winsCard"></div>' +
       '<div class="card" id="syncCard" hidden></div>' +
-      '<div class="card"><div class="eyebrow">Playing along</div><p class="note" style="margin-top:6px">' + (BOARD_URL ? 'Anyone can mark their own tablas on their phone with the <a id="boardLink" target="_blank" rel="noopener">Lotería board</a> — tap <b>Cantaron…</b> there as you call. ' : '') + 'Printed tablas work too: <b>Print tablas</b> makes a numbered set, or <a href="print.html">make your own</a> card by card.</p></div>' +
+      '<div class="card"><div class="eyebrow">Playing along</div><p class="note" style="margin-top:6px">Anyone can mark their tablas on their own phone with <a href="board.html">My tablas</a> — tap <b>Cantaron…</b> there as you call. Printed tablas work too: <b>Print tablas</b> makes a numbered set, or <a href="print.html">make your own</a> card by card.</p></div>' +
       '<div class="card"><div class="eyebrow">Keyboard</div><p class="note" style="margin-top:6px">Space starts or pauses · → next card · ← puts the last card back · L checks a ¡Lotería!</p></div>' +
       '<footer class="jd-foot"><a href="https://junkdrawer.works/">Part of junkdrawer.works</a> <span aria-hidden="true">·</span> <a href="https://junkdrawer.works/privacy.html">Privacy</a></footer></div>');
-    if (BOARD_URL) $('boardLink').href = BOARD_URL;
     var STYLES = [
       ['name', 'Name only', 'Just the card: “¡La Luna!” The verse still shows on screen.'],
       ['verse', 'Verse, then name', '“El farol de los enamorados… ¡La Luna!” The card turns over right away.'],
@@ -960,7 +958,7 @@ a.chip{text-decoration:none}
       if (not.length) { v.className = 'verdict no'; v.innerHTML = '<h3>Not yet</h3><p>' + esc(list(not.map(function (n) { return card(n).name; }))) + (not.length === 1 ? ' hasn’t' : ' haven’t') + ' been called.</p>'; return; }
       var last = Math.max.apply(null, out.map(orderOf));
       V.how = L.gameName(C.patterns);
-      v.className = 'verdict ok'; v.innerHTML = '<h3>All ' + out.length + ' are out</h3><p>If they make the shape — ' + esc(L.gameName(C.patterns)) + ' — it’s good. ' + esc(whenText(last)) + '</p>';
+      v.className = 'verdict ok'; v.innerHTML = '<h3>' + (out.length === 1 ? 'It’s out' : 'All ' + out.length + ' are out') + '</h3><p>If they make the shape — ' + esc(L.gameName(C.patterns)) + ' — it’s good. ' + esc(whenText(last)) + '</p>';
     }
     document.querySelectorAll('#vfSeg button').forEach(function (b) { b.addEventListener('click', function () { V.mode = b.dataset.v; body(); }); });
     $('vfx').addEventListener('click', closeSheet);
