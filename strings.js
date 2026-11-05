@@ -13,8 +13,9 @@
 //   T.apply(root)      fills in markup: data-t (its text), data-t-html, data-t-aria (aria-label), data-t-title
 //                      (title) and data-t-ph (placeholder). The markup keeps its English, and a page runs
 //                      T.apply(document) right after it, so English never flashes up first.
-//   T.switch(host, reopen)  draws the English | Español control. A tap saves the choice and reloads the page; reopen
-//                      ('settings') is left in sessionStorage 'loteria.reopen' so the page opens that sheet again.
+//   T.switch(host, reopen, before)  draws the English | Español control. A tap saves the choice and reloads the page;
+//                      reopen ('settings') is left in sessionStorage 'loteria.reopen' so the page opens that sheet again,
+//                      and before() runs first, to keep what the page needs back (a shared link, a name typed).
 // test/e2e.mjs's 'strings' check fails when a key is missing in either language, a {value} or a plural form is
 // missing on one side, or a key is used nowhere. Change a wording in both languages.
 //
@@ -930,20 +931,21 @@
     each('data-t-title', function (el, k) { el.title = T(k); });
     each('data-t-ph', function (el, k) { el.placeholder = T(k); });
   };
-  T.set = function (to, reopen) {
+  T.set = function (to, reopen, before) {
     if (to === lang || !S[to]) return;
+    if (before) before();
     try { localStorage.setItem(KEY, to); } catch (e) { }
     try { if (reopen) sessionStorage.setItem('loteria.reopen', reopen); } catch (e) { }
     location.reload();
   };
   // Each label in its own language (the same in both tables), so someone who reads only one of them can find it.
-  T.switch = function (host, reopen) {
+  T.switch = function (host, reopen, before) {
     var label = { en: T('lang.en'), es: T('lang.es') };
     host.innerHTML = '<div class="seg lang" role="group" aria-label="' + esc(T('lang.label')) + '">' + ['en', 'es'].map(function (l) {
       return '<button type="button" lang="' + l + '" data-lang="' + l + '" aria-pressed="' + (l === lang) + '"' + (l === lang ? ' class="on"' : '') + '>' + esc(label[l]) + '</button>';
     }).join('') + '</div>';
     var bs = host.querySelectorAll('button');
-    for (var i = 0; i < bs.length; i++) bs[i].addEventListener('click', function () { T.set(this.getAttribute('data-lang'), reopen); });
+    for (var i = 0; i < bs.length; i++) bs[i].addEventListener('click', function () { T.set(this.getAttribute('data-lang'), reopen, before); });
   };
   T.S = S; // the tables, for test/e2e.mjs
   window.T = T;

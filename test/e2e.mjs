@@ -1052,6 +1052,47 @@ check('board: a shared link on a new device makes that person its player, and sa
   }
 });
 
+check('espanol: on a first visit, English | Español on the shared-link sheet keeps the link, and on Who’s playing the name typed', async () => {
+  // A phone in English, opening a link with two tablas for Mamá: Español there brings the same offer back in Spanish.
+  let ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await page.goto(base + 'board.html#t=Mam%C3%A1~Tabla%201:1.2.3.4.5.6.7.8.9.a.b.c.d.e.f.g~Tabla%202:h.i.j.k.l.m.n.o.p.q.r.s.t.u.v.w');
+    assert.equal(await sheetTitle(page), 'Tablas from Mamá');
+    assert.equal(await page.getAttribute('#shLang [lang="en"]', 'aria-pressed'), 'true');
+    await Promise.all([page.waitForEvent('load'), page.click('#shLang [lang="es"]')]);
+    await until(page, () => (document.querySelector('#sheet h2') || {}).textContent === 'Tablas de Mamá');
+    assert.equal(await page.getAttribute('html', 'lang'), 'es-MX');
+    assert.equal(await page.textContent('#sheet .note'), 'Esta liga trae 2 tablas para “Mamá”.');
+    assert.equal(await page.evaluate(() => location.hash), '', 'the link was left in the address');
+    assert.equal(await saved(page, 'loteria.v1'), null, 'a player was saved before anyone chose');
+    await page.click('#imOk');
+    assert.deepEqual((await saved(page, 'loteria.v1')).players.map(p => [p.name, p.boards.map(b => b.name + ':' + b.cards.join('.'))]), [['Mamá', ['Tabla 1:' + run(1).join('.'), 'Tabla 2:' + run(17).join('.')]]]);
+    // Set up now: a link for someone else asks without the switch, which is in Settings.
+    await page.goto(base + 'board.html#t=Beto~Tabla%201:1.2.3.4.5.6.7.8.9.a.b.c.d.e.f.g');
+    await until(page, () => (document.querySelector('#sheet h2') || {}).textContent === 'Tablas de Beto');
+    assert.equal(await page.locator('#shLang').count(), 0);
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+  // Who's playing: a name typed comes back in the new language, and nobody is saved meanwhile.
+  ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await page.goto(base + 'board.html');
+    assert.equal(await sheetTitle(page), 'Who’s playing on this device?');
+    await page.fill('#wName', 'Tía Lupe');
+    await Promise.all([page.waitForEvent('load'), page.click('#shLang [lang="es"]')]);
+    await until(page, () => (document.querySelector('#sheet h2') || {}).textContent === '¿Quién juega en este dispositivo?');
+    assert.equal(await page.inputValue('#wName'), 'Tía Lupe');
+    assert.equal(await saved(page, 'loteria.v1'), null);
+    await page.click('#wMark');
+    assert.deepEqual((await saved(page, 'loteria.v1')).players.map(p => p.name), ['Tía Lupe']);
+    await page.reload();
+    assert.ok(await page.evaluate(() => document.getElementById('sheet').hidden && sessionStorage.getItem('loteria.wName') === null));
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('board: a share link carries a ~ in a name, and a broken link doesn’t stop the board', async () => {
   let url;
   for (const step of ['share', 'open', 'broken']) {

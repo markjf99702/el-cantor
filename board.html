@@ -594,15 +594,21 @@ a{color:var(--teal);font-weight:700}
   }
   function maybeImport() {
     var imp = decodeShare(location.hash); if (!imp) return;
+    imp.link = location.hash; // as it came, to put back if the page reloads in another language
     history.replaceState(null, '', location.pathname + location.search);
     importSheet(imp);
   }
+  // The language switch at the foot of a first-visit sheet: someone who reads the other language may land here first,
+  // and the sheet waits for a choice before Settings can be reached.
+  function langRow() { return '<div class="row" style="margin-top:4px"><span class="eyebrow">' + T('lang.label') + '</span><div id="shLang"></div></div>'; }
   // On a device nobody has set up yet, the person in the link becomes its player, or No thanks goes on to
   // Who's playing. Nothing is saved before one or the other, so the stand-in Mark never sticks.
   function importSheet(imp) {
     var first = firstRun, existing = first ? null : S.players.filter(function (p) { return p.name.toLowerCase() === imp.name.toLowerCase(); })[0];
-    openSheet('<div class="hd"><h2>' + esc(T('board.importH', { name: imp.name })) + '</h2></div><div class="bd stack"><p class="note">' + esc(T('board.importNote', { n: imp.boards.length, name: imp.name }) + (existing ? ' ' + T('board.importHave', { name: existing.name }) : '')) + '</p><div class="row"><button class="btn red" type="button" id="imOk">' + T(existing ? 'board.replaceUse' : 'board.addUse') + '</button><button class="btn sec" type="button" id="imNo">' + T('board.noThanks') + '</button></div></div>');
+    openSheet('<div class="hd"><h2>' + esc(T('board.importH', { name: imp.name })) + '</h2></div><div class="bd stack"><p class="note">' + esc(T('board.importNote', { n: imp.boards.length, name: imp.name }) + (existing ? ' ' + T('board.importHave', { name: existing.name }) : '')) + '</p><div class="row"><button class="btn red" type="button" id="imOk">' + T(existing ? 'board.replaceUse' : 'board.addUse') + '</button><button class="btn sec" type="button" id="imNo">' + T('board.noThanks') + '</button></div>' + (first ? langRow() : '') + '</div>');
     if (first) UI.welcome = true; // waits for a choice, like Who's playing
+    // A new language reloads the page: the link goes back in the address first, so the same tablas are offered again.
+    if (first) T.switch($('shLang'), null, function () { history.replaceState(null, '', location.pathname + location.search + (imp.link || encodeShare(imp))); });
     reopen = function () { importSheet(imp); }; // tablas from Google Drive landed: ask again with them in place
     $('imNo').addEventListener('click', function () { if (first) welcomeSheet(); else closeSheet(); });
     $('imOk').addEventListener('click', function () {
@@ -615,9 +621,12 @@ a{color:var(--teal);font-weight:700}
   // ---------- first visit ----------
   function welcomeSheet() {
     openSheet('<div class="hd"><h2>' + T('board.welcomeH') + '</h2></div><div class="bd stack"><p class="note">' + T(window.LoteriaSync && LoteriaSync.ready ? 'board.welcomeDrive' : 'board.welcomeLocal') + '</p><input id="wName" placeholder="' + esc(T('board.yourName')) + '" autocomplete="off" autocapitalize="words"><div class="card"><div class="eyebrow">' + T('board.startWith') + '</div><div class="row" style="margin-top:8px"><button class="btn red" type="button" id="wRandom">' + T('board.wRandom') + '</button><button class="btn sec" type="button" id="wMark">' + T('board.wMark') + '</button></div><p class="note" style="margin-top:8px">' + T.html('board.eitherWay_html') + '</p></div>' +
-      (window.LoteriaSync && LoteriaSync.ready ? '<p class="note">' + T('board.alreadyDrive') + '</p><div class="card" id="wSync"></div>' : '') + '</div>');
+      (window.LoteriaSync && LoteriaSync.ready ? '<p class="note">' + T('board.alreadyDrive') + '</p><div class="card" id="wSync"></div>' : '') + langRow() + '</div>');
     UI.welcome = true; // waits for a choice: no tap outside, no Escape
     if (window.LoteriaSync) LoteriaSync.card($('wSync'));
+    // Nothing is saved before a choice, so a new language just reloads; a name already typed comes back with it.
+    T.switch($('shLang'), null, function () { try { sessionStorage.setItem('loteria.wName', $('wName').value); } catch (e) { } });
+    try { var typed = sessionStorage.getItem('loteria.wName'); sessionStorage.removeItem('loteria.wName'); if (typed) $('wName').value = typed; } catch (e) { }
     function go(mark) {
       var name = $('wName').value.trim() || (mark ? 'Mark' : T('board.player'));
       var p = { id: uid(), name: name, boards: mark ? origBoards() : [randomBoard('Tabla 1'), randomBoard('Tabla 2')] };
