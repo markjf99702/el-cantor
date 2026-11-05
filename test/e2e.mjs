@@ -908,6 +908,7 @@ check('cantor: a winner’s name goes from the ¡Lotería! box to the checker, a
     assert.equal(await sheetTitle(page), 'Round 4 — what are we playing?');
     await page.click('#ptx');
     // Take their word: a name typed the way a past winner's is goes in as theirs, and Shuffle asks what's next, as above.
+    await page.click('#nextBtn'); // a card into the new round: before one, ¡Lotería! only says ▶ starts the round
     await page.click('#lotBtn');
     assert.deepEqual(await chips('#clNames'), ['Abuela', 'tío beto']);
     await page.fill('#clWho', 'abuela ');
@@ -921,6 +922,7 @@ check('cantor: a winner’s name goes from the ¡Lotería! box to the checker, a
     assert.deepEqual(await chips('#winsCard'), ['tío beto · 2', 'Abuela · 2']);
     await page.click('#stx');
     // A spelling with no capitals gives way to one typed with them, so the tally can be put right.
+    await page.click('#nextBtn');
     await page.click('#lotBtn');
     await page.fill('#clWho', 'Tío Beto');
     await page.click('#clNew');
