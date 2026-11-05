@@ -54,7 +54,7 @@
       'home.print.go': 'Make tablas →',
       'home.privacy': 'Everything stays on this device: no accounts, nothing sent anywhere.',
       'home.privacyDrive': 'Everything stays on this device unless you save to Google Drive, which keeps your tablas in a Lotería folder in your own Drive.',
-      'home.juegos_html': 'Numbered juegos that El Cantor checks by number print from El Cantor’s <b>Print tablas</b>.',
+      'home.juegos': 'El Cantor also prints numbered tablas it can check by number.',
       // shared by the pages
       'home.aria': 'Home — all the Lotería tools',
       'home.title': 'Home',
@@ -301,8 +301,8 @@
       'board.callingH': 'Calling the game?',
       'board.calling_html': '<a href="cantor.html">El Cantor</a> shuffles a deck and reads each card aloud, prints numbered tablas, and checks a ¡Lotería! by tabla number.',
       'board.about': 'About',
-      'board.aboutDrive': 'Everything lives on this device, and in your Google Drive if you save there. Reload-safe: the round survives a refresh.',
-      'board.aboutLocal': 'Everything lives on this device — nothing is sent anywhere. Reload-safe: the round survives a refresh.',
+      'board.aboutDrive': 'Everything lives on this device, and in your Google Drive if you save there. A refresh keeps the round.',
+      'board.aboutLocal': 'Everything lives on this device — nothing is sent anywhere. A refresh keeps the round.',
 
       // My tablas: Tablas, and a printed tabla
       'board.playerName': 'Player name',
@@ -502,7 +502,7 @@
       'home.print.go': 'Hacer tablas →',
       'home.privacy': 'Todo se queda en este dispositivo: sin cuentas, nada se manda a ningún lado.',
       'home.privacyDrive': 'Todo se queda en este dispositivo, a menos que guardes en Google Drive: ahí tus tablas van a una carpeta Lotería en tu propio Drive.',
-      'home.juegos_html': 'Los juegos numerados, que El Cantor revisa por número, se imprimen desde <b>Imprimir tablas</b> en El Cantor.',
+      'home.juegos': 'El Cantor también imprime tablas numeradas que puede revisar por número.',
       // shared by the pages
       'home.aria': 'Inicio — todas las herramientas de Lotería',
       'home.title': 'Inicio',

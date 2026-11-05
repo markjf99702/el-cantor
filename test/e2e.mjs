@@ -568,6 +568,20 @@ check('home: the three tools, at phone and desktop width', async () => {
   }
 });
 
+check('home: the footer says El Cantor prints numbered tablas, and My tablas’ About that a refresh keeps the round', async () => {
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await page.goto(base);
+    assert.equal(await page.textContent('footer:has(#privacy)'), 'Everything stays on this device: no accounts, nothing sent anywhere. El Cantor also prints numbered tablas it can check by number.');
+    await seed(page, { 'loteria.v1': ANA });
+    await page.goto(base + 'board.html');
+    await page.click('#setBtn');
+    assert.equal(await page.locator('#sheet .card', { hasText: 'About' }).locator('.note').textContent(), 'Everything lives on this device — nothing is sent anywhere. A refresh keeps the round.');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('fonts: every page has Bree Serif and Nunito Sans, served from here', async () => {
   const ctx = await context(PHONE);
   try {
