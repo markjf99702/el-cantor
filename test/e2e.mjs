@@ -921,6 +921,38 @@ check('board: a share link carries a ~ in a name, and a broken link doesn’t st
   }
 });
 
+check('board: Share’s Copy link says “Link copied” only when it copied, and leaves the link selected when it couldn’t', async () => {
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.v1': ANA });
+    await page.goto(base + 'board.html');
+    await page.click('#tablasBtn'); await page.click('#tbShare');
+    const url = await page.inputValue('#shUrl');
+    // The clipboard copies, refuses (no permission, an installed app, a page without the focus) or isn't there; the
+    // browser's older copy command, tried after it, copies what's selected or refuses too.
+    const copy = async (clip, old) => {
+      await page.evaluate(([clip, old]) => {
+        window.__copied = null;
+        const writeText = clip === 'copies' ? t => { window.__copied = t; return Promise.resolve(); } : () => Promise.reject(new DOMException('Write permission denied.', 'NotAllowedError'));
+        Object.defineProperty(navigator, 'clipboard', { configurable: true, value: clip === 'none' ? undefined : { writeText } });
+        document.execCommand = c => { const i = document.activeElement; if (c !== 'copy' || old === 'refuses' || !i || i.id !== 'shUrl') return false; window.__copied = i.value.slice(i.selectionStart, i.selectionEnd); return true; };
+        document.getElementById('toast').textContent = '';
+      }, [clip, old]);
+      await page.click('#shCopy');
+      await until(page, () => document.getElementById('toast').textContent !== '');
+      await page.waitForTimeout(100); // a toast that's taken back
+      return [await page.textContent('#toast'), await page.evaluate(() => window.__copied)];
+    };
+    assert.deepEqual(await copy('copies', 'copies'), ['Link copied', url]);
+    assert.deepEqual(await copy('refuses', 'copies'), ['Link copied', url], 'the clipboard refused and nothing else copied it');
+    assert.deepEqual(await copy('none', 'copies'), ['Link copied', url]);
+    assert.deepEqual(await copy('refuses', 'refuses'), ['Select the link and copy it', null], 'it said it copied when nothing did');
+    assert.deepEqual(await page.evaluate(() => { const i = document.activeElement; return [i.id, i.selectionStart, i.selectionEnd]; }), ['shUrl', 0, url.length], 'the link isn’t left selected to copy by hand');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('board: calling a card from Cantaron… doesn’t put a phone’s keyboard up; a computer keeps typing', async () => {
   for (const kind of [PHONE, DESKTOP]) {
     const ctx = await context(kind);

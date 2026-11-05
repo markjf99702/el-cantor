@@ -575,7 +575,16 @@ a{color:var(--teal);font-weight:700}
     var p = player(), url = shareUrl(p);
     openSheet('<div class="hd"><h2>Share ' + esc(p.name) + '’s tablas</h2><button class="btn sec sm" type="button" id="shx">Done</button></div><div class="bd stack"><p class="note">Anyone who opens this link gets a copy of ' + (p.boards.length === 1 ? 'this tabla' : 'these ' + p.boards.length + ' tablas') + ' on their own device, under the name “' + esc(p.name) + '”. The link is the whole thing — nothing is stored anywhere else.</p><input id="shUrl" readonly value="' + esc(url) + '"><div class="row"><button class="btn red" type="button" id="shCopy">Copy link</button>' + (navigator.share ? '<button class="btn sec" type="button" id="shNative">Send…</button>' : '') + '</div></div>');
     $('shx').addEventListener('click', closeSheet);
-    $('shCopy').addEventListener('click', function () { var i = $('shUrl'); i.select(); var ok = false; try { if (navigator.clipboard) { navigator.clipboard.writeText(url); ok = true; } else ok = document.execCommand('copy'); } catch (e) { } toast(ok ? 'Link copied' : 'Select the link and copy it'); });
+    // It says the link is copied once it is. Where the clipboard refuses (no permission, some installed apps), the
+    // browser's older copy command has a go; if that can't either, the link stays selected for the phone's own Copy.
+    $('shCopy').addEventListener('click', function () {
+      var i = $('shUrl');
+      function pick() { i.focus({ preventScroll: true }); i.select(); i.setSelectionRange(0, i.value.length); }
+      function old() { pick(); var ok = false; try { ok = document.execCommand('copy'); } catch (e) { } if (!ok) pick(); toast(ok ? 'Link copied' : 'Select the link and copy it'); }
+      pick();
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { toast('Link copied'); }, old);
+      else old();
+    });
     var nb = $('shNative'); if (nb) nb.addEventListener('click', function () { navigator.share({ title: 'Lotería tablas', text: p.name + '’s tablas', url: url }).catch(function () { }); });
   }
   function maybeImport() {
