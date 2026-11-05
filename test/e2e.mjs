@@ -710,6 +710,26 @@ check('cantor: deals cards and keeps the round through a reload', async () => {
   } finally { await ctx.close(); }
 });
 
+check('cantor: the card called is the card itself, edge to edge on its own cream paper, with no white mat round it', async () => {
+  // The cards are drawn on cream (#FBF4E4) with their own rounded frame; a white mat round them made a second frame,
+  // and the brightest thing on a dark screen.
+  for (const scheme of ['light', 'dark']) {
+    const ctx = await context(PHONE, { colorScheme: scheme });
+    try {
+      const page = await ctx.newPage(), problems = watch(page);
+      await page.goto(base + 'cantor.html');
+      await page.click('#nextBtn');
+      await until(page, () => document.getElementById('bigImg').complete && document.getElementById('bigImg').naturalWidth > 0);
+      const f = await page.evaluate(() => {
+        const face = document.querySelector('.face.front'), img = document.getElementById('bigImg'), a = face.getBoundingClientRect(), b = img.getBoundingClientRect();
+        return { bg: getComputedStyle(face).backgroundColor, inset: [b.left - a.left, b.top - a.top, a.right - b.right, a.bottom - b.bottom].map(Math.round), back: getComputedStyle(document.querySelector('.face.back')).backgroundColor };
+      });
+      assert.deepEqual(f, { bg: 'rgb(251, 244, 228)', inset: [0, 0, 0, 0], back: 'rgb(251, 244, 228)' }, scheme);
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
+});
+
 check('cantor: two windows on one device follow each other instead of calling a card twice', async () => {
   // The installed app and a browser tab share one save. A known deck, read as Adivinanza so each call takes a few seconds.
   const order = run(1, 54).reverse();
