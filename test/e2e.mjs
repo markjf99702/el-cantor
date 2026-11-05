@@ -485,7 +485,7 @@ check('espanol: My tablas in Spanish, from the first visit and a shared link to 
   } finally { await ctx.close(); }
 });
 
-check('espanol: Make tablas in Spanish, with Print… and Play these in the app…', async () => {
+check('espanol: Make tablas in Spanish, with Print… and Play these in My tablas…', async () => {
   // Tabla 1 full, with El Gallo twice; Tabla 2 nine cards in. Ana's two tablas from My tablas are there to copy in.
   const PRINT = { tablas: [{ id: 't1', name: 'Tabla 1', cards: [1].concat(run(1, 15)) }, { id: 't2', name: 'Tabla 2', cards: run(20, 9).concat([0, 0, 0, 0, 0, 0, 0]) }], set: { doubles: true, per: 2, paper: 'letter', names: true, who: '' } };
   for (const kind of [PHONE, { viewport: { width: 360, height: 740 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true }, DESKTOP]) {
@@ -520,11 +520,13 @@ check('espanol: Make tablas in Spanish, with Print… and Play these in the app�
       assert.equal(right[0], right[1], 'Sí / No isn’t on the right of its row');
       await clean('Print…');
       await page.click('#pdx');
-      // Play these in the app…: a link with no name typed goes as Familia.
+      // Play these in My tablas…: a link with no name typed goes as Familia.
       await page.click('#appBtn');
-      assert.equal(await page.textContent('#dlg h2'), 'Jugar estas en la app');
+      assert.equal(await page.textContent('#appBtn'), 'Jugar estas en Mis tablas…');
+      assert.equal(await page.textContent('#dlg h2'), 'Jugar estas en Mis tablas');
+      assert.equal(await page.textContent('#apOpen'), 'Abrir en Mis tablas');
       assert.equal(await page.textContent('#dlg .note'), 'Hace una liga que abre Mis tablas con estas 4 tablas para quien tú digas. Ábrela aquí o mándala al teléfono o iPad donde se va a jugar. 1 tabla todavía no está llena y se queda.');
-      await clean('Play these in the app…');
+      await clean('Play these in My tablas…');
       await Promise.all([page.waitForURL(/board\.html#t=Familia~/), page.click('#apOpen')]);
       await until(page, () => (document.querySelector('#sheet h2') || {}).textContent === 'Tablas de Familia');
       assert.deepEqual(problems, []);
@@ -1013,11 +1015,21 @@ check('names: El Cantor and Make tablas call My tablas by its name, and its Shar
     assert.deepEqual([await link.getAttribute('href'), await link.getAttribute('target')], ['board.html', null]);
     assert.doesNotMatch(await page.textContent('#sheet'), /Lotería board/);
     await page.goto(base + 'print.html');
+    assert.equal(await page.textContent('#appBtn'), 'Play these in My tablas…');
     await page.click('#appBtn');
     assert.match(await page.textContent('#dlg .note'), /^Makes a link that opens My tablas with this tabla for whoever you name\./);
+    assert.deepEqual([await page.textContent('#dlg h2'), await page.textContent('#apOpen')], ['Play these in My tablas', 'Open in My tablas']);
+    assert.doesNotMatch(await page.textContent('#dlg'), /the app/, 'Play these calls My tablas “the app”');
+    await page.click('#apx');
+    await page.click('.tb [data-a="clear"]');
+    await page.click('#appBtn');
+    assert.equal(await page.textContent('#toast'), 'Fill a tabla all the way first — My tablas needs all 16 squares');
     await page.goto(base + 'board.html');
     assert.equal(await page.title(), 'Lotería · My tablas');
-    await page.click('#tablasBtn'); await page.click('#tbShare');
+    await page.click('#tablasBtn');
+    await page.click('#tbDel'); // the only person
+    assert.equal(await page.textContent('#toast'), 'There has to be one person — add someone else first');
+    await page.click('#tbShare');
     assert.match(await page.textContent('#sheet .note'), /^Anyone who opens this link gets a copy of this tabla on their own device/);
     assert.deepEqual(problems, []);
   } finally { await ctx.close(); }

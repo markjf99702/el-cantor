@@ -320,7 +320,7 @@
       'board.removeTablaAgain': 'Tap again to remove {tabla}', // a tabla: no personal "a" in Spanish
       'board.sixPlenty': 'Six tablas is plenty',
       'board.replaceAllAgain': { one: 'Tap again to replace your tabla', other: 'Tap again to replace all {n} tablas' },
-      'board.needOne': 'Add someone else first — the app needs one player',
+      'board.needOne': 'There has to be one person — add someone else first',
       'board.removePersonAgain': 'Tap again to remove {name}', // a person: "quitar a {name}"
       'board.addPrintedH': 'Add a printed tabla',
       'board.printedNote': 'Tablas printed from El Cantor carry a juego name along the bottom and a number at the top. Type both and the same tabla shows up here, square for square — so the caller can still check it by number.',
@@ -373,7 +373,7 @@
       'print.printBtn': 'Print…',
       'print.hint_html': '<b>Drag</b> cards from the deck onto a square (on a phone or iPad, press and hold a card first). Drag a square to move it around the tabla, onto another tabla to copy it there, or back to the deck to take it off. Or <b>tap</b> a square, then tap cards to fill in order.',
       'print.savedHere': 'Saved on this device as you go.',
-      'print.appBtn': 'Play these in the app…',
+      'print.appBtn': 'Play these in My tablas…',
       'print.find': 'Find a card — “luna” or 23',
       'print.findAria': 'Find a card',
       'print.nothingUndo': 'Nothing to undo',
@@ -430,16 +430,16 @@
       'print.scaleNote': 'In the print window, keep the scale at 100% (or “Actual size”) and turn off headers and footers.',
       'print.getting': 'Getting the cards ready…',
 
-      // Make tablas: Play these in the app…
-      'print.fillFirst': 'Fill a tabla all the way first — the app needs all 16 squares',
-      'print.appH': 'Play these in the app',
+      // Make tablas: Play these in My tablas…
+      'print.fillFirst': 'Fill a tabla all the way first — My tablas needs all 16 squares',
+      'print.appH': 'Play these in My tablas',
       'print.appNote': { one: 'Makes a link that opens My tablas with this tabla for whoever you name. Open it here, or send it to the phone or iPad that will play.', other: 'Makes a link that opens My tablas with these {n} tablas for whoever you name. Open it here, or send it to the phone or iPad that will play.' },
       'print.appRest': { one: '1 tabla isn’t full yet and stays behind.', other: '{n} tablas aren’t full yet and stay behind.' },
       'print.appSix': 'My tablas keeps six per person, so pick up to six.',
       'print.appMost': 'Six tablas per person is the most My tablas holds',
       'print.whose': 'Whose tablas are these?',
       'print.family': 'Family', // the name sent in the link when none is typed
-      'print.openApp': 'Open in the app',
+      'print.openApp': 'Open in My tablas',
       'print.appAsks': 'If My tablas already has someone by that name, it asks whether to add to their tablas or replace them.',
       'print.copyPrompt': 'Copy this link:',
 
@@ -767,7 +767,7 @@
       'board.removeTablaAgain': 'Toca otra vez para quitar {tabla}',
       'board.sixPlenty': 'Con seis tablas basta',
       'board.replaceAllAgain': { one: 'Toca otra vez para reemplazar tu tabla', other: 'Toca otra vez para reemplazar tus {n} tablas' },
-      'board.needOne': 'Primero agrega a alguien más — la app necesita a alguien que juegue',
+      'board.needOne': 'Tiene que haber alguien — primero agrega a otra persona',
       'board.removePersonAgain': 'Toca otra vez para quitar a {name}',
       'board.addPrintedH': 'Agregar una tabla impresa',
       'board.printedNote': 'Las tablas que imprime El Cantor traen el nombre del juego abajo y un número arriba. Escribe los dos y aquí aparece la misma tabla, casilla por casilla — así quien canta la puede revisar por número.',
@@ -820,7 +820,7 @@
       'print.printBtn': 'Imprimir…',
       'print.hint_html': '<b>Arrastra</b> cartas de la baraja a una casilla (en un teléfono o iPad, primero mantén presionada la carta). Arrastra una casilla para moverla dentro de la tabla, a otra tabla para copiarla allá, o de regreso a la baraja para quitarla. O <b>toca</b> una casilla y luego toca cartas para llenarla en orden.',
       'print.savedHere': 'Se guarda en este dispositivo mientras trabajas.',
-      'print.appBtn': 'Jugar estas en la app…',
+      'print.appBtn': 'Jugar estas en Mis tablas…',
       'print.find': 'Busca una carta — “luna” o 23',
       'print.findAria': 'Buscar una carta',
       'print.nothingUndo': 'No hay nada que deshacer',
@@ -877,16 +877,16 @@
       'print.scaleNote': 'En la ventana de impresión, deja la escala en 100 % (o “Tamaño real”) y quita los encabezados y pies de página.',
       'print.getting': 'Preparando las cartas…',
 
-      // Make tablas: Play these in the app…
-      'print.fillFirst': 'Primero llena una tabla completa — la app necesita las 16 casillas',
-      'print.appH': 'Jugar estas en la app',
+      // Make tablas: Play these in My tablas…
+      'print.fillFirst': 'Primero llena una tabla completa — Mis tablas necesita las 16 casillas',
+      'print.appH': 'Jugar estas en Mis tablas',
       'print.appNote': { one: 'Hace una liga que abre Mis tablas con esta tabla para quien tú digas. Ábrela aquí o mándala al teléfono o iPad donde se va a jugar.', other: 'Hace una liga que abre Mis tablas con estas {n} tablas para quien tú digas. Ábrela aquí o mándala al teléfono o iPad donde se va a jugar.' },
       'print.appRest': { one: '1 tabla todavía no está llena y se queda.', other: '{n} tablas todavía no están llenas y se quedan.' },
       'print.appSix': 'Mis tablas guarda hasta seis por persona, así que escoge hasta seis.',
       'print.appMost': 'Mis tablas guarda hasta seis tablas por persona',
       'print.whose': '¿De quién son estas tablas?',
       'print.family': 'Familia',
-      'print.openApp': 'Abrir en la app',
+      'print.openApp': 'Abrir en Mis tablas',
       'print.appAsks': 'Si Mis tablas ya tiene a alguien con ese nombre, te pregunta si las agregas a sus tablas o si reemplazas las suyas.',
       'print.copyPrompt': 'Copia esta liga:',
 
