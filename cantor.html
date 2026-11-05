@@ -990,8 +990,8 @@ a.chip{text-decoration:none}
   function celebrate(who) {
     var box = $('winbox'), r = C.round, first = UI.cheered !== r;
     if (first) { UI.cheered = r; fanfare(); }
-    var cards = T('cards', { n: C.pos });
-    box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p>' + (who ? T.html('cantor.won_html', { who: who, r: r, cards: cards }) : esc(T('cantor.wonNobody', { r: r, cards: cards }))) + '</p><div class="row"><button class="btn red" type="button" id="celOk">' + T('cantor.shuffleFor', { r: r + 1 }) + '</button></div></div></div>';
+    var n = C.pos; // the cards called
+    box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p>' + (who ? T.html('cantor.won_html', { who: who, r: r, n: n }) : esc(T('cantor.wonNobody', { r: r, n: n }))) + '</p><div class="row"><button class="btn red" type="button" id="celOk">' + T('cantor.shuffleFor', { r: r + 1 }) + '</button></div></div></div>';
     box.hidden = false;
     var lines = (first ? [{ clip: 'loteria', text: '¡Lotería!', gap: 200 }] : []).concat(who && !choice().pack ? [{ text: 'Felicidades, ' + who + '.' }] : []);
     if (voiceOn() && lines.length) say(lines, null);

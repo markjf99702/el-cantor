@@ -211,6 +211,8 @@ check('strings: Spanish for a device in Spanish until a language is chosen, and 
   assert.equal(E('x_html', { who: '<i>' }), '<b><i></b> won', 'T leaves text as it is (it goes in with textContent)');
   assert.deepEqual([E.list(['El Gallo']), E.list(['El Gallo', 'La Luna']), E.list(['El Gallo', 'La Luna', 'La Rosa'])], ['El Gallo', 'El Gallo and La Luna', 'El Gallo, La Luna and La Rosa']);
   assert.equal(S.list(['El Gallo', 'La Luna', 'La Rosa']), 'El Gallo, La Luna y La Rosa');
+  // A round won with the cards called so far, not with that many on the tabla.
+  assert.deepEqual([E('cantor.wonNobody', { r: 2, n: 1 }), S('cantor.wonNobody', { r: 2, n: 1 }), S.html('cantor.won_html', { who: 'Tía Lupe', r: 2, n: 6 })], ['Round 2 is won after 1 card.', 'Se ganó la ronda 2 con 1 carta cantada.', '<b>Tía Lupe</b> gana la ronda 2 con 6 cartas cantadas.']);
   assert.deepEqual([1, 2, 3, 4, 11, 12, 13, 21, 22, 23, 54, 101, 111].map(E.ord), ['1st', '2nd', '3rd', '4th', '11th', '12th', '13th', '21st', '22nd', '23rd', '54th', '101st', '111th']);
   assert.deepEqual([1, 5, 22].map(S.ord), ['1.ª', '5.ª', '22.ª']);
 });
@@ -344,6 +346,7 @@ check('espanol: El Cantor in Spanish, every sheet and the ¡Lotería! box, and t
       assert.equal(await page.textContent('#vfWin'), 'Darla por buena');
       assert.deepEqual(await english(page), [], where + 'English on Not yet');
       await page.click('#vfSeg [data-v="cards"]');
+      assert.equal(await page.textContent('#vfV p'), 'Pídele que te lea sus cartas ganadoras y toca cada una abajo. Así funciona con una tabla de la tienda o de otro juego.');
       assert.deepEqual(await english(page), [], where + 'English in Card by card');
       const pick = name => page.locator('#vfPick .pk', { has: page.locator('.n', { hasText: new RegExp('^' + name + '$') }) }).click();
       await pick('El Gallo'); await pick('La Luna');
@@ -355,7 +358,7 @@ check('espanol: El Cantor in Spanish, every sheet and the ¡Lotería! box, and t
       await page.fill('#vfWho', 'Tía Lupe');
       await page.click('#vfWin');
       await page.waitForSelector('#winbox .winc #celOk');
-      assert.equal(await page.textContent('#winbox .winc p'), 'Tía Lupe gana la ronda 2 con 5 cartas.');
+      assert.equal(await page.textContent('#winbox .winc p'), 'Tía Lupe gana la ronda 2 con 5 cartas cantadas.');
       assert.deepEqual(await english(page), [], where + 'English in the celebration');
       assert.deepEqual(problems, []);
     } finally { await ctx.close(); }
@@ -2060,6 +2063,7 @@ check('keyboard: Enter (a phone’s Go) does the main thing in the name and numb
     await page.press('#vfWho', 'Enter');
     assert.deepEqual(await wins(), ['3 Tío Beto']);
     assert.ok(await page.isVisible('#celOk'), 'no celebration');
+    assert.equal(await page.textContent('#winbox .winc p'), 'Tío Beto wins round 3 after 6 cards.');
     // My tablas: Add a person, and the No. box of a printed tabla.
     await seed(page, { 'loteria.v1': ANA });
     await page.goto(base + 'board.html');

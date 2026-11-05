@@ -217,8 +217,8 @@
       'cantor.notCalled': { one: '{list} hasn’t been called.', other: '{list} haven’t been called.' },
       'cantor.allOut': { one: 'It’s out', other: 'All {n} are out' },
       'cantor.ifShape': 'If they make the shape — {game} — it’s good. {when}',
-      'cantor.won_html': '<b>{who}</b> wins round {r} after {cards}.',
-      'cantor.wonNobody': 'Round {r} is won after {cards}.',
+      'cantor.won_html': { one: '<b>{who}</b> wins round {r} after 1 card.', other: '<b>{who}</b> wins round {r} after {n} cards.' },
+      'cantor.wonNobody': { one: 'Round {r} is won after 1 card.', other: 'Round {r} is won after {n} cards.' },
 
       // El Cantor: Print tablas, and the PDF
       'cantor.prIntro_html': 'Makes a PDF of numbered tablas to print at home. A set of tablas — a <b>juego</b> — is built from its name, so the same name always gives the same tablas. When someone shouts ¡Lotería!, you check their tabla here by its number.',
@@ -661,12 +661,12 @@
       'cantor.closest_html': { one: '{juego} No. {k} va más cerca de <b>{shape}</b> y le falta {miss}. Las casillas con borde rojo todavía no salen.', other: '{juego} No. {k} va más cerca de <b>{shape}</b> y le faltan {miss}. Las casillas con borde rojo todavía no salen.' },
       'cantor.takeOff': 'Quitar {card}',
       'cantor.notYetChip': ' · todavía no',
-      'cantor.readOut': 'Pídeles que lean sus cartas ganadoras y toca cada una abajo. Así funciona con una tabla de la tienda o de otro juego.',
+      'cantor.readOut': 'Pídele que te lea sus cartas ganadoras y toca cada una abajo. Así funciona con una tabla de la tienda o de otro juego.',
       'cantor.notCalled': { one: '{list} todavía no sale.', other: '{list} todavía no salen.' },
       'cantor.allOut': { one: 'Ya salió', other: 'Ya salieron las {n}' },
       'cantor.ifShape': 'Si forman la figura — {game} — es buena. {when}',
-      'cantor.won_html': '<b>{who}</b> gana la ronda {r} con {cards}.',
-      'cantor.wonNobody': 'Se ganó la ronda {r} con {cards}.',
+      'cantor.won_html': { one: '<b>{who}</b> gana la ronda {r} con 1 carta cantada.', other: '<b>{who}</b> gana la ronda {r} con {n} cartas cantadas.' }, // not "with 6 cards", as if on the tabla
+      'cantor.wonNobody': { one: 'Se ganó la ronda {r} con 1 carta cantada.', other: 'Se ganó la ronda {r} con {n} cartas cantadas.' },
 
       // El Cantor: Print tablas, and the PDF
       'cantor.prIntro_html': 'Hace un PDF de tablas numeradas para imprimir en casa. Un <b>juego</b> de tablas sale de su nombre, así que el mismo nombre siempre da las mismas tablas. Cuando alguien grite ¡Lotería!, aquí revisas su tabla por su número.',
