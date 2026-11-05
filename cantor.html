@@ -208,6 +208,9 @@ a.chip{text-decoration:none}
 .vfwin .card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
 .vfwin input{width:100%;min-width:0}
 .vfwin .btns{display:flex;gap:8px;flex-wrap:wrap}
+.vfwin .chips{grid-column:1/-1;grid-row:2;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -14px;padding:0 14px} /* one line, so the row stays short */
+.vfwin .chips::-webkit-scrollbar{display:none}
+.vfwin .chips .chip{flex:none}
 /* card picker */
 .pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:7px}
 .pk{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:4px 4px 5px;text-align:center;cursor:pointer;position:relative;font:inherit;color:inherit}
@@ -257,7 +260,7 @@ a.chip{text-decoration:none}
   .nextb span{display:none}.nextb{padding:0 13px}
   .bar{gap:8px}.lotb{font-size:20px;padding:0 15px;height:50px}
   .vf{grid-template-columns:1fr}.vf .grid{max-width:200px;margin:0 auto}
-  .vfwin .card{grid-template-columns:minmax(0,1fr)}
+  .vfwin .card{grid-template-columns:minmax(0,1fr)}.vfwin .chips{grid-row:auto}
   .cap{min-height:70px}
 }
 @media (max-width:440px){.stat{display:none}.top h1 .t{display:none}}
@@ -771,8 +774,9 @@ a.chip{text-decoration:none}
     function winsCard() {
       var el = $('winsCard'), w = C.wins;
       if (!w.length) { el.innerHTML = '<div class="eyebrow">Winners</div><p class="note" style="margin-top:6px">When you confirm a ¡Lotería!, add the winner’s name and it’s kept here.</p>'; return; }
-      var tally = {}; w.forEach(function (x) { var k = x.who || 'Unnamed'; tally[k] = (tally[k] || 0) + 1; });
-      el.innerHTML = '<div class="row sp"><div class="eyebrow">Winners</div><button class="btn sec sm" type="button" id="wClr">Clear</button></div><div class="chips" style="margin-top:8px">' + Object.keys(tally).sort(function (a, b) { return tally[b] - tally[a]; }).map(function (k) { return '<span class="chip">' + esc(k) + ' · ' + tally[k] + '</span>'; }).join('') + '</div><div class="wins">' + w.slice(-8).reverse().map(function (x) { return '<div><span>Round ' + x.round + '</span><b>' + esc(x.who || 'Unnamed') + '</b><span>' + esc(x.how) + (x.tabla ? ' · ' + esc(x.tabla) : '') + ' · ' + plural(x.at, 'card', 'cards') + '</span></div>'; }).join('') + '</div>';
+      // One count per person whatever the capitals, under the name as it was last typed.
+      var tally = {}, shown = {}; w.forEach(function (x) { var k = nameKey(x.who); tally[k] = (tally[k] || 0) + 1; shown[k] = k ? String(x.who).trim() : 'Unnamed'; });
+      el.innerHTML = '<div class="row sp"><div class="eyebrow">Winners</div><button class="btn sec sm" type="button" id="wClr">Clear</button></div><div class="chips" style="margin-top:8px">' + Object.keys(tally).sort(function (a, b) { return tally[b] - tally[a]; }).map(function (k) { return '<span class="chip">' + esc(shown[k]) + ' · ' + tally[k] + '</span>'; }).join('') + '</div><div class="wins">' + w.slice(-8).reverse().map(function (x) { return '<div><span>Round ' + x.round + '</span><b>' + esc(x.who || 'Unnamed') + '</b><span>' + esc(x.how) + (x.tabla ? ' · ' + esc(x.tabla) : '') + ' · ' + plural(x.at, 'card', 'cards') + '</span></div>'; }).join('') + '</div>';
       var armed = false;
       $('wClr').addEventListener('click', function () { if (!armed) { armed = true; this.textContent = 'Tap again to clear'; return; } C.wins = []; save(); winsCard(); });
     }
@@ -824,36 +828,62 @@ a.chip{text-decoration:none}
     renderBar();
   }
   function shout() { if (C.settings.check) verifySheet(); else claim(); }
+
+  // ---------- winners' names ----------
+  // One person whatever the capitals: "Abuela" and "abuela " are the same winner.
+  function nameKey(who) { return String(who || '').trim().toLowerCase(); }
+  // Past winners under a Who won? box, newest first and once each: a tap puts the name in the box.
+  function namesHtml(id) {
+    var names = [], seen = {};
+    for (var i = C.wins.length - 1; i >= 0 && names.length < 8; i--) { var w = C.wins[i].who, k = nameKey(w); if (k && !seen[k]) { seen[k] = 1; names.push(String(w).trim()); } }
+    return names.length ? '<div class="chips" id="' + id + '">' + names.map(function (n) { return '<button type="button" class="chip">' + esc(n) + '</button>'; }).join('') + '</div>' : '';
+  }
+  function wireNames(id, input) {
+    var host = $(id), chips = document.querySelectorAll('#' + id + ' .chip');
+    function mark() {
+      var k = nameKey(input.value), on = null;
+      chips.forEach(function (x) { x.classList.toggle('on', !!k && nameKey(x.textContent) === k); if (x.classList.contains('on')) on = x; });
+      if (on) { var r = on.getBoundingClientRect(), h = host.getBoundingClientRect(); if (r.left < h.left || r.right > h.right) host.scrollLeft += r.left - h.left - 14; } // on a line that scrolls, into view
+    }
+    chips.forEach(function (b) { b.addEventListener('click', function () { input.value = b.classList.contains('on') ? '' : b.textContent; mark(); }); });
+    input.addEventListener('input', mark); mark();
+  }
+  // A name typed the way a past winner's was, capitals aside, is saved as theirs, so the tally counts one person.
+  function winnerName(typed) {
+    var k = nameKey(typed);
+    for (var i = C.wins.length - 1; k && i >= 0; i--) if (nameKey(C.wins[i].who) === k) return String(C.wins[i].who).trim();
+    return String(typed || '').trim();
+  }
+  function shuffleNext() { newRound(); patternSheet('Round ' + C.round + ' — what are we playing?'); }
+
   // Take their word: straight to the celebration, with the winner's name and the next round.
   function claim() {
     var was = R.playing; stopCalling(); cheer();
-    var box = $('winbox'), r = C.round, names = [], seen = {};
-    for (var i = C.wins.length - 1; i >= 0 && names.length < 8; i--) { var w = C.wins[i].who, k = w && w.toLowerCase(); if (w && !seen[k]) { seen[k] = 1; names.push(w); } }
+    var box = $('winbox'), r = C.round;
     box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p>Round ' + r + ' · ' + esc(L.gameName(C.patterns)) + ' · ' + plural(C.pos, 'card', 'cards') + ' called</p>' +
-      '<div class="who"><input id="clWho" placeholder="Who won? (optional)" autocomplete="off" maxlength="30" aria-label="Who won">' + (names.length ? '<div class="chips" id="clNames">' + names.map(function (n) { return '<button type="button" class="chip">' + esc(n) + '</button>'; }).join('') + '</div>' : '') + '</div>' +
+      '<div class="who"><input id="clWho" placeholder="Who won? (optional)" autocomplete="off" maxlength="30" aria-label="Who won">' + namesHtml('clNames') + '</div>' +
       '<div class="row"><button class="btn red" type="button" id="clNew">Shuffle for round ' + (r + 1) + '</button><button class="btn sec" type="button" id="clBack">Keep calling</button></div>' +
       '<button type="button" class="linkb" id="clCheck">Check a tabla first</button></div></div>';
     box.hidden = false;
-    box.querySelectorAll('#clNames .chip').forEach(function (b) { b.addEventListener('click', function () { var on = !b.classList.contains('on'); box.querySelectorAll('#clNames .chip').forEach(function (x) { x.classList.remove('on'); }); b.classList.toggle('on', on); $('clWho').value = on ? b.textContent : ''; }); });
-    $('clWho').addEventListener('input', function () { box.querySelectorAll('#clNames .chip').forEach(function (x) { x.classList.toggle('on', x.textContent === $('clWho').value.trim()); }); });
+    wireNames('clNames', $('clWho'));
     $('clNew').addEventListener('click', function () {
-      var who = $('clWho').value.trim();
-      C.wins.push({ round: r, who: who, how: L.gameName(C.patterns), tabla: '', at: C.pos, t: Date.now() }); save();
-      box.hidden = true; newRound(); toast((who ? who + ' wins round ' + r + ' · ' : '') + 'Round ' + C.round + ' is shuffled — tap ▶ to start');
+      C.wins.push({ round: r, who: winnerName($('clWho').value), how: L.gameName(C.patterns), tabla: '', at: C.pos, t: Date.now() }); save();
+      box.hidden = true; shuffleNext();
     });
     $('clBack').addEventListener('click', function () { box.hidden = true; UI.cheered = 0; if (was) play(); });
-    $('clCheck').addEventListener('click', function () { box.hidden = true; verifySheet(was); });
+    $('clCheck').addEventListener('click', function () { box.hidden = true; verifySheet(was, $('clWho').value.trim()); });
     $('clNew').focus();
   }
   function cheer() { if (UI.cheered === C.round) return; UI.cheered = C.round; fanfare(); if (voiceOn()) say([{ clip: 'loteria', text: '¡Lotería!' }], null); }
-  function verifySheet(resume) {
+  function verifySheet(resume, who) {
     var was = arguments.length ? resume : R.playing; stopCalling();
     var V = { mode: C.juego ? 'printed' : 'cards', picked: [], how: '', tabla: '', q: '' };
     openSheet('<div class="hd"><h2>¡Lotería! — check it</h2><button class="btn sec sm" type="button" id="vfx">Keep calling</button></div><div class="bd stack">' +
       '<div class="row sp" style="flex-wrap:wrap"><div class="seg" id="vfSeg"><button type="button" data-v="printed">Printed tabla</button><button type="button" data-v="cards">Card by card</button></div><span class="note">' + esc(L.gameName(C.patterns)) + ' · ' + plural(C.pos, 'card', 'cards') + ' called</span></div>' +
       '<div id="vfBody"></div>' +
-      '<div class="vfwin"><div class="card"><input id="vfWho" placeholder="Who won? (optional)" autocomplete="off" maxlength="30" aria-label="Who won"><div class="btns"><button class="btn red" type="button" id="vfBack" hidden>Keep calling</button><button class="btn red" type="button" id="vfWin">¡Buena! New round</button></div></div></div></div>');
+      '<div class="vfwin"><div class="card"><input id="vfWho" placeholder="Who won? (optional)" autocomplete="off" maxlength="30" aria-label="Who won">' + namesHtml('vfNames') + '<div class="btns"><button class="btn red" type="button" id="vfBack" hidden>Keep calling</button><button class="btn red" type="button" id="vfWin">¡Buena! New round</button></div></div></div></div>');
     UI.onClose = function () { if (!UI.won) { UI.cheered = 0; if (was) play(); } UI.won = false; };
+    $('vfWho').value = who || ''; wireNames('vfNames', $('vfWho'));
     function body() {
       document.querySelectorAll('#vfSeg button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === V.mode); });
       if (V.mode === 'printed') {
@@ -928,7 +958,7 @@ a.chip{text-decoration:none}
     $('vfx').addEventListener('click', closeSheet);
     $('vfBack').addEventListener('click', closeSheet);
     $('vfWin').addEventListener('click', function () {
-      var who = $('vfWho').value.trim();
+      var who = winnerName($('vfWho').value);
       C.wins.push({ round: C.round, who: who, how: V.how || L.gameName(C.patterns), tabla: V.tabla, at: C.pos, t: Date.now() });
       save(); UI.won = true; closeSheet(); celebrate(who);
     });
@@ -941,7 +971,7 @@ a.chip{text-decoration:none}
     box.hidden = false;
     var lines = (first ? [{ clip: 'loteria', text: '¡Lotería!', gap: 200 }] : []).concat(who && !choice().pack ? [{ text: 'Felicidades, ' + who + '.' }] : []);
     if (voiceOn() && lines.length) say(lines, null);
-    $('celOk').addEventListener('click', function () { box.hidden = true; newRound(); patternSheet('Round ' + C.round + ' — what are we playing?'); });
+    $('celOk').addEventListener('click', function () { box.hidden = true; shuffleNext(); });
     $('celOk').focus();
   }
 

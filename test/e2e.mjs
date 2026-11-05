@@ -391,6 +391,45 @@ check('cantor: the juego of a tabla checked once is ready at the next ¡Lotería
   } finally { await ctx.close(); }
 });
 
+check('cantor: a winner’s name goes from the ¡Lotería! box to the checker, and the tally counts a name once, whatever its capitals', async () => {
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    // Two rounds won by Tío Beto, typed two ways on two phones before.
+    const win = (round, who) => ({ round, who, how: 'Clásico', tabla: '', at: 9, t: round });
+    await seed(page, { 'loteria.cantor': { order: run(1, 54), pos: 6, round: 3, patterns: ['equis'], juego: '', wins: [win(1, 'Tío Beto'), win(2, 'tío beto')], settings: { speak: false, sound: false, check: false } } });
+    await page.goto(base + 'cantor.html');
+    const chips = sel => page.$$eval(sel + ' .chip', bs => bs.map(b => b.textContent + (b.classList.contains('on') ? ' (on)' : '')));
+    const wins = async () => (await saved(page, 'loteria.cantor')).wins.map(w => w.round + ' ' + w.who);
+    await page.click('#lotBtn');
+    assert.deepEqual(await chips('#clNames'), ['tío beto']);
+    await page.fill('#clWho', 'Abuela');
+    await page.click('#clCheck');
+    assert.equal(await page.inputValue('#vfWho'), 'Abuela', 'Check a tabla first lost the name');
+    assert.deepEqual(await chips('#vfNames'), ['tío beto'], 'the checker has no past winners to tap');
+    await page.click('#vfNames .chip');
+    assert.equal(await page.inputValue('#vfWho'), 'tío beto');
+    await page.fill('#vfWho', 'Abuela');
+    await page.click('#vfWin');
+    await page.click('#celOk');
+    assert.equal(await sheetTitle(page), 'Round 4 — what are we playing?');
+    await page.click('#ptx');
+    // Take their word: a name typed the way a past winner's is goes in as theirs, and Shuffle asks what's next, as above.
+    await page.click('#lotBtn');
+    assert.deepEqual(await chips('#clNames'), ['Abuela', 'tío beto']);
+    await page.fill('#clWho', 'abuela ');
+    assert.deepEqual(await chips('#clNames'), ['Abuela (on)', 'tío beto']);
+    await page.click('#clNew');
+    assert.equal(await sheetTitle(page), 'Round 5 — what are we playing?', 'take their word’s Shuffle didn’t ask what we’re playing');
+    await page.click('#ptx');
+    assert.deepEqual((await saved(page, 'loteria.cantor')).patterns, ['equis'], 'Done changed the game');
+    assert.deepEqual(await wins(), ['1 Tío Beto', '2 tío beto', '3 Abuela', '4 Abuela']);
+    await page.click('#setBtn');
+    assert.deepEqual(await chips('#winsCard'), ['tío beto · 2', 'Abuela · 2']);
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('cantor: checking card by card keeps a card read out twice, and a chip takes a card back off', async () => {
   // Mark's Tabla 2 has La Corona twice in its second row, read out square by square: El Cazo, La Corona, La Corona, El Negrito.
   const ctx = await context(PHONE);
