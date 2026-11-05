@@ -265,6 +265,7 @@ a.chip{text-decoration:none}
   .vfwin .card{grid-template-columns:minmax(0,1fr)}.vfwin .chips{grid-row:auto}
   .cap{min-height:70px}
 }
+@media (max-width:560px) and (max-height:780px){.vf .grid{max-width:170px}} /* a short phone keeps the verdict and the winner row on screen with the tabla */
 @media (max-width:440px){.stat{display:none}.top h1 .t{display:none}}
 @media (max-width:400px){.bar{padding:10px 10px 12px;gap:6px}.cbtn{width:42px;height:42px}.nextb{height:42px;padding:0 11px}.pacec{height:42px;padding:0 9px 0 7px;gap:3px}.playb{margin:0 3px}.lotb{font-size:18px;padding:0 11px;height:48px}}
 @media (max-width:340px){.pacec svg{display:none}.pacec{padding:0 10px}}
@@ -932,6 +933,9 @@ a.chip{text-decoration:none}
         v.className = 'verdict no'; v.innerHTML = '<h3>Not yet</h3><p>' + esc(name) + ' No. ' + k + ' is closest to <b>' + esc(cl.pat.name) + '</b> and still needs ' + esc(miss) + '. Squares outlined in red haven’t been called.</p>';
       }
       host.innerHTML = tablaHtml(t, hit, need);
+      // On a short screen the winner row would cover the verdict: the sheet scrolls just enough to show it above the row.
+      var bd = v.closest('.bd'), over = v.getBoundingClientRect().bottom - (bd.querySelector('.vfwin').getBoundingClientRect().top - 12);
+      if (over > 0) bd.scrollTop += over;
     }
     function pickGrid() {
       var f = L.fold(V.q.trim()), num = parseInt(f, 10), host = $('vfPick'); host.innerHTML = '';

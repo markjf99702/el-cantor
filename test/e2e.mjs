@@ -383,6 +383,23 @@ check('cantor: checks a printed tabla by juego and number (CANELA 7 never change
   } finally { await ctx.close(); }
 });
 
+check('cantor: on a short phone a printed tabla’s verdict shows above the winner row', async () => {
+  const ctx = await context({ ...PHONE, viewport: { width: 360, height: 740 } });
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    const win = (round, who) => ({ round, who, how: 'Clásico', tabla: '', at: 9, t: round });
+    await seed(page, { 'loteria.cantor': { order: run(1, 54), pos: 6, round: 3, patterns: ['linea', 'esquinas', 'cuadro'], juego: 'CANELA', wins: [win(1, 'Abuela'), win(2, 'Tío Beto')], settings: { speak: false, sound: false, check: true } } });
+    await page.goto(base + 'cantor.html');
+    await page.click('#lotBtn');
+    await page.fill('#vfN', '3');
+    const seen = sel => page.$eval(sel, el => { const r = el.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight && el.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)); });
+    assert.equal(await page.textContent('#vfV h3'), 'Not yet');
+    assert.ok(await seen('#vfV h3'), 'the winner row covers the verdict');
+    assert.ok(await seen('#vfBack'), 'Keep calling is off the screen');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('cantor: the juego of a tabla checked once is ready at the next ¡Lotería!', async () => {
   // The usual table: the tablas were printed on the laptop, and the caller's phone has never made a PDF.
   const ctx = await context(PHONE);
