@@ -132,6 +132,8 @@ input[type=search]::-webkit-search-cancel-button{display:none} /* the box clears
 .sheet .hd h2{margin:0;font:400 20px/1 var(--disp);flex:1}
 .sheet .hd input{flex:1}
 .sheet .bd{overflow:auto;padding:4px 14px 16px;flex:1;min-height:0;-webkit-overflow-scrolling:touch}
+.later{margin:-4px 0 -6px;font-size:14px} /* a way out of a sheet that waits for a choice, quieter than the choices */
+.later a{display:inline-block;padding:8px 0;color:var(--ink2);font-weight:600;text-underline-offset:3px}
 .need{margin:-6px 0 0;color:var(--red);font:700 13px var(--body)} /* under a name box that has to be filled */
 .jd-foot{margin:4px 0 0;text-align:center;color:var(--ink3);font-size:13px}
 .jd-foot a{color:var(--ink2);font-weight:400;text-decoration:none}
@@ -678,8 +680,9 @@ a{color:var(--teal);font-weight:700}
   // ---------- first visit ----------
   function welcomeSheet() {
     openSheet('<div class="hd"><h2>' + T('board.welcomeH') + '</h2></div><div class="bd stack"><p class="note">' + T(window.LoteriaSync && LoteriaSync.ready ? 'board.welcomeDrive' : 'board.welcomeLocal') + '</p><input id="wName" placeholder="' + esc(T('board.yourName')) + '" autocomplete="off" autocapitalize="words" aria-describedby="wNeed"><p class="need" id="wNeed" hidden>' + T('board.nameFirst') + '</p><div class="card"><div class="eyebrow">' + T('board.startWith') + '</div><div class="row" style="margin-top:8px"><button class="btn red" type="button" id="wRandom">' + T('board.wRandom') + '</button><button class="btn sec" type="button" id="wMark">' + T('board.wMark') + '</button></div><p class="note" style="margin-top:8px">' + T.html('board.eitherWay_html') + '</p></div>' +
-      (window.LoteriaSync && LoteriaSync.ready ? '<p class="note">' + T('board.alreadyDrive') + '</p><div class="card" id="wSync"></div>' : '') + langRow() + '</div>');
-    UI.welcome = true; // waits for a choice: no tap outside, no Escape
+      (window.LoteriaSync && LoteriaSync.ready ? '<p class="note">' + T('board.alreadyDrive') + '</p><div class="card" id="wSync"></div>' : '') +
+      '<p class="later"><a href="./" id="wLater">' + T('board.notNow') + '</a></p>' + langRow() + '</div>');
+    UI.welcome = true; // waits for a choice: no tap outside, no Escape. Not now goes home, and it asks again next time.
     if (window.LoteriaSync) LoteriaSync.card($('wSync'));
     // Nothing is saved before a choice, so a new language just reloads; a name already typed comes back with it.
     T.switch($('shLang'), null, function () { try { sessionStorage.setItem('loteria.wName', $('wName').value); } catch (e) { } });

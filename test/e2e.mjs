@@ -1099,6 +1099,24 @@ check('board: Who’s playing waits for a name, so nobody is saved as Mark or as
   } finally { await ctx.close(); }
 });
 
+check('board: Not now on Who’s playing goes to the home screen and saves nobody, so it asks again next time', async () => {
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await page.goto(base + 'board.html');
+    assert.equal(await sheetTitle(page), 'Who’s playing on this device?');
+    await page.fill('#wName', 'Lupe'); // typed, but not chosen
+    await Promise.all([page.waitForURL(base), page.click('#wLater')]);
+    assert.equal(await page.title(), 'Lotería');
+    assert.equal(await saved(page, 'loteria.v1'), null, 'Not now saved someone');
+    assert.equal(await page.evaluate(() => sessionStorage.getItem('loteria.wName')), null);
+    await page.goto(base + 'board.html');
+    assert.equal(await sheetTitle(page), 'Who’s playing on this device?', 'it didn’t ask again');
+    assert.equal(await page.inputValue('#wName'), '');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('board: a shared link on a new device makes that person its player, and saves no stand-in Mark', async () => {
   const CARDS1 = '1.2.3.4.5.6.7.8.9.a.b.c.d.e.f.g', who = async page => (await saved(page, 'loteria.v1') || { players: [] }).players.map(p => p.name + ':' + p.boards.length);
   for (const step of ['add', 'no thanks', 'mark', 'set up']) {
