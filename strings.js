@@ -426,6 +426,7 @@
       'print.sumCut': '{tablas} on {pages} — cut along the gap between them.',
       'print.pickOne': 'Pick at least one tabla.',
       'print.notFull': 'Not full yet, empty squares print blank: {list}',
+      'print.emptyN': { one: '{name} (1\u00a0empty)', other: '{name} ({n}\u00a0empty)' }, // in that list, each on one line
       'print.print': 'Print',
       'print.scaleNote': 'In the print window, keep the scale at 100% (or “Actual size”) and turn off headers and footers.',
       'print.getting': 'Getting the cards ready…',
@@ -873,6 +874,7 @@
       'print.sumCut': '{tablas} en {pages} — corta por el espacio entre ellas.',
       'print.pickOne': 'Escoge al menos una tabla.',
       'print.notFull': 'Con casillas vacías, que salen en blanco: {list}',
+      'print.emptyN': { one: '{name} (falta\u00a01)', other: '{name} (faltan\u00a0{n})' },
       'print.print': 'Imprimir',
       'print.scaleNote': 'En la ventana de impresión, deja la escala en 100 % (o “Tamaño real”) y quita los encabezados y pies de página.',
       'print.getting': 'Preparando las cartas…',

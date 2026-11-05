@@ -515,7 +515,7 @@ check('espanol: Make tablas in Spanish, with Print… and Play these in My tabla
       await page.click('#printBtn');
       assert.equal(await page.textContent('#dlg h2'), 'Imprimir tablas');
       assert.match(await page.textContent('#pers .per.on small'), /^Normal · cartas de \d\.\d\d × \d\.\d\d\u00a0pulg\.$/);
-      assert.equal(await page.textContent('#pwarn'), 'Con casillas vacías, que salen en blanco: Tabla 2 (7)');
+      assert.equal(await page.textContent('#pwarn'), 'Con casillas vacías, que salen en blanco: Tabla 2 (faltan\u00a07)');
       const right = await page.$$eval('#paperSeg, #nameSeg', ss => ss.map(s => Math.round(s.getBoundingClientRect().right)));
       assert.equal(right[0], right[1], 'Sí / No isn’t on the right of its row');
       await clean('Print…');
@@ -1940,6 +1940,35 @@ check('print: on an iPhone the deck’s last row clears the home indicator', asy
   } finally { await ctx.close(); }
 });
 
+check('print: Print… says how many squares of a tabla print blank, and has nothing to cut for a lone tabla', async () => {
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.print': { tablas: [{ id: 't1', name: 'Tabla 1', cards: run(1, 15).concat([0]) }, { id: 't2', name: 'Tabla 2', cards: run(20, 9).concat([0, 0, 0, 0, 0, 0, 0]) }], set: { doubles: true, per: 2, paper: 'letter', names: true, who: '' } } });
+    await page.goto(base + 'print.html');
+    await page.click('#printBtn');
+    assert.equal(await page.textContent('#pwarn'), 'Not full yet, empty squares print blank: Tabla 1 (1\u00a0empty), Tabla 2 (7\u00a0empty)');
+    assert.equal(await page.textContent('#psum'), '2 tablas on 1 page — cut along the gap between them.');
+    await page.locator('#tchips .chip', { hasText: 'Tabla 1' }).click();
+    assert.equal(await page.textContent('#psum'), '1 tabla on 1 page.');
+    await page.click('#pers .per[data-v="4"]');
+    assert.equal(await page.textContent('#psum'), '1 tabla on 1 page.');
+    assert.equal(await page.textContent('#pwarn'), 'Not full yet, empty squares print blank: Tabla 2 (7\u00a0empty)');
+    await page.locator('#tchips .chip', { hasText: 'Tabla 1' }).click();
+    assert.equal(await page.textContent('#psum'), '2 tablas on 1 page — cut along the gap between them.');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+  const es = await context(PHONE, { locale: 'es-MX' });
+  try {
+    const page = await es.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.print': { tablas: [{ id: 't1', name: 'Tabla 1', cards: run(1, 15).concat([0]) }], set: { doubles: true, per: 2, paper: 'letter', names: true, who: '' } } });
+    await page.goto(base + 'print.html');
+    await page.click('#printBtn');
+    assert.deepEqual([await page.textContent('#psum'), await page.textContent('#pwarn')], ['1 tabla en 1 hoja.', 'Con casillas vacías, que salen en blanco: Tabla 1 (falta\u00a01)']);
+    assert.deepEqual(problems, []);
+  } finally { await es.close(); }
+});
+
 check('print: two per page prints every tabla whole (Letter and A4, names on and off)', async () => {
   const ctx = await context(DESKTOP);
   try {
@@ -2325,7 +2354,7 @@ check('saves: a damaged save opens with what can be kept, instead of a blank pag
         await seed(page, { 'loteria.print': { tablas: [{ id: 't1', name: 'Tabla 1', cards: run(1) }], set: { doubles: true, per: 3, paper: 'legal', names: true, who: '' } } });
         await page.goto(base + 'print.html');
         await page.click('#printBtn');
-        assert.equal(await page.textContent('#psum'), '1 tabla on 1 page — cut along the gap between them.');
+        assert.equal(await page.textContent('#psum'), '1 tabla on 1 page.');
         assert.equal(await page.textContent('#pers .per.on b'), '2 per page');
         assert.equal(await page.textContent('#paperSeg button.on'), 'Letter');
       }
