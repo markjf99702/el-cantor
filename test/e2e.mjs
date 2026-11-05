@@ -137,7 +137,7 @@ check('deck: Clásico already wins with every shape but Siete Loco, and a game�
 // ---------------------------------------------------------------- the words, without a browser
 // The keys whose Spanish reads the same as the English (the language switch's labels by design); every other key's
 // Spanish is a translation.
-const SAME = ['lang.label', 'lang.en', 'lang.es', 'tablas', 'pace.normal', 'cantor.rate.normal', 'cantor.goodLine', 'board.whoTablas'];
+const SAME = ['lang.label', 'lang.en', 'lang.es', 'tablas', 'pace.normal', 'cantor.rate.normal', 'cantor.goodLine', 'board.whoTablas', 'print.mini'];
 // strings.js as a page loads it on a device in this language, with this choice saved (or none).
 async function loadStrings(language = 'en-US', chosen = null) {
   const box = { navigator: { language, languages: [language] }, document: { documentElement: {} }, localStorage: { getItem: k => k === 'loteria.lang' ? chosen : null } };
@@ -165,7 +165,7 @@ check('strings: every word is there in English and in Spanish, with the same {va
   // argument of T( or T.html(, which may pick one of a few: T(on ? 'on' : 'off'). 'prefix.' + id there uses every key
   // starting prefix., and each shape, voice and pace then needs its own.
   const used = new Set(), prefixes = new Set();
-  for (const f of ['index.html', 'cantor.html', 'board.html', 'deck.js', 'strings.js']) {
+  for (const f of ['index.html', 'cantor.html', 'board.html', 'print.html', 'deck.js', 'strings.js']) {
     const src = await readFile(join(root, f), 'utf8');
     for (const m of src.matchAll(/\bT(?:\.html)?\(/g)) {
       let arg = '', depth = 0;
@@ -478,6 +478,69 @@ check('espanol: My tablas in Spanish, from the first visit and a shared link to 
     await page.reload();
     assert.ok(await page.evaluate(() => document.getElementById('sheet').hidden), 'Settings opens on every reload');
     assert.equal(await page.textContent('#hist'), 'Called cards show up here');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
+check('espanol: Make tablas in Spanish, with Print… and Play these in the app…', async () => {
+  // Tabla 1 full, with El Gallo twice; Tabla 2 nine cards in. Ana's two tablas from My tablas are there to copy in.
+  const PRINT = { tablas: [{ id: 't1', name: 'Tabla 1', cards: [1].concat(run(1, 15)) }, { id: 't2', name: 'Tabla 2', cards: run(20, 9).concat([0, 0, 0, 0, 0, 0, 0]) }], set: { doubles: true, per: 2, paper: 'letter', names: true, who: '' } };
+  for (const kind of [PHONE, { viewport: { width: 360, height: 740 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true }, DESKTOP]) {
+    const ctx = await context(kind, { locale: 'es-MX' });
+    try {
+      const page = await ctx.newPage(), problems = watch(page), where = kind.viewport.width + ': ';
+      const clean = async what => { assert.deepEqual(await english(page), [], where + 'English in ' + what); await noSideways(page, what + ' in Spanish'); };
+      const toast = text => until(page, t => document.getElementById('toast').textContent === t && document.getElementById('toast').classList.contains('show'), text);
+      await seed(page, { 'loteria.v1': ANA, 'loteria.print': PRINT });
+      await page.goto(base + 'print.html');
+      await page.evaluate(() => document.fonts.ready);
+      assert.equal(await page.getAttribute('html', 'lang'), 'es-MX');
+      assert.equal(await page.title(), 'Lotería · Hacer tablas');
+      assert.deepEqual([await page.textContent('#dblBtn'), await page.textContent('.tb .tbn')], ['Dobles ✓', 'Dos veces: El Gallo']);
+      assert.equal(await page.textContent('#dnote'), 'Tabla 1 ya está llena — toca una casilla para cambiarla, o arrastra.');
+      await clean('Make tablas');
+      await page.locator('.addt .chip', { hasText: 'Tablas de Ana (2)' }).click();
+      await toast('Se agregaron 2 tablas');
+      await page.click('.tb[data-t="t1"] [data-a="dup"]');
+      assert.ok(await page.evaluate(() => [...document.querySelectorAll('#tg .nm')].some(i => i.value === 'Tabla 1 (copia)')), 'a copy isn’t named “Tabla 1 (copia)”');
+      await page.click('#dblBtn');
+      await toast('Sin dobles — si sueltas una carta que ya está, se mueve');
+      assert.equal(await page.locator('.tb .tbn').first().textContent(), 'Dos veces: El Gallo — no se permiten dobles');
+      await page.click('#dblBtn');
+      await clean('Make tablas, with tablas copied in');
+      // Print…: the sizes in pulgadas, and each Sí / No on the right of its row, even when its label wraps.
+      await page.click('#printBtn');
+      assert.equal(await page.textContent('#dlg h2'), 'Imprimir tablas');
+      assert.match(await page.textContent('#pers .per.on small'), /^Normal · cartas de \d\.\d\d × \d\.\d\d pulg\.$/);
+      assert.equal(await page.textContent('#pwarn'), 'Con casillas vacías, que salen en blanco: Tabla 2 (7)');
+      const right = await page.$$eval('#paperSeg, #nameSeg', ss => ss.map(s => Math.round(s.getBoundingClientRect().right)));
+      assert.equal(right[0], right[1], 'Sí / No isn’t on the right of its row');
+      await clean('Print…');
+      await page.click('#pdx');
+      // Play these in the app…: a link with no name typed goes as Familia.
+      await page.click('#appBtn');
+      assert.equal(await page.textContent('#dlg h2'), 'Jugar estas en la app');
+      assert.equal(await page.textContent('#dlg .note'), 'Hace una liga que abre Mis tablas con estas 4 tablas para quien tú digas. Ábrela aquí o mándala al teléfono o iPad donde se va a jugar. 1 tabla todavía no está llena y se queda.');
+      await clean('Play these in the app…');
+      await Promise.all([page.waitForURL(/board\.html#t=Familia~/), page.click('#apOpen')]);
+      await until(page, () => (document.querySelector('#sheet h2') || {}).textContent === 'Tablas de Familia');
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
+  // English chosen at the foot of Make tablas: the page comes back in English, with the switch in view.
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.print': PRINT, 'loteria.lang': 'es' });
+    await page.goto(base + 'print.html');
+    assert.equal(await page.textContent('#printBtn'), 'Imprimir…');
+    assert.equal(await page.getAttribute('#langSw [lang="es"]', 'aria-pressed'), 'true');
+    await page.locator('#langSw').scrollIntoViewIfNeeded();
+    await Promise.all([page.waitForEvent('load'), page.click('#langSw [lang="en"]')]);
+    assert.equal(await page.getAttribute('html', 'lang'), 'en');
+    assert.equal(await page.textContent('#printBtn'), 'Print…');
+    await until(page, () => { const r = document.getElementById('langSw').getBoundingClientRect(), t = document.getElementById('tablas').getBoundingClientRect(); return r.top >= t.top && r.bottom <= t.bottom; });
+    assert.equal(await page.evaluate(() => sessionStorage.getItem('loteria.reopen')), null);
     assert.deepEqual(problems, []);
   } finally { await ctx.close(); }
 });
