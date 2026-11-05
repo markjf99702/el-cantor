@@ -1480,6 +1480,42 @@ check('board: a long game name in the header doesn’t paint over the Lotería t
   }
 });
 
+check('board: “not on your tablas” shows whole on a line of its own under the card called, at every width', async () => {
+  // El Violoncello, the longest name, isn't on Mine 1; La Dama is.
+  const ONE = people([{ id: 'm1', name: 'Mine 1', cards: run(1) }]);
+  for (const [w, h] of [[360, 740], [390, 844], [1280, 800]]) for (const lang of ['en', 'es']) {
+    const ctx = await context(w > 500 ? { viewport: { width: w, height: h } } : { ...PHONE, viewport: { width: w, height: h } });
+    try {
+      const page = await ctx.newPage(), problems = watch(page), what = `${w}px, ${lang}`;
+      const strip = () => page.evaluate(() => {
+        const q = s => document.querySelector(s), off = q('#last .off'), n = q('#last .n'), v = q('#last .v'), last = q('#last').getBoundingClientRect();
+        const box = off && off.getBoundingClientRect();
+        return {
+          off: off && { text: off.textContent, whole: off.scrollWidth <= off.clientWidth && box.height > 0 && box.top >= n.getBoundingClientRect().bottom - 1 && box.bottom <= last.bottom },
+          name: n.textContent, oneLine: n.getBoundingClientRect().height < 25, nameWhole: n.scrollWidth <= n.clientWidth, verse: getComputedStyle(v).display !== 'none', height: Math.round(last.height)
+        };
+      });
+      await seed(page, { 'loteria.v1': ONE, 'loteria.lang': lang, 'loteria.game': { called: [3], announced: {} } });
+      await page.goto(base + 'board.html');
+      await page.evaluate(() => document.fonts.ready);
+      const on = await strip();
+      assert.equal(on.off, null, what + ': La Dama is on Mine 1');
+      await seed(page, { 'loteria.v1': ONE, 'loteria.lang': lang, 'loteria.game': { called: [3, 18], announced: {} } });
+      await page.goto(base + 'board.html');
+      await page.evaluate(() => document.fonts.ready);
+      const s = await strip();
+      assert.ok(s.off, what + ': nothing says El Violoncello isn’t on the tablas');
+      assert.equal(s.off.text, lang === 'en' ? 'not on your tablas' : 'no está en tus tablas');
+      assert.ok(s.off.whole, `${what}: “${s.off.text}” is cut off or out of the strip (${JSON.stringify(s)})`);
+      assert.equal(s.name, '18El Violoncello');
+      assert.ok(s.oneLine && s.nameWhole, `${what}: El Violoncello's name doesn't fit on one line (${JSON.stringify(s)})`);
+      assert.equal(s.verse, w > 520, what + (w > 520 ? ': the verse went' : ': the verse shows on a phone'));
+      assert.equal(s.height, on.height, what + ': the strip changed height for a card that isn’t on the tablas');
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
+});
+
 check('board: a tabla’s label stays on one line above its grid, and its win always shows in full', async () => {
   const FOUR = [[11, 24, 43, 33, 16, 51, 29, 52, 26, 31, 31, 49, 22, 19, 44, 50], [45, 38, 4, 32, 36, 47, 47, 26, 5, 9, 35, 28, 20, 12, 8, 37], [1, 39, 2, 21, 35, 48, 48, 13, 3, 14, 23, 34, 18, 38, 6, 30], [15, 25, 34, 17, 40, 41, 41, 7, 46, 12, 42, 53, 54, 10, 27, 38]];
   const marks = FOUR.map((cards, i) => ({ id: 't' + i, name: 'Tabla ' + (i + 1), cards }));

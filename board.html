@@ -76,6 +76,8 @@ input[type=search]::-webkit-search-cancel-button{display:none} /* the box clears
 .last .n{font:400 17px/1.15 var(--disp);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .last .n small{font:600 11px var(--body);color:var(--ink3);margin-right:6px}
 .last .v{font-size:12px;color:var(--ink2);font-style:italic;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.last .off{font:700 12px/1.25 var(--body);color:var(--red);margin-top:1px}
+.last .off+.v{-webkit-line-clamp:1} /* the strip stays the same height */
 .last .empty{font-size:13px;color:var(--ink3)}
 .last button.undo{flex:none;background:none;border:1px solid var(--line2);border-radius:999px;width:34px;height:34px;color:var(--ink2);font-size:15px}
 /* boards */
@@ -179,6 +181,7 @@ a{color:var(--teal);font-weight:700}
 .toast.show{opacity:1;transform:translateX(-50%)}
 @media (max-width:420px){.top:has(#syncBtn:not([hidden])) h1 .t{display:none}}
 @media (max-width:520px){.top h1 small{display:none}.callbtn{min-width:88px;padding:6px 10px}.callbtn b{font-size:17px}.last .v{display:none}}
+@media (max-width:380px){.last{gap:8px;padding:6px}} /* room for El Violoncello's whole name at 360 */
 @media (prefers-reduced-motion:reduce){.cell .mk.new,.winc,.cell.hit::after{animation:none}.toast{transition:none}}
 .noscript{position:fixed;inset:0;z-index:100;margin:0;display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center;padding:16px;text-align:center;font:400 22px/1.3 var(--disp);color:var(--ink);background:var(--bg)}
 </style>
@@ -300,7 +303,8 @@ a{color:var(--teal);font-weight:700}
     var el = $('last'), n = G.called[G.called.length - 1];
     if (!n) { el.innerHTML = '<div class="t"><div class="empty">' + T.html('board.nothingYet_html') + '</div></div>'; return; }
     var c = card(n), onb = player().boards.some(function (b) { return b.cards.indexOf(n) >= 0; });
-    el.innerHTML = '<img src="' + src(n) + '" alt=""><div class="t"><div class="n"><small>' + c.n + '</small>' + c.name + (onb ? '' : ' <small style="color:var(--red)">' + T('board.notOnYours') + '</small>') + '</div><div class="v">' + c.verse + '</div></div><button class="undo" type="button" id="undoBtn" aria-label="' + esc(T('board.undoCall')) + '" title="' + esc(T('board.undoCall')) + '">↶</button>';
+    // A card on none of the tablas says so on a line of its own, under the name: in place of the verse on a phone.
+    el.innerHTML = '<img src="' + src(n) + '" alt=""><div class="t"><div class="n"><small>' + c.n + '</small>' + c.name + '</div>' + (onb ? '' : '<div class="off">' + T('board.notOnYours') + '</div>') + '<div class="v">' + c.verse + '</div></div><button class="undo" type="button" id="undoBtn" aria-label="' + esc(T('board.undoCall')) + '" title="' + esc(T('board.undoCall')) + '">↶</button>';
     $('undoBtn').addEventListener('click', function () { G.called.pop(); tick(); evaluate(false); render(); });
   }
   // Where the keyboard's focus is on the tablas, to put it back once they're drawn again: a square, or a label's button.
