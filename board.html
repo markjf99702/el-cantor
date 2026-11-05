@@ -49,6 +49,8 @@ button,input,select{font:inherit;color:inherit}
 button{cursor:pointer}
 input{background:var(--paper);border:1px solid var(--line2);border-radius:10px;padding:9px 12px;min-width:0;font-size:16px}
 input:focus-visible,button:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
+input[type=search]{-webkit-appearance:none;appearance:none}
+input[type=search]::-webkit-search-cancel-button{display:none} /* the box clears itself when a card is picked */
 .app{position:absolute;inset:0;display:flex;flex-direction:column;padding-top:var(--sat);padding-bottom:var(--sab)}
 /* header */
 .top{display:flex;align-items:center;gap:6px;padding:8px 10px 6px;flex:none}
@@ -386,7 +388,7 @@ a{color:var(--teal);font-weight:700}
   function sheetScroll(top) { var b = document.querySelector('#sheet .bd'); if (!b) return 0; if (top != null) b.scrollTop = top; return b.scrollTop; }
 
   function pickerSheet(mode, onPick, taken) {
-    var sh = openSheet('<div class="hd"><input id="pkq" placeholder="' + (mode === 'call' ? 'Name or number… “luna”, 23' : 'Pick a card for this square') + '" autocomplete="off" inputmode="search"><button class="btn sec sm" type="button" id="pkx">Done</button></div><div class="bd"><div class="pick" id="pk"></div></div>');
+    var sh = openSheet('<div class="hd"><input id="pkq" type="search" enterkeyhint="search" placeholder="' + (mode === 'call' ? 'Name or number… “luna”, 23' : 'Pick a card for this square') + '" autocomplete="off"><button class="btn sec sm" type="button" id="pkx">Done</button></div><div class="bd"><div class="pick" id="pk"></div></div>');
     var q = $('pkq'), grid = $('pk');
     function draw() {
       var f = fold(q.value.trim()), num = parseInt(f, 10);
@@ -449,7 +451,7 @@ a{color:var(--teal);font-weight:700}
       '<div class="card"><div class="eyebrow">Marker</div><div class="row" style="margin-top:8px"><div class="seg" id="mkseg"><button type="button" data-v="bean">Frijol</button><button type="button" data-v="chip">Ficha</button><button type="button" data-v="coin">Moneda</button></div></div></div>' +
       '<div class="card"><div class="row sp"><div><b>Sounds</b><div class="note">A bean drop on each mark, a little fanfare on a win.</div></div><button class="chip" type="button" id="sndBtn"></button></div></div>' +
       '<div class="card"><div class="row sp"><div><b>Dim squares outside the pattern</b><div class="note">Only for fixed shapes like Esquinas or La Ele.</div></div><button class="chip" type="button" id="gdBtn"></button></div></div>' +
-      '<div class="card"><div class="eyebrow">Who is playing on this device</div><div class="row" id="plist" style="margin-top:8px"></div><div class="row" style="margin-top:10px"><input id="pnew" placeholder="Add a person" style="flex:1"><button class="btn sm" type="button" id="padd">Add</button></div><p class="note" style="margin-top:8px">Each person keeps their own tablas. To send someone your tablas, use <b>Share</b> on the Tablas screen.</p></div>' +
+      '<div class="card"><div class="eyebrow">Who is playing on this device</div><div class="row" id="plist" style="margin-top:8px"></div><div class="row" style="margin-top:10px"><input id="pnew" placeholder="Add a person" autocomplete="off" autocapitalize="words" enterkeyhint="done" style="flex:1"><button class="btn sm" type="button" id="padd">Add</button></div><p class="note" style="margin-top:8px">Each person keeps their own tablas. To send someone your tablas, use <b>Share</b> on the Tablas screen.</p></div>' +
       '<div class="card"><div class="eyebrow">Calling the game?</div><p class="note" style="margin-top:6px"><a href="cantor.html">El Cantor</a> shuffles a deck and reads each card aloud, prints numbered tablas, and checks a ¡Lotería! by tabla number.</p></div>' +
       '<div class="card" id="syncCard" hidden></div>' +
       '<div class="card"><div class="eyebrow">About</div><p class="note" style="margin-top:6px">Everything lives on this device' + (window.LoteriaSync && LoteriaSync.ready ? ', and in your Google Drive if you save there' : ' — nothing is sent anywhere') + '. Reload-safe: the round survives a refresh.</p></div>' +
@@ -467,12 +469,13 @@ a{color:var(--teal);font-weight:700}
     $('sndBtn').addEventListener('click', function () { st.sound = !st.sound; save(); draw(); if (st.sound) tick(); });
     $('gdBtn').addEventListener('click', function () { st.guide = !st.guide; save(); draw(); renderBoards(); });
     $('padd').addEventListener('click', function () { var n = $('pnew').value.trim(); if (!n) return; var p = { id: uid(), name: n, boards: [randomBoard('Tabla 1'), randomBoard('Tabla 2')] }; S.players.push(p); S.current = p.id; save(); $('pnew').value = ''; draw(); render(); toast(n + ' gets two random tablas to start — edit them under Tablas'); });
+    $('pnew').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); $('padd').click(); } });
     $('stx').addEventListener('click', closeSheet); draw();
   }
 
   function tablasSheet() {
     var p = player();
-    openSheet('<div class="hd"><input id="tbName" value="' + esc(p.name) + '" aria-label="Player name" style="font:400 18px var(--disp);flex:1"><button class="btn sec sm" type="button" id="tbShare">Share</button><button class="btn sm" type="button" id="tbx">Done</button></div><div class="bd stack"><p class="note">Tap any square to change its card. Doubles are fine (house rules) — when that card is called, both squares get a bean — but not three of a card. Names are editable.</p><div class="edb" id="edb"></div><div class="row"><button class="btn sec sm" type="button" id="tbAdd">+ Add a tabla</button><button class="btn sec sm" type="button" id="tbPrinted">+ A printed tabla</button><button class="btn sec sm" type="button" id="tbOrig">Restore the original four</button><a class="btn sec sm" href="print.html">Make tablas to print</a><button class="btn sec sm" type="button" id="tbDel" style="color:var(--red)">Remove this person</button></div></div>');
+    openSheet('<div class="hd"><input id="tbName" value="' + esc(p.name) + '" aria-label="Player name" autocapitalize="words" style="font:400 18px var(--disp);flex:1"><button class="btn sec sm" type="button" id="tbShare">Share</button><button class="btn sm" type="button" id="tbx">Done</button></div><div class="bd stack"><p class="note">Tap any square to change its card. Doubles are fine (house rules) — when that card is called, both squares get a bean — but not three of a card. Names are editable.</p><div class="edb" id="edb"></div><div class="row"><button class="btn sec sm" type="button" id="tbAdd">+ Add a tabla</button><button class="btn sec sm" type="button" id="tbPrinted">+ A printed tabla</button><button class="btn sec sm" type="button" id="tbOrig">Restore the original four</button><a class="btn sec sm" href="print.html">Make tablas to print</a><button class="btn sec sm" type="button" id="tbDel" style="color:var(--red)">Remove this person</button></div></div>');
     reopen = tablasSheet;
     var origArmed = false; // the tablas a tap would replace or remove are only gone on a second tap
     function draw() {
@@ -529,7 +532,7 @@ a{color:var(--teal);font-weight:700}
 
   // ---------- printed tablas (from El Cantor) ----------
   function printedSheet(typed) {
-    openSheet('<div class="hd"><h2>Add a printed tabla</h2><button class="btn sec sm" type="button" id="ptx">Cancel</button></div><div class="bd stack"><p class="note">Tablas printed from El Cantor carry a juego name along the bottom and a number at the top. Type both and the same tabla shows up here, square for square — so the caller can still check it by number.</p><div class="row"><input id="ptJ" placeholder="Juego, like CANELA" autocomplete="off" autocapitalize="characters" spellcheck="false" style="flex:1 1 10em;text-transform:uppercase;font-weight:700"><input id="ptN" placeholder="No." inputmode="numeric" autocomplete="off" maxlength="3" aria-label="Tabla number" style="width:5.5em"><button class="btn red" type="button" id="ptAdd" disabled>Add it</button></div><div class="edb"><div id="ptPrev"></div></div></div>');
+    openSheet('<div class="hd"><h2>Add a printed tabla</h2><button class="btn sec sm" type="button" id="ptx">Cancel</button></div><div class="bd stack"><p class="note">Tablas printed from El Cantor carry a juego name along the bottom and a number at the top. Type both and the same tabla shows up here, square for square — so the caller can still check it by number.</p><div class="row"><input id="ptJ" placeholder="Juego, like CANELA" autocomplete="off" autocapitalize="characters" spellcheck="false" style="flex:1 1 10em;text-transform:uppercase;font-weight:700"><input id="ptN" placeholder="No." inputmode="numeric" enterkeyhint="done" autocomplete="off" maxlength="3" aria-label="Tabla number" style="width:5.5em"><button class="btn red" type="button" id="ptAdd" disabled>Add it</button></div><div class="edb"><div id="ptPrev"></div></div></div>');
     var pick = null;
     typed = typed || { j: null, n: '' };
     reopen = function () { printedSheet(typed); }; // tablas from Google Drive landed: come back with what was typed
@@ -545,6 +548,7 @@ a{color:var(--teal);font-weight:700}
     $('ptN').value = typed.n;
     $('ptJ').addEventListener('input', draw);
     $('ptN').addEventListener('input', function () { this.value = this.value.replace(/\D/g, ''); draw(); });
+    $('ptN').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); if (!$('ptAdd').disabled) $('ptAdd').click(); } });
     $('ptAdd').addEventListener('click', function () {
       var p = player(); if (!pick) return; if (p.boards.length >= 6) { toast('Six tablas is plenty'); return; }
       p.boards.push({ id: uid(), name: pick.name, cards: pick.cards }); save(); closeSheet(); evaluate(true); render(); tablasSheet(); toast(pick.name + ' added');
@@ -596,7 +600,7 @@ a{color:var(--teal);font-weight:700}
 
   // ---------- first visit ----------
   function welcomeSheet() {
-    openSheet('<div class="hd"><h2>Who’s playing on this device?</h2></div><div class="bd stack"><p class="note">Asked once. Tablas are saved on this phone or tablet' + (window.LoteriaSync && LoteriaSync.ready ? ', and in your own Google Drive if you turn that on below.' : ' only, so what you set up here is yours and nobody else’s.') + '</p><input id="wName" placeholder="Your name" autocomplete="off"><div class="card"><div class="eyebrow">Start with</div><div class="row" style="margin-top:8px"><button class="btn red" type="button" id="wRandom">Random tablas I’ll edit</button><button class="btn sec" type="button" id="wMark">Mark’s four tablas</button></div><p class="note" style="margin-top:8px">Either way you can change every square later under <b>Tablas</b>.</p></div>' +
+    openSheet('<div class="hd"><h2>Who’s playing on this device?</h2></div><div class="bd stack"><p class="note">Asked once. Tablas are saved on this phone or tablet' + (window.LoteriaSync && LoteriaSync.ready ? ', and in your own Google Drive if you turn that on below.' : ' only, so what you set up here is yours and nobody else’s.') + '</p><input id="wName" placeholder="Your name" autocomplete="off" autocapitalize="words"><div class="card"><div class="eyebrow">Start with</div><div class="row" style="margin-top:8px"><button class="btn red" type="button" id="wRandom">Random tablas I’ll edit</button><button class="btn sec" type="button" id="wMark">Mark’s four tablas</button></div><p class="note" style="margin-top:8px">Either way you can change every square later under <b>Tablas</b>.</p></div>' +
       (window.LoteriaSync && LoteriaSync.ready ? '<p class="note">Already saving tablas to Google Drive on another device? Turn it on here and they come right over.</p><div class="card" id="wSync"></div>' : '') + '</div>');
     UI.welcome = true; // waits for a choice: no tap outside, no Escape
     if (window.LoteriaSync) LoteriaSync.card($('wSync'));

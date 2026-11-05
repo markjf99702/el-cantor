@@ -36,7 +36,7 @@ Every page has a ⌂ button back to the home screen. They all load the same `dec
 - **Games:** Clásico (4 in a row, 4 corners, or 4 in a square), or a single shape. The shapes are Línea, Esquinas, Centro, Cuadrito, La Ele, La Equis, El Marco, Rieles, Escalera, Siete Loco and Tabla Llena. Hold a shape for a second to add it to the game; then a tabla wins on any one of them. Clásico already wins with every shape but Siete Loco, so on Clásico only Siete Loco goes on top (**Clásico + Siete Loco**), and holding another one says so.
 - **Keeps a tally** of who won each round. A name counts once whatever its capitals: typed the way a past winner's was, "abuela" is saved as "Abuela".
 
-Keyboard: Space starts or pauses · → next card · ← puts the last card back · L checks a ¡Lotería!
+Keyboard: Space starts or pauses · → next card · ← puts the last card back · L checks a ¡Lotería! · Enter in **Who won?** counts the win (a phone's Go key does the same)
 
 ### My tablas — playing along
 

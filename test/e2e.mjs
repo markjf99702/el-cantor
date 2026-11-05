@@ -1048,6 +1048,94 @@ check('sheets: a sheet takes the focus when it opens, with no phone keyboard, an
   }
 });
 
+check('keyboard: Enter (a phone’s Go) does the main thing in the name and number boxes', async () => {
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    const wins = async () => (await saved(page, 'loteria.cantor')).wins.map(w => w.round + ' ' + w.who);
+    const cantor = extra => ({ order: run(1, 54), pos: 6, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], juego: '', wins: [], settings: { speak: false, sound: false, awake: false, check: false }, ...extra });
+    // El Cantor, taking their word: Enter is Shuffle for round 2.
+    await seed(page, { 'loteria.cantor': cantor() });
+    await page.goto(base + 'cantor.html');
+    await page.click('#lotBtn');
+    await page.fill('#clWho', 'Abuela');
+    await page.press('#clWho', 'Enter');
+    assert.deepEqual(await wins(), ['1 Abuela'], 'Enter in Who won? didn’t count the win');
+    assert.equal(await sheetTitle(page), 'Round 2 — what are we playing?');
+    // The checker: Enter is ¡Buena! New round, but not on a Not yet, where it only puts the keyboard away.
+    await seed(page, { 'loteria.cantor': cantor({ round: 3, settings: { speak: false, sound: false, awake: false, check: true } }) });
+    await page.goto(base + 'cantor.html');
+    await page.click('#lotBtn');
+    await page.locator('#vfPick .pk', { has: page.locator('.n', { hasText: /^La Rana$/ }) }).click();
+    await page.fill('#vfWho', 'Tío Beto');
+    await page.press('#vfWho', 'Enter');
+    assert.equal(await page.textContent('#vfV h3'), 'Not yet');
+    assert.deepEqual(await wins(), [], 'Enter counted a tabla that isn’t good');
+    assert.notEqual(await page.evaluate(() => document.activeElement.id), 'vfWho', 'Enter left the keyboard up');
+    await page.click('#vfChips .chip');
+    await page.press('#vfWho', 'Enter');
+    assert.deepEqual(await wins(), ['3 Tío Beto']);
+    assert.ok(await page.isVisible('#celOk'), 'no celebration');
+    // My tablas: Add a person, and the No. box of a printed tabla.
+    await seed(page, { 'loteria.v1': ANA });
+    await page.goto(base + 'board.html');
+    await page.click('#setBtn');
+    await page.fill('#pnew', 'Tía Rosa');
+    await page.press('#pnew', 'Enter');
+    assert.deepEqual((await saved(page, 'loteria.v1')).players.map(p => p.name), ['Ana', 'Tía Rosa'], 'Enter in Add a person');
+    await page.click('#stx');
+    await page.click('#tablasBtn'); await page.click('#tbPrinted');
+    await page.fill('#ptJ', 'CANELA');
+    await page.press('#ptN', 'Enter'); // no number yet: nothing to add
+    await page.fill('#ptN', '7');
+    await page.press('#ptN', 'Enter');
+    const rosa = (await saved(page, 'loteria.v1')).players[1];
+    assert.deepEqual(rosa.boards.map(b => b.name).slice(2), ['CANELA 7'], 'Enter in the No. box');
+    // Make tablas: Whose tablas are these? opens them in the app.
+    await seed(page, { 'loteria.print': { tablas: [{ id: 't1', name: 'Tabla 1', cards: run(1) }], set: { doubles: true, per: 2, paper: 'letter', names: true, who: '' } } });
+    await page.goto(base + 'print.html');
+    await page.click('#appBtn');
+    await page.fill('#apName', 'Abuela');
+    await page.press('#apName', 'Enter');
+    await page.waitForURL(/board\.html#t=Abuela~/);
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
+check('keyboard: name boxes start each word with a capital, and the search boxes have a phone’s Search key', async () => {
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    const attrs = sel => page.$eval(sel, i => [i.type, i.getAttribute('autocapitalize'), i.getAttribute('enterkeyhint')].join(' '));
+    await seed(page, { 'loteria.cantor': { order: run(1, 54), pos: 6, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], juego: '', wins: [], settings: { speak: false, sound: false, check: false } } });
+    await page.goto(base + 'cantor.html');
+    await page.click('#lotBtn');
+    assert.equal(await attrs('#clWho'), 'text words go');
+    await page.click('#clCheck');
+    assert.equal(await attrs('#vfWho'), 'text words go');
+    assert.equal(await attrs('#vfQ'), 'search  search');
+    await page.goto(base + 'board.html');
+    assert.equal(await attrs('#wName'), 'text words ');
+    await page.click('#wRandom');
+    await page.click('#setBtn');
+    assert.equal(await attrs('#pnew'), 'text words done');
+    await page.keyboard.press('Escape');
+    await page.click('#tablasBtn');
+    assert.equal(await attrs('#tbName'), 'text words ');
+    await page.click('#tbPrinted');
+    assert.equal(await attrs('#ptN'), 'text  done');
+    await page.keyboard.press('Escape');
+    await page.click('#callBtn');
+    assert.equal(await attrs('#pkq'), 'search  search');
+    await page.goto(base + 'print.html');
+    await page.evaluate(() => { localStorage.setItem('loteria.print', JSON.stringify({ tablas: [{ id: 't1', name: 'Tabla 1', cards: Array.from({ length: 16 }, (_, i) => i + 1) }] })); });
+    await page.reload();
+    await page.click('#appBtn');
+    assert.equal(await attrs('#apName'), 'text words go');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('board: the squares, the Tablas sheet and Cantaron… work from the keyboard', async () => {
   const ctx = await context(DESKTOP);
   try {

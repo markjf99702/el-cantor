@@ -58,6 +58,8 @@ button{cursor:pointer}
 button:disabled{cursor:default;opacity:.45}
 input,select{background:var(--paper);border:1px solid var(--line2);border-radius:10px;padding:9px 12px;min-width:0;font-size:16px}
 input[type=range]{padding:0;border:0;background:none;accent-color:var(--teal);width:100%}
+input[type=search]{-webkit-appearance:none;appearance:none}
+input[type=search]::-webkit-search-cancel-button{display:none} /* the box clears itself when a card is picked */
 input:focus-visible,button:focus-visible,select:focus-visible,a:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
 a{color:var(--teal);font-weight:700}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
@@ -860,11 +862,12 @@ a.chip{text-decoration:none}
     var was = R.playing; stopCalling(); cheer();
     var box = $('winbox'), r = C.round;
     box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p>Round ' + r + ' · ' + esc(L.gameName(C.patterns)) + ' · ' + plural(C.pos, 'card', 'cards') + ' called</p>' +
-      '<div class="who"><input id="clWho" placeholder="Who won? (optional)" autocomplete="off" maxlength="30" aria-label="Who won">' + namesHtml('clNames') + '</div>' +
+      '<div class="who"><input id="clWho" placeholder="Who won? (optional)" autocomplete="off" autocapitalize="words" enterkeyhint="go" maxlength="30" aria-label="Who won">' + namesHtml('clNames') + '</div>' +
       '<div class="row"><button class="btn red" type="button" id="clNew">Shuffle for round ' + (r + 1) + '</button><button class="btn sec" type="button" id="clBack">Keep calling</button></div>' +
       '<button type="button" class="linkb" id="clCheck">Check a tabla first</button></div></div>';
     box.hidden = false;
     wireNames('clNames', $('clWho'));
+    $('clWho').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); $('clNew').click(); } });
     $('clNew').addEventListener('click', function () {
       C.wins.push({ round: r, who: winnerName($('clWho').value), how: L.gameName(C.patterns), tabla: '', at: C.pos, t: Date.now() }); save();
       box.hidden = true; shuffleNext();
@@ -880,9 +883,11 @@ a.chip{text-decoration:none}
     openSheet('<div class="hd"><h2>¡Lotería! — check it</h2><button class="btn sec sm" type="button" id="vfx">Keep calling</button></div><div class="bd stack">' +
       '<div class="row sp" style="flex-wrap:wrap"><div class="seg" id="vfSeg"><button type="button" data-v="printed">Printed tabla</button><button type="button" data-v="cards">Card by card</button></div><span class="note">' + esc(L.gameName(C.patterns)) + ' · ' + plural(C.pos, 'card', 'cards') + ' called</span></div>' +
       '<div id="vfBody"></div>' +
-      '<div class="vfwin"><div class="card"><input id="vfWho" placeholder="Who won? (optional)" autocomplete="off" maxlength="30" aria-label="Who won">' + namesHtml('vfNames') + '<div class="btns"><button class="btn red" type="button" id="vfBack" hidden>Keep calling</button><button class="btn red" type="button" id="vfWin">¡Buena! New round</button></div></div></div></div>');
+      '<div class="vfwin"><div class="card"><input id="vfWho" placeholder="Who won? (optional)" autocomplete="off" autocapitalize="words" enterkeyhint="go" maxlength="30" aria-label="Who won">' + namesHtml('vfNames') + '<div class="btns"><button class="btn red" type="button" id="vfBack" hidden>Keep calling</button><button class="btn red" type="button" id="vfWin">¡Buena! New round</button></div></div></div></div>');
     UI.onClose = function () { if (!UI.won) { UI.cheered = 0; if (was) play(); } UI.won = false; };
     $('vfWho').value = who || ''; wireNames('vfNames', $('vfWho'));
+    // Enter is ¡Buena! New round; on a Not yet it only puts the keyboard away, so the caller sees both buttons.
+    $('vfWho').addEventListener('keydown', function (e) { if (e.key !== 'Enter') return; e.preventDefault(); if ($('vfBack').hidden) $('vfWin').click(); else this.blur(); });
     function body() {
       document.querySelectorAll('#vfSeg button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === V.mode); });
       if (V.mode === 'printed') {
@@ -895,7 +900,7 @@ a.chip{text-decoration:none}
         printed();
         if (!('ontouchstart' in window)) (C.juego ? $('vfN') : $('vfJ')).focus();
       } else {
-        $('vfBody').innerHTML = '<div class="stack"><div class="verdict" id="vfV"></div><div class="chips" id="vfChips"></div><input id="vfQ" placeholder="Find a card — name or number" autocomplete="off" inputmode="search"><div class="pick" id="vfPick"></div></div>';
+        $('vfBody').innerHTML = '<div class="stack"><div class="verdict" id="vfV"></div><div class="chips" id="vfChips"></div><input id="vfQ" type="search" enterkeyhint="search" placeholder="Find a card — name or number" autocomplete="off"><div class="pick" id="vfPick"></div></div>';
         $('vfQ').value = V.q;
         $('vfQ').addEventListener('input', function () { V.q = this.value; pickGrid(); });
         $('vfQ').addEventListener('keydown', function (e) { if (e.key === 'Enter') { var only = $('vfPick').querySelectorAll('.pk'); if (only.length === 1) only[0].click(); } });
