@@ -137,7 +137,7 @@ check('deck: Clásico already wins with every shape but Siete Loco, and a game�
 // ---------------------------------------------------------------- the words, without a browser
 // The keys whose Spanish reads the same as the English (the language switch's labels by design); every other key's
 // Spanish is a translation.
-const SAME = ['lang.label', 'lang.en', 'lang.es', 'tablas', 'pace.normal', 'cantor.rate.normal', 'cantor.goodLine', 'board.whoTablas', 'print.mini'];
+const SAME = ['lang.label', 'lang.en', 'lang.es', 'tablas', 'pace.normal', 'cantor.rate.normal', 'cantor.goodLine', 'print.mini'];
 // strings.js as a page loads it on a device in this language, with this choice saved (or none).
 async function loadStrings(language = 'en-US', chosen = null) {
   const box = { navigator: { language, languages: [language] }, document: { documentElement: {} }, localStorage: { getItem: k => k === 'loteria.lang' ? chosen : null } };
@@ -417,9 +417,9 @@ check('espanol: My tablas in Spanish, from the first visit and a shared link to 
       await clean('Settings');
       await page.fill('#pnew', 'Beto'); await page.click('#padd');
       await toast('Beto empieza con dos tablas al azar — cámbialas en Tablas');
-      assert.equal(await page.textContent('#who'), 'Beto · 2 tablas');
+      assert.deepEqual([await page.textContent('#plBtn'), await page.textContent('#who')], ['Beto', '2 tablas']);
       await page.locator('#plist .chip', { hasText: 'Mamá' }).click();
-      assert.equal(await page.textContent('#who'), 'Mamá · 1 tabla');
+      assert.deepEqual([await page.textContent('#plBtn'), await page.textContent('#who')], ['Mamá', '1 tabla']);
       await page.click('#stx');
       // Tablas: the double, a second tap, a printed tabla, and Share.
       await page.click('#tablasBtn');
@@ -1460,21 +1460,81 @@ check('games: holding a shape adds it to the game, with a mouse or a finger, in 
   }
 });
 
-check('board: a long game name in the header doesn’t paint over the Lotería title', async () => {
-  for (const [w, pats] of [[360, ['equis', 'marco']], [390, ['equis', 'marco']], [360, ['llena']], [390, ['linea', 'esquinas', 'cuadro']], [360, ['linea', 'esquinas', 'cuadro', 'siete']]]) {
-    const ctx = await context({ ...PHONE, viewport: { width: w, height: 780 } });
+check('board: a long game name in the header doesn’t paint over the Lotería title, or over whose tablas they are', async () => {
+  // With two people on the device the title is the name of the one playing (Mateo), at every width, ☁ or not. A long
+  // name gives way to the game's.
+  const two = name => ({ ...ANA, players: [ANA.players[0], { id: 'mt', name, boards: [{ id: 'm9', name: 'Tabla 1', cards: run(30) }] }], current: 'mt' });
+  const TWO = two('Mateo'), LONG = two('Abuela Lupita');
+  for (const [w, pats] of [[360, ['equis', 'marco']], [390, ['equis', 'marco']], [360, ['llena']], [390, ['linea', 'esquinas', 'cuadro']], [360, ['linea', 'esquinas', 'cuadro']], [360, ['linea', 'esquinas', 'cuadro', 'siete']]]) {
+    for (const [who, cloud] of [[ANA, false], [ANA, true], [TWO, false], [TWO, true], [LONG, false], [LONG, true]]) {
+      const ctx = await context({ ...PHONE, viewport: { width: w, height: 780 } });
+      try {
+        const page = await ctx.newPage(), problems = watch(page), two = who !== ANA, what = `${w}px, ${pats.join('+')}, ${two ? 'two people, ' + who.players[1].name : 'one person'}${cloud ? ', ☁' : ''}`;
+        await seed(page, { 'loteria.v1': { ...who, patterns: pats } });
+        await page.goto(base + 'board.html');
+        await page.evaluate(() => document.fonts.ready);
+        if (cloud) await page.evaluate(() => { document.getElementById('syncBtn').hidden = false; }); // as when saving to Google Drive
+        const r = await page.evaluate(() => {
+          const pl = document.getElementById('plBtn'), t = pl.hidden ? document.querySelector('.top h1 .t') : pl, cs = getComputedStyle(t), box = t.getBoundingClientRect();
+          const name = pl.querySelector('span'), items = [...document.querySelectorAll('.top > *')].filter(e => !e.hidden).map(e => e.getBoundingClientRect());
+          return {
+            right: box.right, width: box.width, shown: cs.display !== 'none', chip: document.getElementById('patBtn').getBoundingClientRect().left, clips: cs.overflow === 'hidden' || !!name, cut: (name || t).scrollWidth > (name || t).clientWidth,
+            text: t.textContent, height: document.querySelector('.top').getBoundingClientRect().height, icons: [...document.querySelectorAll('.top .chip.ic:not([hidden])')].map(e => e.getBoundingClientRect().width),
+            overlap: items.some((b, i) => i && b.left < items[i - 1].right - 0.5), sideways: document.documentElement.scrollWidth > innerWidth,
+            game: (s => { const c = s.cloneNode(true); c.style.cssText = 'position:absolute;visibility:hidden'; s.parentNode.appendChild(c); const full = c.getBoundingClientRect().width; c.remove(); return s.getBoundingClientRect().width >= full - 0.01; })(document.querySelector('#patBtn span'))
+          };
+        });
+        assert.ok(!r.shown || (r.right <= r.chip && r.clips), `${what}: the title runs under the game chip (${JSON.stringify(r)})`);
+        assert.ok(!r.shown || r.width >= 35, `${what}: the title is cut to a sliver instead of “Lo…” or nothing (${JSON.stringify(r)})`);
+        if (pats.length === 3 && !cloud && !two) assert.ok(!r.cut, what + ': Clásico leaves room for the whole title');
+        if (two) {
+          assert.ok(r.shown && r.text === who.players[1].name && r.width >= 55, `${what}: whose tablas these are doesn't show (${JSON.stringify(r)})`);
+          if (pats.length === 3 && who === TWO) assert.ok(!r.cut, `${what}: Clásico leaves room for all of “Mateo” (${JSON.stringify(r)})`);
+          if (pats.length === 3) assert.ok(r.game, `${what}: Clásico is cut short for the name (${JSON.stringify(r)})`);
+        }
+        assert.ok(!r.overlap && !r.sideways, `${what}: the header's buttons run into each other (${JSON.stringify(r)})`);
+        assert.equal(r.height, 48, what + ': the header grew');
+        if (two) assert.ok(r.icons.every(x => x === 34), `${what}: a round button is squeezed (${JSON.stringify(r)})`);
+        assert.deepEqual(problems, []);
+      } finally { await ctx.close(); }
+    }
+  }
+});
+
+check('board: with two people on a phone, the header says whose tablas are up, and a tap on it switches people', async () => {
+  for (const lang of ['en', 'es']) {
+    const ctx = await context({ ...PHONE, viewport: { width: 360, height: 740 } });
     try {
-      const page = await ctx.newPage(), problems = watch(page), what = `${w}px, ${pats.join('+')}`;
-      await seed(page, { 'loteria.v1': { ...ANA, patterns: pats } });
+      const page = await ctx.newPage(), problems = watch(page), es = lang === 'es';
+      // Lupe has Mine 1; Mateo has two tablas, and the cards called make a línea on his first.
+      const TWO = { ...people([{ id: 'l1', name: 'Mine 1', cards: run(1) }]), players: [{ id: 'lp', name: 'Lupe', boards: [{ id: 'l1', name: 'Mine 1', cards: run(1) }] }, { id: 'mt', name: 'Mateo', boards: [{ id: 'm1', name: 'Tabla 1', cards: run(30) }, { id: 'm2', name: 'Tabla 2', cards: run(17) }] }], current: 'lp' };
+      await seed(page, { 'loteria.v1': TWO, 'loteria.lang': lang, 'loteria.game': { called: [30, 31, 32, 33], announced: {} } });
       await page.goto(base + 'board.html');
-      await page.evaluate(() => document.fonts.ready);
-      const r = await page.evaluate(() => {
-        const t = document.querySelector('.top h1 .t'), cs = getComputedStyle(t), box = t.getBoundingClientRect();
-        return { right: box.right, width: box.width, shown: cs.display !== 'none', chip: document.getElementById('patBtn').getBoundingClientRect().left, clips: cs.overflow === 'hidden', cut: t.scrollWidth > t.clientWidth };
-      });
-      assert.ok(!r.shown || (r.right <= r.chip && r.clips), `${what}: the title runs under the game chip (${JSON.stringify(r)})`);
-      assert.ok(!r.shown || r.width >= 35, `${what}: the title is cut to a sliver instead of “Lo…” or nothing (${JSON.stringify(r)})`);
-      if (pats.length === 3) assert.ok(!r.cut, what + ': Clásico leaves room for the whole title');
+      const head = () => page.evaluate(() => { const b = document.getElementById('plBtn'), r = b.getBoundingClientRect(); return { name: b.hidden ? null : b.textContent, seen: !b.hidden && r.width > 0 && r.top >= 0, title: getComputedStyle(document.querySelector('.top h1 .t')).display !== 'none', tablas: [...document.querySelectorAll('#boards .tabla')].map(t => t.dataset.id) }; });
+      assert.deepEqual(await head(), { name: 'Lupe', seen: true, title: false, tablas: ['l1'] });
+      await page.tap('#plBtn');
+      assert.equal(await sheetTitle(page), es ? '¿Quién juega?' : 'Who’s playing?');
+      assert.deepEqual(await page.$$eval('#wplist .chip', cs => cs.map(c => c.textContent + (c.classList.contains('on') ? ' ✓' : ''))), ['Lupe ✓', 'Mateo']);
+      await page.locator('#wplist .chip', { hasText: 'Mateo' }).tap();
+      assert.ok(await page.evaluate(() => document.getElementById('sheet').hidden), 'picking a person left the sheet open');
+      assert.deepEqual(await head(), { name: 'Mateo', seen: true, title: false, tablas: ['m1', 'm2'] }, 'the header or the tablas didn’t follow');
+      assert.equal((await saved(page, 'loteria.v1')).current, 'mt');
+      assert.equal(await page.locator('#boards .tabla.win').count(), 1, 'Mateo’s línea isn’t outlined');
+      assert.ok(await page.evaluate(() => document.getElementById('winbox').hidden), 'switching people cheered a win nobody called a card for');
+      assert.equal(await page.evaluate(() => document.activeElement.id), 'plBtn');
+      // An enlarged tabla goes back to all of them on a switch.
+      await page.locator('#boards .tabla[data-id="m2"] .z').tap();
+      await page.tap('#plBtn'); await page.locator('#wplist .chip', { hasText: 'Lupe' }).tap();
+      await page.tap('#plBtn'); await page.locator('#wplist .chip', { hasText: 'Mateo' }).tap();
+      assert.deepEqual((await head()).tablas, ['m1', 'm2']);
+      // Done leaves things as they were; Settings' list moves the header too.
+      await page.tap('#plBtn'); await page.tap('#wpx');
+      assert.equal((await head()).name, 'Mateo');
+      await page.tap('#setBtn'); await page.locator('#plist .chip', { hasText: 'Lupe' }).tap(); await page.tap('#stx');
+      assert.equal((await head()).name, 'Lupe');
+      // Back to one person, the header is Lotería again.
+      await page.tap('#tablasBtn'); await page.tap('#tbDel'); await page.tap('#tbDel');
+      assert.deepEqual(await head(), { name: null, seen: false, title: true, tablas: ['m1', 'm2'] });
       assert.deepEqual(problems, []);
     } finally { await ctx.close(); }
   }

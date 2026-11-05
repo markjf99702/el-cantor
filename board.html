@@ -59,6 +59,17 @@ input[type=search]::-webkit-search-cancel-button{display:none} /* the box clears
 .top h1 small{font:600 11px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .top h1 .t{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} /* a long game name in the chip leaves less room */
 @container (width < 36px){.top h1 .t{display:none}} /* not even room for "Lo…" */
+/* two or more people: whose tablas, in the title's place at every width, with a tap to switch */
+.top.two h1{flex:1 1 0;min-width:3.4em} /* the room the buttons leave, and never less */
+.top.two h1 .t{display:none}
+.top h1 .pl{display:flex;align-items:baseline;gap:4px;min-width:0;max-width:8em;background:none;border:0;padding:7px 2px;margin:-7px -2px;font:inherit;color:inherit;letter-spacing:inherit}
+.top h1 .pl span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top h1 .pl::after{content:"▾";flex:none;font:600 12px var(--body);color:var(--ink3)}
+.top.two .chip.ic{flex:none}
+.top.two #patBtn{min-width:0} /* a long name gives way first, then a long game's, never the buttons */
+#patBtn{gap:0}
+#patBtn span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis}
+#patBtn span+span{flex:none;white-space:pre}
 .chip{background:var(--paper);border:1px solid var(--line2);border-radius:999px;padding:6px 11px;font:600 12.5px var(--body);color:var(--ink2);white-space:nowrap;display:inline-flex;align-items:center;gap:5px;text-decoration:none}
 .chip.home svg{width:17px;height:17px;display:block}
 .chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
@@ -182,6 +193,7 @@ a{color:var(--teal);font-weight:700}
 @media (max-width:420px){.top:has(#syncBtn:not([hidden])) h1 .t{display:none}}
 @media (max-width:520px){.top h1 small{display:none}.callbtn{min-width:88px;padding:6px 10px}.callbtn b{font-size:17px}.last .v{display:none}}
 @media (max-width:380px){.last{gap:8px;padding:6px}} /* room for El Violoncello's whole name at 360 */
+@media (max-width:420px){.top.two{gap:4px;padding-left:8px;padding-right:8px}.top.two .chip:not(.ic){padding-left:7px;padding-right:7px}.top.two h1{font-size:18px}} /* room for a name */
 @media (prefers-reduced-motion:reduce){.cell .mk.new,.winc,.cell.hit::after{animation:none}.toast{transition:none}}
 .noscript{position:fixed;inset:0;z-index:100;margin:0;display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center;padding:16px;text-align:center;font:400 22px/1.3 var(--disp);color:var(--ink);background:var(--bg)}
 </style>
@@ -191,7 +203,7 @@ a{color:var(--teal);font-weight:700}
 <div class="app">
   <div class="top">
     <a class="chip ic home" href="./" aria-label="Home — all the Lotería tools" title="Home" data-t-aria="home.aria" data-t-title="home.title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5"/><path d="M6.5 10v9h11v-9"/></svg></a>
-    <h1><span class="t">Lotería</span> <small id="who"></small></h1>
+    <h1><span class="t">Lotería</span><button class="pl" id="plBtn" type="button" hidden></button> <small id="who"></small></h1>
     <button class="chip" id="patBtn" type="button">Línea</button>
     <button class="chip" id="tablasBtn" type="button">Tablas</button>
     <button class="chip ic" id="clearBtn" type="button" aria-label="New round" title="New round" data-t-aria="newRound" data-t-title="newRound">↺</button>
@@ -294,9 +306,14 @@ a{color:var(--teal);font-weight:700}
 
   // ---------- render ----------
   function render() { renderTop(); renderLast(); renderBoards(); renderHist(); }
+  // With two or more people on the device, the title is whose tablas these are, and a tap switches people.
   function renderTop() {
-    var p = player(); $('who').textContent = S.players.length > 1 ? T('board.whoTablas', { name: p.name, n: p.boards.length }) : p.name;
-    $('patBtn').textContent = gameName() + ' ▾';
+    var p = player(), many = S.players.length > 1, pb = $('plBtn');
+    document.querySelector('.top').classList.toggle('two', many);
+    pb.hidden = !many;
+    if (many) { pb.innerHTML = '<span>' + esc(p.name) + '</span>'; pb.setAttribute('aria-label', T('board.whoAria', { name: p.name })); pb.title = T('board.whoPlaying'); }
+    $('who').textContent = many ? T('tablas', { n: p.boards.length }) : p.name;
+    $('patBtn').innerHTML = '<span>' + esc(gameName()) + '</span><span> ▾</span>';
     $('patBtn').classList.toggle('teal', S.patterns.length > 0);
   }
   function renderLast() {
@@ -475,6 +492,16 @@ a{color:var(--teal);font-weight:700}
       });
     }
     $('ptx').addEventListener('click', closeSheet); draw();
+  }
+
+  function whoSheet() {
+    openSheet('<div class="hd"><h2>' + T('board.whoPlaying') + '</h2><button class="btn sec sm" type="button" id="wpx">' + T('done') + '</button></div><div class="bd"><div class="row" id="wplist"></div></div>');
+    S.players.forEach(function (p) {
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'chip' + (p.id === S.current ? ' on' : ''); b.textContent = p.name;
+      b.addEventListener('click', function () { S.current = p.id; save(); UI.focus = null; closeSheet(); evaluate(false); render(); });
+      $('wplist').appendChild(b);
+    });
+    $('wpx').addEventListener('click', closeSheet);
   }
 
   function settingsSheet() {
@@ -700,6 +727,7 @@ a{color:var(--teal);font-weight:700}
   // A card called again stays called; one is taken back with ↶, its square, or the row of called cards.
   $('callBtn').addEventListener('click', function () { pickerSheet('call', function (n) { if (isCalled(n)) toast(T('board.alreadyCalled', { card: card(n).name })); else call(n); }); });
   $('patBtn').addEventListener('click', function () { patternSheet(); });
+  $('plBtn').addEventListener('click', whoSheet);
   $('tablasBtn').addEventListener('click', tablasSheet);
   $('setBtn').addEventListener('click', settingsSheet);
   $('clearBtn').addEventListener('click', newRoundAsk);
