@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script src="carry.js"></script>
+<script src="strings.js"></script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -105,6 +106,14 @@ footer{margin:26px auto 0;max-width:40em;text-align:center;color:var(--ink3);fon
 }
 @media (prefers-reduced-motion:reduce){.picado .fl{animation:none}.tile{transition:none}}
 .noscript{margin:-8px 0 20px;text-align:center;font-weight:800;color:var(--red)}
+.noscript span{display:block}
+.noscript span+span{margin-top:6px}
+/* English | Español */
+.langsw{display:flex;justify-content:center;margin-top:12px}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:999px;overflow:hidden;background:var(--paper)}
+.seg button{background:none;border:0;padding:7px 14px;font:700 13px var(--body);color:var(--ink2);cursor:pointer}
+.seg button.on{background:var(--ink);color:var(--bg)}
+.seg button:focus-visible{outline:2px solid var(--teal);outline-offset:-2px;border-radius:999px}
 </style>
 </head>
 <body>
@@ -112,44 +121,46 @@ footer{margin:26px auto 0;max-width:40em;text-align:center;color:var(--ink3);fon
 <main>
   <header>
     <h1>Lotería</h1>
-    <p>Call the game, play along, or make your own tablas.</p>
+    <p data-t="home.sub">Call the game, play along, or make your own tablas.</p>
+    <div class="langsw" id="langSw"></div>
   </header>
-  <noscript><p class="noscript">El Cantor, My tablas and Make tablas all need JavaScript to work.</p></noscript>
-  <nav class="tiles" aria-label="Lotería tools">
+  <noscript><p class="noscript"><span>El Cantor, My tablas and Make tablas all need JavaScript to work.</span> <span lang="es">El Cantor, Mis tablas y Hacer tablas necesitan JavaScript para funcionar.</span></p></noscript>
+  <nav class="tiles" aria-label="Lotería tools" data-t-aria="home.nav">
     <a class="tile" href="cantor.html">
       <div class="art"><div class="fan"><img src="cards/LaLuna.jpg" alt=""><img src="cards/ElGallo.jpg" alt=""><img src="cards/LaSirena.jpg" alt=""></div></div>
-      <div class="txt"><h2><small>Call the game</small>El Cantor</h2>
-      <p>Shuffles the deck and calls each card aloud in Spanish. For the phone or tablet at the head of the table; it checks a ¡Lotería! too.</p></div>
-      <span class="go">Start calling →</span>
+      <div class="txt"><h2><small data-t="home.cantor.eyebrow">Call the game</small>El Cantor</h2>
+      <p data-t="home.cantor.text">Shuffles the deck and calls each card aloud in Spanish. For the phone or tablet at the head of the table; it checks a ¡Lotería! too.</p></div>
+      <span class="go" data-t="home.cantor.go">Start calling →</span>
     </a>
     <a class="tile" href="board.html">
       <div class="art"><img src="cards/LaChalupa.jpg" alt=""><svg class="bean" viewBox="0 0 100 100" aria-hidden="true"><defs><radialGradient id="mkb" cx="38%" cy="32%" r="72%"><stop offset="0" stop-color="#D2AB7F"/><stop offset=".55" stop-color="#8E5C38"/><stop offset="1" stop-color="#48290F"/></radialGradient></defs><path d="M20 60C10 36 28 16 52 16c25 0 36 17 31 36-4 14-15 23-31 26C36 81 26 74 20 60z" fill="url(#mkb)" stroke="#FFF4DC" stroke-width="5" paint-order="stroke"/><path d="M40 28c6-5 16-5 24-1" stroke="#4A2A12" stroke-width="3.5" fill="none" opacity=".55" stroke-linecap="round"/></svg></div>
-      <div class="txt"><h2><small>Play along</small>My tablas</h2>
-      <p>Your tablas on your own phone. Tap the card that was called and it marks itself, with a cheer when you win.</p></div>
-      <span class="go">Open my tablas →</span>
+      <div class="txt"><h2><small data-t="home.board.eyebrow">Play along</small><span data-t="tool.board">My tablas</span></h2>
+      <p data-t="home.board.text">Your tablas on your own phone. Tap the card that was called and it marks itself, with a cheer when you win.</p></div>
+      <span class="go" data-t="home.board.go">Open my tablas →</span>
     </a>
     <a class="tile" href="print.html">
       <div class="art"><div class="mini"><img src="cards/ElMelon.jpg" alt=""><img src="cards/ElCotorro.jpg" alt=""><img src="cards/LaCampana.jpg" alt=""><img src="cards/ElNegrito.jpg" alt=""><span class="d"><img src="cards/LasJaras.jpg" alt=""></span><span class="d"><img src="cards/LasJaras.jpg" alt=""></span></div></div>
-      <div class="txt"><h2><small>Print</small>Make tablas</h2>
-      <p>Drag and drop cards onto your own tablas, doubles and all, and print them 1, 2 or 4 to a page.</p></div>
-      <span class="go">Make tablas →</span>
+      <div class="txt"><h2><small data-t="home.print.eyebrow">Print</small><span data-t="tool.print">Make tablas</span></h2>
+      <p data-t="home.print.text">Drag and drop cards onto your own tablas, doubles and all, and print them 1, 2 or 4 to a page.</p></div>
+      <span class="go" data-t="home.print.go">Make tablas →</span>
     </a>
   </nav>
   <section class="card" id="syncCard" hidden></section>
-  <footer><span id="privacy">Everything stays on this device: no accounts, nothing sent anywhere.</span> Numbered juegos that El Cantor checks by number print from El Cantor’s <b>Print tablas</b>.</footer>
+  <footer><span id="privacy" data-t="home.privacy">Everything stays on this device: no accounts, nothing sent anywhere.</span> <span data-t-html="home.juegos_html">Numbered juegos that El Cantor checks by number print from El Cantor’s <b>Print tablas</b>.</span></footer>
   <footer class="jd-foot">
-    <a href="https://junkdrawer.works/">Part of junkdrawer.works</a>
+    <a href="https://junkdrawer.works/" data-t="foot.part">Part of junkdrawer.works</a>
     <span aria-hidden="true">·</span>
-    <a href="https://junkdrawer.works/privacy.html">Privacy</a>
+    <a href="https://junkdrawer.works/privacy.html" data-t="foot.privacy">Privacy</a>
   </footer>
 </main>
+<script>T.apply(document); T.switch(document.getElementById('langSw'));</script>
 <script src="sync.js"></script>
 <script>if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(function () { });</script>
 <script>(function () {
   'use strict';
   if (window.LoteriaSync && LoteriaSync.ready) {
     LoteriaSync.card(document.getElementById('syncCard'));
-    document.getElementById('privacy').textContent = 'Everything stays on this device unless you save to Google Drive, which keeps your tablas in a Lotería folder in your own Drive.';
+    document.getElementById('privacy').textContent = T('home.privacyDrive');
   }
   function picado() { // the same banderitas as El Cantor
     var host = document.getElementById('picado'), W = host.clientWidth, H = 34; if (!W) return;

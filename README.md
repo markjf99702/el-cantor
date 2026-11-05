@@ -20,6 +20,8 @@ Install it from the browser (on an iPhone, Share → Add to Home Screen) and it 
 
 Every page has a ⌂ button back to the home screen. They all load the same `deck.js` and card images.
 
+**English or Español.** The home screen has an **English | Español** switch. The choice is kept on each device (it doesn't go to Google Drive), and a phone or computer set to Spanish starts in Español. The card names, the verses and the recorded voices are Spanish either way.
+
 ## How it plays
 
 ### El Cantor — calling the game
@@ -100,6 +102,7 @@ To put it online with GitHub Pages: **Settings → Pages → Build and deploymen
 - `board.html` — My tablas, the play-along board.
 - `print.html` — Make tablas.
 - `carry.js` — the first time it opens at el-cantor.junkdrawer.works, brings the tablas saved at its old address, junkdrawer.works/el-cantor/.
+- `strings.js` — every word the app shows, in English and in Spanish, and the English / Español setting. Change a wording in both languages: `npm test` fails when a word is missing in either one, or is there but used nowhere.
 - `manifest.webmanifest`, `icon.svg` and the `icon-*.png` sizes — installing it as an app. `node tools/make-icons.mjs` redraws the PNGs from `icon.svg` and `tools/icon-full-bleed.svg`.
 - `sw.js` — the offline copy: the pages, the fonts, the card pictures, and each voice clip once it has played. On a connection that isn't answering, a page opens from that copy after four seconds. `FILES` in it is a fingerprint of the files it keeps: change one and `npm test` says what to set it to, so a release never leaves the copy half old.
 - `sync.js` — saving to Google Drive: signing in, the Drive file, and merging changes from every device.
@@ -115,7 +118,7 @@ To put it online with GitHub Pages: **Settings → Pages → Build and deploymen
   - `voices.json` lists the voices and where each verse ends, so Adivinanza can stop before the name.
 - `tools/make_voices.py` — renders `audio/` with [Kokoro-82M](https://github.com/hexgrad/kokoro) (Apache-2.0), using espeak-ng's Latin American Spanish for pronunciation. Rerun it after changing a verse in `deck.js`; the usage is at the top of the script.
 - `tools/screenshots.mjs` — draws the pictures in `docs/`, with each tool opened on the same saved tablas every time. It saves them with 256 colours using upng-js, from `npm install`.
-- `test/e2e.mjs` — what `npm test` runs: El Cantor, My tablas and Make tablas used through the real pages in Chromium, two devices saving to a stand-in Google Drive (`test/fake-google.mjs`), and every page offline.
+- `test/e2e.mjs` — what `npm test` runs: El Cantor, My tablas and Make tablas used through the real pages in Chromium, two devices saving to a stand-in Google Drive (`test/fake-google.mjs`), every page offline, and the words: each one in English and Spanish, and the screens in Spanish swept for English left behind. It runs Chromium in US English, whatever the computer's language, and so does `tools/screenshots.mjs`.
 
 ## License
 

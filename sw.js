@@ -8,10 +8,10 @@
 // refreshed only when a page that loads it is visited online, and the copy could mix two releases. So FILES is a
 // fingerprint of every file in SHELL: change any of them and test/e2e.mjs fails until FILES is changed to match (it
 // says what to), which changes this file, so every copy is made whole again at once.
-const CACHE = 'el-cantor-v2'; // bump the number when the file list changes
-const FILES = '31989839'; // test/e2e.mjs checks this
+const CACHE = 'el-cantor-v3'; // bump the number when the file list changes
+const FILES = '7989fb4e'; // test/e2e.mjs checks this
 const SHELL = [
-  './', 'index.html', 'carry.js', 'cantor.html', 'board.html', 'print.html', 'deck.js', 'sync.js',
+  './', 'index.html', 'carry.js', 'strings.js', 'cantor.html', 'board.html', 'print.html', 'deck.js', 'sync.js',
   'icon.svg', 'icon-180.png', 'icon-192.png', 'manifest.webmanifest', 'audio/voices.json',
   'fonts/fonts.css', 'fonts/bree-serif-latin.woff2', 'fonts/bree-serif-latin-ext.woff2', 'fonts/nunito-sans-latin.woff2',
   'fonts/nunito-sans-latin-ext.woff2', 'fonts/nunito-sans-italic-latin.woff2', 'fonts/nunito-sans-italic-latin-ext.woff2',

@@ -1,7 +1,7 @@
 {
   "name": "El Cantor",
   "short_name": "El Cantor",
-  "description": "Lotería for the family table: a caller that reads the cards aloud, play-along tablas and tablas to print.",
+  "description": "Lotería for the family table · Lotería para la mesa familiar",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

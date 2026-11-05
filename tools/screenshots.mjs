@@ -37,9 +37,9 @@ const n = name => L.CARDS.filter(c => c.name === name)[0].n;
 const browser = await pw.chromium.launch();
 await mkdir(join(root, 'docs'), { recursive: true });
 
-// A phone that has used the app: these saves in place, then the page.
+// A phone that has used the app: these saves in place, then the page. In English, whatever this computer's language.
 async function open(path, saves) {
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, serviceWorkers: 'block' });
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: 'en-US', serviceWorkers: 'block' });
   await ctx.route(url => !url.href.startsWith(base), route => route.abort());
   const page = await ctx.newPage();
   await page.addInitScript(seed => {

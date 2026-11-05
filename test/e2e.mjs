@@ -36,8 +36,9 @@ const PHONE = { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isM
 const DESKTOP = { viewport: { width: 1280, height: 800 } };
 
 // A fresh browser profile: nothing saved, service workers off unless asked for, and nothing reaches the internet.
+// Its language is US English whatever this computer's is, since a phone in Spanish opens the app in Spanish.
 async function context(kind = PHONE, extra = {}) {
-  const ctx = await browser.newContext({ ...kind, serviceWorkers: 'block', ...extra });
+  const ctx = await browser.newContext({ ...kind, locale: 'en-US', serviceWorkers: 'block', ...extra });
   await ctx.route(url => !url.href.startsWith(base), route => route.abort());
   return ctx;
 }
@@ -133,6 +134,121 @@ check('deck: Clásico already wins with every shape but Siete Loco, and a game�
   assert.equal(L.gameName([]), 'Pick a game');
 });
 
+// ---------------------------------------------------------------- the words, without a browser
+// strings.js as a page loads it on a device in this language, with this choice saved (or none).
+async function loadStrings(language = 'en-US', chosen = null) {
+  const box = { navigator: { language, languages: [language] }, document: { documentElement: {} }, localStorage: { getItem: k => k === 'loteria.lang' ? chosen : null } };
+  box.window = box;
+  vm.runInNewContext(await readFile(join(root, 'strings.js'), 'utf8'), box);
+  return { T: box.T, lang: box.document.documentElement.lang };
+}
+
+check('strings: every word is there in English and in Spanish, with the same {values}, and each one is used', async () => {
+  const { T } = await loadStrings(), { en, es } = T.S;
+  assert.deepEqual(Object.keys(es).sort(), Object.keys(en).sort(), 'English and Spanish have different keys');
+  const holes = s => [...s.matchAll(/\{(\w+)\}/g)].map(m => m[1]).sort();
+  for (const k in en) {
+    const a = en[k], b = es[k], count = typeof a === 'object';
+    assert.equal(typeof b, typeof a, k + ': a count in one language only');
+    if (count) for (const v of [a, b]) assert.deepEqual(Object.keys(v).sort(), ['one', 'other'], k + ': a count needs its one and other forms');
+    for (const f of count ? ['one', 'other'] : [null]) {
+      const x = f ? a[f] : a, y = f ? b[f] : b, what = k + (f ? '.' + f : '');
+      assert.ok(typeof x === 'string' && x.trim() && typeof y === 'string' && y.trim(), what + ' is empty');
+      assert.deepEqual(holes(y), holes(x), what + ': English and Spanish fill in different {values}');
+      if (!/_html$/.test(k)) assert.ok(!/[<>&]/.test(x + y), what + ' holds markup, but its key doesn’t end _html');
+    }
+  }
+  // Each key a page uses is there, and each key there is used: T('key'), T.html('key') and data-t…="key", and
+  // T('prefix.' + id), which covers every key starting prefix.
+  const used = new Set(), prefixes = new Set();
+  for (const f of ['index.html', 'cantor.html', 'deck.js', 'strings.js']) {
+    const src = await readFile(join(root, f), 'utf8');
+    for (const m of src.matchAll(/\bT(?:\.html)?\(\s*'([\w.]+)'(\s*\+)?/g)) (m[2] ? prefixes : used).add(m[1]);
+    for (const m of src.matchAll(/\bdata-t(?:-html|-aria|-title|-ph)?="([\w.]+)"/g)) used.add(m[1]);
+  }
+  for (const k of used) assert.ok(k in en, k + ' is used but isn’t in strings.js');
+  for (const k in en) assert.ok(used.has(k) || [...prefixes].some(p => k.startsWith(p)), k + ' is in strings.js, but nothing uses it');
+  // The language switch's labels read the same in either language.
+  for (const k of ['lang.label', 'lang.en', 'lang.es']) assert.equal(es[k], en[k], k);
+});
+
+check('strings: Spanish for a device in Spanish until a language is chosen, and counts, lists and ordinals in each', async () => {
+  for (const [device, chosen, lang] of [['es-MX', null, 'es-MX'], ['es', null, 'es-MX'], ['es-419', null, 'es-MX'], ['es-US', null, 'es-MX'], ['ES-es', null, 'es-MX'], ['en-US', null, 'en'], ['fr-FR', null, 'en'], ['', null, 'en'], ['es-MX', 'en', 'en'], ['en-US', 'es', 'es-MX'], ['en-US', 'fr', 'en']]) {
+    const got = await loadStrings(device, chosen);
+    assert.deepEqual([got.lang, got.T.lang, got.T.locale], [lang, lang === 'en' ? 'en' : 'es', lang === 'en' ? 'en-US' : 'es-MX'], `a device in “${device}” with ${chosen || 'nothing'} chosen`);
+  }
+  const { T: E } = await loadStrings('en-US'), { T: S } = await loadStrings('es-MX');
+  // Made-up keys, put in the tables the two loaded copies read.
+  for (const T of [E, S]) {
+    Object.assign(T.S.en, { 'x.n': { one: '1 card', other: '{n} cards' }, 'x_html': '<b>{who}</b> won', 'x.amp': 'A & B' }); // x.amp only in English
+    Object.assign(T.S.es, { 'x.n': { one: '1 carta', other: '{n} cartas' }, 'x_html': '<b>{who}</b> ganó' });
+  }
+  assert.deepEqual([E('x.n', { n: 1 }), E('x.n', { n: 0 }), E('x.n', { n: 12 }), S('x.n', { n: 1 }), S('x.n', { n: 2 })], ['1 card', '0 cards', '12 cards', '1 carta', '2 cartas']);
+  assert.equal(S('x.amp'), 'A & B', 'a key missing in Spanish shows its English');
+  assert.equal(S('no.such.key'), 'no.such.key');
+  assert.equal(E.html('x_html', { who: '<Tía & Lupe>' }), '<b>&lt;Tía &amp; Lupe&gt;</b> won');
+  assert.equal(E('x_html', { who: '<i>' }), '<b><i></b> won', 'T leaves text as it is (it goes in with textContent)');
+  assert.deepEqual([E.list(['El Gallo']), E.list(['El Gallo', 'La Luna']), E.list(['El Gallo', 'La Luna', 'La Rosa'])], ['El Gallo', 'El Gallo and La Luna', 'El Gallo, La Luna and La Rosa']);
+  assert.equal(S.list(['El Gallo', 'La Luna', 'La Rosa']), 'El Gallo, La Luna y La Rosa');
+  assert.deepEqual([1, 2, 3, 4, 11, 12, 13, 21, 22, 23, 54, 101, 111].map(E.ord), ['1st', '2nd', '3rd', '4th', '11th', '12th', '13th', '21st', '22nd', '23rd', '54th', '101st', '111th']);
+  assert.deepEqual([1, 5, 22].map(S.ord), ['1.ª', '5.ª', '22.ª']);
+});
+
+// A page's words a person can see or hear, swept for English: visible text, the options in a list, and every
+// aria-label, title and placeholder. The language switch's English, the Drive card (sync.js's, not in Spanish yet)
+// and junkdrawer.works are left out.
+const ENGLISH = /\b(the|and|or|to|of|is|it|on|off|in|with|your|this|that|tap|cards?|round|settings|done|print|copy|link|called|calling|reading|keep|clear|remove|share|undo|sync|saved|player|winners?|next|start|shuffle|voice|check|who|won|first|more|game|pause|paused|ready|try|before|only|name|number|page|paper|letter|sideways|make|left|again|anyway|new|home|tools|everything|privacy|part|play|along|open|drag|drop)\b/i;
+const english = page => page.evaluate(src => {
+  const EN = new RegExp(src, 'i'), bad = [], skip = el => el.closest('[lang="en"], #syncCard, script, style, noscript, .sr');
+  const seen = el => el.checkVisibility() || el.closest('select');
+  const say = (t, where) => { t = String(t || '').replace(/junkdrawer\.works/g, ''); if (EN.test(t)) bad.push(where + t.trim()); };
+  const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let n; (n = walk.nextNode());) { const el = n.parentElement; if (el && !skip(el) && seen(el)) say(n.textContent, ''); }
+  for (const el of document.body.querySelectorAll('[aria-label], [title], [placeholder], optgroup')) {
+    if (skip(el) || !seen(el)) continue;
+    for (const a of ['aria-label', 'title', 'placeholder', 'label']) if (el.hasAttribute(a) && (a !== 'label' || el.tagName === 'OPTGROUP')) say(el.getAttribute(a), a + ': ');
+  }
+  say(document.title, 'title: ');
+  return bad;
+}, ENGLISH.source);
+
+check('espanol: a phone in Spanish opens the home screen in Spanish, and English / Español changes it and stays', async () => {
+  for (const kind of [PHONE, { viewport: { width: 360, height: 740 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true }, DESKTOP]) {
+    const ctx = await context(kind, { locale: 'es-MX' });
+    try {
+      const page = await ctx.newPage(), problems = watch(page);
+      await page.goto(base);
+      assert.equal(await page.getAttribute('html', 'lang'), 'es-MX');
+      assert.equal(await page.getAttribute('html', 'translate'), 'no', 'the browser offers to translate Spanish it put there itself');
+      assert.equal(await page.textContent('header p'), 'Canta la lotería, juega en tu teléfono o haz tus propias tablas.');
+      assert.deepEqual(await english(page), [], 'English on the home screen in Spanish');
+      assert.deepEqual(await page.$$eval('#langSw button', bs => bs.map(b => [b.textContent, b.lang, b.getAttribute('aria-pressed')])), [['English', 'en', 'false'], ['Español', 'es', 'true']]);
+      assert.equal(await page.getAttribute('#langSw .seg', 'aria-label'), 'Idioma · Language');
+      await noSideways(page, 'the home screen in Spanish');
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
+  // A phone in English opens it in English; Español is a tap away, and it stays chosen.
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await page.goto(base);
+    assert.equal(await page.getAttribute('html', 'lang'), 'en');
+    assert.equal(await page.textContent('header p'), 'Call the game, play along, or make your own tablas.');
+    await Promise.all([page.waitForEvent('load'), page.click('#langSw [lang="es"]')]);
+    assert.equal(await page.getAttribute('html', 'lang'), 'es-MX');
+    assert.equal(await page.textContent('.tile [data-t="tool.board"]'), 'Mis tablas');
+    assert.equal(await page.evaluate(() => localStorage.getItem('loteria.lang')), 'es');
+    await page.reload();
+    assert.equal(await page.getAttribute('html', 'lang'), 'es-MX', 'Español didn’t stay chosen');
+    assert.deepEqual(await english(page), []);
+    await Promise.all([page.waitForEvent('load'), page.click('#langSw [lang="en"]')]);
+    assert.equal(await page.getAttribute('html', 'lang'), 'en');
+    assert.equal(await page.evaluate(() => sessionStorage.getItem('loteria.reopen')), null, 'the home screen asks a page to open its Settings');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 // ---------------------------------------------------------------- the home screen
 check('home: the three tools, at phone and desktop width', async () => {
   for (const kind of [PHONE, DESKTOP]) {
@@ -205,12 +321,20 @@ check('no JavaScript: every page says what it needs it for', async () => {
   const ctx = await context(PHONE, { javaScriptEnabled: false });
   try {
     const page = await ctx.newPage();
-    const SAYS = { '': 'El Cantor, My tablas and Make tablas all need JavaScript to work.', 'cantor.html': 'El Cantor needs JavaScript to shuffle and call the cards.', 'board.html': 'My tablas needs JavaScript to mark your tablas as the cards are called.', 'print.html': 'Make tablas needs JavaScript to put cards on tablas and print them.' };
+    // In English and Spanish, one under the other: the language setting needs JavaScript too.
+    const SAYS = {
+      '': ['El Cantor, My tablas and Make tablas all need JavaScript to work.', 'El Cantor, Mis tablas y Hacer tablas necesitan JavaScript para funcionar.'],
+      'cantor.html': ['El Cantor needs JavaScript to shuffle and call the cards.', 'El Cantor necesita JavaScript para barajar y cantar las cartas.'],
+      'board.html': ['My tablas needs JavaScript to mark your tablas as the cards are called.', 'Mis tablas necesita JavaScript para marcar tus tablas mientras cantan las cartas.'],
+      'print.html': ['Make tablas needs JavaScript to put cards on tablas and print them.', 'Hacer tablas necesita JavaScript para poner cartas en las tablas e imprimirlas.']
+    };
     for (const p in SAYS) {
       await page.goto(base + p);
       const n = page.locator('.noscript');
       assert.ok(await n.count() && await n.isVisible(), (p || 'index.html') + ' says nothing without JavaScript');
-      assert.equal(await n.textContent(), SAYS[p]);
+      assert.deepEqual(await n.locator('span').evaluateAll(ss => ss.map(s => [s.textContent, s.lang])), [[SAYS[p][0], ''], [SAYS[p][1], 'es']]);
+      const [en, es] = await n.locator('span').evaluateAll(ss => ss.map(s => s.getBoundingClientRect().top));
+      assert.ok(es > en, (p || 'index.html') + ': the Spanish isn’t under the English');
     }
   } finally { await ctx.close(); }
 });
@@ -1539,7 +1663,7 @@ try {
     res.end(body);
   }
   const base = `http://localhost:${server.address().port}/`;
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true });
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, hasTouch: true, locale: 'en-US' });
   const page = await ctx.newPage();
   const problems = [];
   page.on('pageerror', e => problems.push(e.message));
