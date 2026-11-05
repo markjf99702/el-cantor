@@ -178,6 +178,9 @@ a{color:var(--teal);font-weight:700}
 
 .edb .eg .cell.sel{outline:3px solid var(--teal);outline-offset:-3px}
 .edb input{width:100%;margin-bottom:6px;font-size:15px;padding:7px 10px}
+.edb.ims{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px} /* a shared link's tablas: two to a row on a phone */
+.edb .tabla .lbl .k{display:flex}
+.edb .tabla .cell{cursor:default}
 .edb .warn{color:var(--red);font-size:12.5px;margin-top:6px;font-weight:600}
 .seg{display:inline-flex;border:1px solid var(--line2);border-radius:999px;overflow:hidden;background:var(--paper)}
 .seg button{background:none;border:0;padding:6px 12px;font:600 13px var(--body);color:var(--ink2)}
@@ -315,7 +318,7 @@ a{color:var(--teal);font-weight:700}
     document.querySelector('.top').classList.toggle('two', many);
     pb.hidden = !many;
     if (many) { pb.innerHTML = '<span>' + esc(p.name) + '</span>'; pb.setAttribute('aria-label', T('board.whoAria', { name: p.name })); pb.title = T('board.whoPlaying'); }
-    $('who').textContent = many ? T('tablas', { n: p.boards.length }) : p.name;
+    $('who').textContent = firstRun && UI.blank ? '' : many ? T('tablas', { n: p.boards.length }) : p.name;
     $('patBtn').innerHTML = '<span>' + esc(gameName()) + '</span><span> ▾</span>';
     $('patBtn').classList.toggle('teal', S.patterns.length > 0);
   }
@@ -337,6 +340,7 @@ a{color:var(--teal);font-weight:700}
   function renderBoards() {
     var p = player(), host = $('boards'), guide = S.settings.guide ? guideCells() : null, back = boardSpot();
     host.innerHTML = '';
+    if (firstRun && UI.blank) return; // a shared link's offer on a new device: the stand-in tablas aren't anyone's
     var list = p.boards.map(function (b, i) { return { b: b, i: i }; }).filter(function (x) { return UI.focus == null || x.b.id === UI.focus; });
     if (UI.focus != null && !list.length) { UI.focus = null; list = p.boards.map(function (b, i) { return { b: b, i: i }; }); }
     list.forEach(function (x) {
@@ -595,6 +599,10 @@ a{color:var(--teal);font-weight:700}
   }
 
   // ---------- printed tablas (from El Cantor) ----------
+  // A tabla to look at before it's added: a printed one being typed in, or one a shared link offers.
+  function preview(b) {
+    return '<div class="tabla" style="--bw:100%"><div class="lbl"><span class="k"><span>' + esc(b.name) + '</span></span></div><div class="eg">' + b.cards.map(function (n) { return '<div class="cell"><img src="' + src(n) + '" alt="' + esc(card(n).name) + '" loading="lazy" draggable="false"></div>'; }).join('') + '</div></div>';
+  }
   function printedSheet(typed) {
     openSheet('<div class="hd"><h2>' + T('board.addPrintedH') + '</h2><button class="btn sec sm" type="button" id="ptx">' + T('cancel') + '</button></div><div class="bd stack"><p class="note">' + T('board.printedNote') + '</p><div class="row"><input id="ptJ" placeholder="' + esc(T('board.juegoLike')) + '" autocomplete="off" autocapitalize="characters" spellcheck="false" style="flex:1 1 10em;text-transform:uppercase;font-weight:700"><input id="ptN" placeholder="No." inputmode="numeric" enterkeyhint="done" autocomplete="off" maxlength="3" aria-label="' + esc(T('tablaNumber')) + '" style="width:5.5em"><button class="btn red" type="button" id="ptAdd" disabled>' + T('board.addIt') + '</button></div><div class="edb"><div id="ptPrev"></div></div></div>');
     var pick = null;
@@ -605,7 +613,7 @@ a{color:var(--teal);font-weight:700}
       var name = L.juegoName($('ptJ').value), k = parseInt($('ptN').value, 10), host = $('ptPrev');
       pick = name && k >= 1 && k <= 999 ? { name: name + ' ' + k, cards: L.juegoTabla(name, k) } : null;
       $('ptAdd').disabled = !pick;
-      host.innerHTML = pick ? '<div class="tabla" style="--bw:100%"><div class="lbl"><span class="k">' + esc(pick.name) + '</span></div><div class="eg">' + pick.cards.map(function (n) { return '<div class="cell"><img src="' + src(n) + '" alt="' + esc(card(n).name) + '" draggable="false"></div>'; }).join('') + '</div></div>' : '';
+      host.innerHTML = pick ? preview(pick) : '';
     }
     var last = ''; try { var c = JSON.parse(localStorage.getItem('loteria.cantor') || 'null'); last = (c && c.juego) || ''; } catch (e) { }
     $('ptJ').value = typed.j != null ? typed.j : last; // to start, the juego El Cantor last printed or checked on this device
@@ -660,25 +668,49 @@ a{color:var(--teal);font-weight:700}
   // The language switch at the foot of a first-visit sheet: someone who reads the other language may land here first,
   // and the sheet waits for a choice before Settings can be reached.
   function langRow() { return '<div class="row" style="margin-top:4px"><span class="eyebrow">' + T('lang.label') + '</span><div id="shLang"></div></div>'; }
-  // On a device nobody has set up yet, the person in the link becomes its player, or No thanks goes on to
-  // Who's playing. Nothing is saved before one or the other, so the stand-in Mark never sticks.
+  // The offer shows the tablas in the link. On a device nobody has set up yet, it asks whose they are: the person in
+  // the link, or whoever is holding the phone, becomes its player. Or No thanks goes on to Who's playing. Nothing is
+  // saved before one or the other, so the stand-in Mark never sticks, and the board behind the offer stays empty.
   function importSheet(imp) {
-    var first = firstRun, existing = first ? null : S.players.filter(function (p) { return p.name.toLowerCase() === imp.name.toLowerCase(); })[0];
-    openSheet('<div class="hd"><h2>' + esc(T('board.importH', { name: imp.name })) + '</h2></div><div class="bd stack"><p class="note">' + esc(T('board.importNote', { n: imp.boards.length, name: imp.name }) + (existing ? ' ' + T('board.importHave', { name: existing.name }) : '')) + '</p><div class="row"><button class="btn red" type="button" id="imOk">' + T(existing ? 'board.replaceUse' : 'board.addUse') + '</button><button class="btn sec" type="button" id="imNo">' + T('board.noThanks') + '</button></div>' + (first ? langRow() : '') + '</div>');
-    if (first) UI.welcome = true; // waits for a choice, like Who's playing
+    var first = firstRun;
+    if (imp.ask == null) { // the first time this link is offered: the name in the box comes back after a change of language
+      imp.ask = first; imp.typed = imp.name;
+      try { var t = sessionStorage.getItem('loteria.imName'); sessionStorage.removeItem('loteria.imName'); if (first && t != null) imp.typed = t; } catch (e) { }
+    }
+    // An empty box keeps the link's name. Once tablas from Google Drive have landed, the name may be someone's here.
+    function who() { return (imp.ask && imp.typed.trim()) || imp.name; }
+    function have() { var n = who().toLowerCase(); return firstRun ? null : S.players.filter(function (p) { return p.name.toLowerCase() === n; })[0]; }
+    openSheet('<div class="hd"><h2>' + esc(T('board.importH', { name: imp.name })) + '</h2></div><div class="bd stack"><p class="note" id="imNote"></p>' +
+      (imp.ask ? '<div><input id="imName" value="' + esc(imp.typed) + '" placeholder="' + esc(imp.name) + '" aria-label="' + esc(T('board.yourName')) + '" autocomplete="off" autocapitalize="words" enterkeyhint="go" style="width:100%"><p class="note" style="margin:6px 0 0">' + T('board.importYours', { n: imp.boards.length }) + '</p></div>' : '') +
+      '<div class="row" id="imBtns"></div><div class="edb ims">' + imp.boards.map(preview).join('') + '</div>' + (first ? langRow() : '') + '</div>');
+    if (first) { UI.welcome = true; UI.blank = true; render(); } // waits for a choice, like Who's playing, over no tablas
     // A new language reloads the page: the link goes back in the address first, so the same tablas are offered again.
-    if (first) T.switch($('shLang'), null, function () { history.replaceState(null, '', location.pathname + location.search + (imp.link || encodeShare(imp))); });
-    reopen = function () { importSheet(imp); }; // tablas from Google Drive landed: ask again with them in place
-    $('imNo').addEventListener('click', function () { if (first) welcomeSheet(); else closeSheet(); });
-    $('imOk').addEventListener('click', function () {
-      if (existing) { existing.boards = imp.boards; S.current = existing.id; }
-      else { var p = { id: uid(), name: imp.name, boards: imp.boards }; if (first) S.players = [p]; else S.players.push(p); S.current = p.id; }
-      firstRun = false; save(); closeSheet(); UI.focus = null; evaluate(false); render(); toast(T('board.playingAs', { name: imp.name }));
+    if (first) T.switch($('shLang'), null, function () {
+      history.replaceState(null, '', location.pathname + location.search + (imp.link || encodeShare(imp)));
+      try { sessionStorage.setItem('loteria.imName', imp.typed); } catch (e) { }
     });
+    reopen = function () { importSheet(imp); }; // tablas from Google Drive landed: ask again with them in place, and the name typed
+    function draw() {
+      var existing = have();
+      $('imNote').textContent = T('board.importNote', { n: imp.boards.length, name: imp.name }) + (existing ? ' ' + T('board.importHave', { name: existing.name }) : '');
+      $('imBtns').innerHTML = '<button class="btn red" type="button" id="imOk">' + T(existing ? 'board.replaceUse' : 'board.addUse') + '</button><button class="btn sec" type="button" id="imNo">' + T('board.noThanks') + '</button>';
+      $('imNo').addEventListener('click', function () { if (firstRun) welcomeSheet(imp.ask && who() !== imp.name ? who() : ''); else closeSheet(); });
+      $('imOk').addEventListener('click', function () {
+        var name = who(), boards = imp.boards.map(function (b) { return { id: uid(), name: b.name, cards: b.cards.slice() }; });
+        if (existing) { existing.boards = boards; S.current = existing.id; }
+        else { var p = { id: uid(), name: name, boards: boards }; if (firstRun) S.players = [p]; else S.players.push(p); S.current = p.id; }
+        firstRun = false; save(); closeSheet(); UI.focus = null; evaluate(false); render(); toast(T('board.playingAs', { name: existing ? existing.name : name }));
+      });
+    }
+    draw();
+    if (imp.ask) {
+      $('imName').addEventListener('input', function () { imp.typed = this.value; draw(); });
+      $('imName').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); $('imOk').click(); } });
+    }
   }
 
   // ---------- first visit ----------
-  function welcomeSheet() {
+  function welcomeSheet(name) { // name: one typed in a shared link's offer, turned down
     openSheet('<div class="hd"><h2>' + T('board.welcomeH') + '</h2></div><div class="bd stack"><p class="note">' + T(window.LoteriaSync && LoteriaSync.ready ? 'board.welcomeDrive' : 'board.welcomeLocal') + '</p><input id="wName" placeholder="' + esc(T('board.yourName')) + '" autocomplete="off" autocapitalize="words" aria-describedby="wNeed"><p class="need" id="wNeed" hidden>' + T('board.nameFirst') + '</p><div class="card"><div class="eyebrow">' + T('board.startWith') + '</div><div class="row" style="margin-top:8px"><button class="btn red" type="button" id="wRandom">' + T('board.wRandom') + '</button><button class="btn sec" type="button" id="wMark">' + T('board.wMark') + '</button></div><p class="note" style="margin-top:8px">' + T.html('board.eitherWay_html') + '</p></div>' +
       (window.LoteriaSync && LoteriaSync.ready ? '<p class="note">' + T('board.alreadyDrive') + '</p><div class="card" id="wSync"></div>' : '') +
       '<p class="later"><a href="./" id="wLater">' + T('board.notNow') + '</a></p>' + langRow() + '</div>');
@@ -686,6 +718,7 @@ a{color:var(--teal);font-weight:700}
     if (window.LoteriaSync) LoteriaSync.card($('wSync'));
     // Nothing is saved before a choice, so a new language just reloads; a name already typed comes back with it.
     T.switch($('shLang'), null, function () { try { sessionStorage.setItem('loteria.wName', $('wName').value); } catch (e) { } });
+    if (name) $('wName').value = name;
     try { var typed = sessionStorage.getItem('loteria.wName'); sessionStorage.removeItem('loteria.wName'); if (typed) $('wName').value = typed; } catch (e) { }
     // It's asked once, so it waits for a name rather than making one up: Mark's four don't make you Mark.
     function go(mark) {

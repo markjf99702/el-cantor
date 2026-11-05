@@ -338,6 +338,7 @@
       'board.guest': 'Guest', // the name of someone a link doesn't name, saved as it is
       'board.importH': 'Tablas from {name}',
       'board.importNote': { one: 'This link carries 1 tabla for “{name}”.', other: 'This link carries {n} tablas for “{name}”.' },
+      'board.importYours': { one: 'Change the name if this tabla is for you.', other: 'Change the name if these tablas are for you.' },
       'board.importHave': 'You already have a {name} on this device — importing replaces their tablas.',
       'board.replaceUse': 'Replace and use',
       'board.addUse': 'Add and use',
@@ -776,6 +777,7 @@
       'board.guest': 'Invitado',
       'board.importH': 'Tablas de {name}',
       'board.importNote': { one: 'Esta liga trae 1 tabla para “{name}”.', other: 'Esta liga trae {n} tablas para “{name}”.' },
+      'board.importYours': { one: 'Cambia el nombre si esta tabla es para ti.', other: 'Cambia el nombre si estas tablas son para ti.' },
       'board.importHave': 'Ya hay alguien llamado {name} en este dispositivo; con esta liga se reemplazan sus tablas.',
       'board.replaceUse': 'Reemplazar y usar',
       'board.addUse': 'Agregar y usar',
