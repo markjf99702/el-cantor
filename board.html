@@ -709,7 +709,10 @@ a{color:var(--teal);font-weight:700}
         if (!existing) { var p = { id: uid(), name: who(), boards: boards() }; if (firstRun) S.players = [p]; else S.players.push(p); done(p, T('board.playingAs', { name: p.name })); return; }
         var mine = existing.boards, had = {}, added = 0, full = false;
         mine.forEach(function (b) { had[b.cards.join('.')] = 1; });
-        boards().forEach(function (b) { var k = b.cards.join('.'); if (had[k]) return; if (mine.length >= 6) { full = true; return; } mine.push(b); had[k] = 1; added++; });
+        // A tabla named like one of theirs ("Tabla 1" beside her own Tabla 1) takes the next Tabla number, as Make tablas does.
+        function named(x) { return mine.some(function (y) { return y.name === x; }); }
+        function next() { var hi = 0; mine.forEach(function (y) { var m = /^Tabla (\d+)$/.exec(y.name); if (m) hi = Math.max(hi, +m[1]); }); return 'Tabla ' + Math.max(hi + 1, mine.length + 1); }
+        boards().forEach(function (b) { var k = b.cards.join('.'); if (had[k]) return; if (mine.length >= 6) { full = true; return; } if (named(b.name)) b.name = next(); mine.push(b); had[k] = 1; added++; });
         var v = { n: added, name: existing.name };
         done(existing, added ? T(full ? 'board.addedFull' : 'board.addedTo', v) : full ? T('board.sixAlready', v) : T('board.haveThese', { n: imp.boards.length, name: existing.name }));
       });

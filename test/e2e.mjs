@@ -1418,7 +1418,8 @@ check('board: a link for someone already on the phone adds to their tablas, up t
   try {
     const page = await es.newPage(), problems = watch(page);
     await seed(page, { 'loteria.v1': { ...HOME, players: [ANA.players[0], { ...HOME.players[1], name: 'Tía Lupe' }] } });
-    await page.goto(link('t%C3%ADa%20lupe', [['Nueva 1', 7]]));
+    // Its one tabla is named like one of hers, with other cards: it comes in under the next Tabla number.
+    await page.goto(link('t%C3%ADa%20lupe', [['Mine 2', 7]]));
     await until(page, () => (document.querySelector('#sheet h2') || {}).textContent === 'Tablas de tía lupe');
     assert.equal(await page.textContent('#imNote'), 'Esta liga trae 1 tabla para “tía lupe”. Tía Lupe ya está en este dispositivo con 3 tablas.');
     assert.deepEqual(await page.$$eval('#imBtns button', bs => bs.map(b => b.textContent)), ['Agregar a las tablas de Tía Lupe', 'Reemplazar las 3 tablas de Tía Lupe', 'No, gracias']);
@@ -1428,6 +1429,7 @@ check('board: a link for someone already on the phone adds to their tablas, up t
     assert.equal(await page.textContent('#imAlt'), 'Toca otra vez para reemplazar las 3 tablas de Tía Lupe');
     await page.click('#imOk');
     await until(page, () => document.getElementById('toast').textContent === 'Se le agregó 1 tabla a Tía Lupe');
+    assert.deepEqual((await saved(page, 'loteria.v1')).players[1].boards.map(b => b.name), ['Mine 1', 'Mine 2', 'Mine 3', 'Tabla 4'], 'two of her tablas have one name');
     assert.deepEqual(problems, []);
   } finally { await es.close(); }
 });
