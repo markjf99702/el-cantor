@@ -22,7 +22,8 @@
   var FILE = { name: 'Lotería tablas.json', mimeType: 'application/json', appProperties: { loteria: 'sync' } };
   // KT is the key every junkdrawer.works app keeps its sign-in under: good for an hour, and it remembers the account.
   var KS = 'loteria.sync', KT = 'junkdrawer.google', KB = 'loteria.sync.base', KN = 'loteria.sync.seen';
-  var KEEP_GONE = 180 * 864e5, RETRY = { retry: true };
+  var KEEP_GONE = 180 * 864e5, RETRY = { retry: true }, NEWER = { newer: true };
+  var VERSION = 1; // the Drive file's shape; a file with a higher v was saved by a newer El Cantor
 
   function get(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
   function put(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } }
@@ -58,6 +59,7 @@
         }
         return o;
       },
+      ok: function (v) { return !!v && typeof v.name === 'string'; },
       firstRemote: true // someone set up as "mark" on a device joining keeps the family's "Mark"
     },
     boards: { // …and each of their tablas, merged one tabla at a time
@@ -78,6 +80,7 @@
         c.order.forEach(function (id) { var b = c.items[id], p = o.players.filter(function (x) { return x.id === b.p; })[0]; if (p) p.boards.push({ id: id, name: b.name, cards: b.cards }); });
         return o;
       },
+      ok: function (v) { return !!v && v.p != null && typeof v.name === 'string' && okCards(v.cards); },
       same: function (a, b) { return a.p === b.p && a.name === b.name && eq(a.cards, b.cards); } // the same tabla on two devices before they first synced
     },
     tablas: { // Make tablas (print.html)
@@ -88,6 +91,7 @@
         return { items: items, order: order };
       },
       write: function (o, c) { o = o || {}; o.tablas = c.order.map(function (id) { return { id: id, name: c.items[id].name, cards: c.items[id].cards }; }); return o; },
+      ok: function (v) { return !!v && typeof v.name === 'string' && okCards(v.cards); },
       same: function (a, b) { return a.name === b.name && eq(a.cards, b.cards); }
     },
     wins: { // El Cantor's winners (cantor.html)
@@ -97,12 +101,14 @@
         (o && Array.isArray(o.wins) ? o.wins : []).forEach(function (w) { if (w && w.t && !items['w' + w.t]) { items['w' + w.t] = w; order.push('w' + w.t); } });
         return { items: items, order: order };
       },
-      write: function (o, c) { o = o || {}; o.wins = c.order.map(function (id) { return c.items[id]; }).sort(function (a, b) { return a.t - b.t; }); return o; }
+      write: function (o, c) { o = o || {}; o.wins = c.order.map(function (id) { return c.items[id]; }).sort(function (a, b) { return a.t - b.t; }); return o; },
+      ok: function (v) { return !!v && typeof v.t === 'number'; }
     },
     juego: { // the juego El Cantor last printed or checked, so any phone can add those tablas by number
       key: 'loteria.cantor',
       read: function (o) { return o && o.juego ? { items: { juego: { name: String(o.juego) } }, order: ['juego'] } : { items: {}, order: [] }; },
       write: function (o, c) { o = o || {}; o.juego = c.items.juego ? c.items.juego.name : ''; return o; },
+      ok: function (v) { return !!v && typeof v.name === 'string'; },
       firstRemote: true // a device joining keeps the family's juego rather than its own
     }
   };
@@ -183,6 +189,24 @@
     });
   }
   function colOf(file, n) { var c = file && file.cols && file.cols[n] || {}; return { items: c.items || {}, order: c.order || [], gone: c.gone || {} }; }
+  // The Drive copy as this version reads it. A damaged one (empty, cut short, a part missing or not what it should be)
+  // gives what can be kept of it and says it was damaged, so a missing part is never read as everything in it removed.
+  // One saved by a newer El Cantor, which this version can't read, is left alone.
+  function readDrive(text) {
+    var o = null; try { o = JSON.parse(text); } catch (e) { }
+    var whole = !!o && typeof o === 'object' && !Array.isArray(o), damaged = !whole || o.v !== VERSION, out = { v: VERSION, gen: whole && typeof o.gen === 'string' ? o.gen : undefined, cols: {} };
+    if (whole && typeof o.v === 'number' && o.v > VERSION) return { newer: true };
+    var cols = whole && o.cols && typeof o.cols === 'object' ? o.cols : {};
+    NAMES.forEach(function (n) {
+      var c = cols[n], col = out.cols[n] = { items: {}, order: [], gone: {} };
+      if (!c || typeof c !== 'object' || !c.items || typeof c.items !== 'object' || !Array.isArray(c.order) || !c.gone || typeof c.gone !== 'object') { damaged = true; return; }
+      Object.keys(c.items).forEach(function (id) { var it = c.items[id]; if (it && typeof it.t === 'number' && COLS[n].ok(it.v)) col.items[id] = it; else damaged = true; });
+      c.order.forEach(function (id) { if (col.items[id] && col.order.indexOf(id) < 0) col.order.push(id); });
+      Object.keys(c.gone).forEach(function (id) { if (typeof c.gone[id] === 'number') col.gone[id] = c.gone[id]; });
+    });
+    return { file: out, damaged: damaged };
+  }
+  function newGen() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
 
   // ---------- Google Drive ----------
   var st = Object.assign({ on: false, email: '', name: '', last: 0 }, get(KS) || {}), tok = get(KT);
@@ -200,13 +224,13 @@
     if (note && s !== 'ok') says.forEach(function (f) { try { f(T(note)); } catch (e) { } });
     if (note !== 'sync.stillLoading') asked = false;
   }
-  function api(method, path, body, type) {
+  function api(method, path, body, type, text) { // text: the answer as it came, for a file's contents
     if (!tok) return Promise.reject({ auth: true });
     var h = { Authorization: 'Bearer ' + tok.token }; if (type) h['Content-Type'] = type;
     return fetch(API + path, { method: method, headers: h, body: body }).then(function (r) {
       if (r.status === 401) { tok = null; put(KT, null); throw { auth: true }; }
       if (!r.ok) return r.json().then(null, function () { return null; }).then(function (b) { throw { http: r.status, reason: reason(b) }; });
-      return r.status === 204 ? null : r.json();
+      return r.status === 204 ? null : text ? r.text() : r.json();
     }, function () { throw { net: true }; }); // no answer at all: no connection
   }
   // Why Drive said no, as Google's guide "Resolve errors" lists it: {error: {errors: [{reason: 'storageQuotaExceeded'}]}}.
@@ -216,6 +240,7 @@
   function failed(e) {
     if (e && e.auth) return setStatus('tap');
     if (e === RETRY) return setStatus('error', 'sync.busyAgain');
+    if (e === NEWER) return setStatus('error', 'sync.newer');
     if (e && e.net) return setStatus('error', 'sync.offline');
     if (e && e.http === 403 && e.reason === 'storageQuotaExceeded') return setStatus('error', 'sync.full');
     if (e && (e.http === 429 || e.http >= 500 || e.http === 403 && /^(user)?[rR]ateLimitExceeded$/.test(e.reason))) {
@@ -261,14 +286,19 @@
     track();
     var seen = get(KN) || {}, base = get(KB), L = readLocal(), Lc = canon(L), L0 = JSON.parse(Lc), file; // L0: untouched, to see what changed
     return findFile().then(function (f) {
-      file = f; return f ? api('GET', 'drive/v3/files/' + f.id + '?alt=media') : null;
-    }).then(function (remote) {
-      // The first sync on this device — or the Drive file is new or was deleted — merges without a
-      // shared history, so nothing on either side counts as removed.
-      var first = !base || !file || base.fileId !== file.id, M = { v: 1, at: Date.now(), cols: {} };
+      file = f; return f ? api('GET', 'drive/v3/files/' + f.id + '?alt=media', null, null, true) : null;
+    }).then(function (text) {
+      var got = file ? readDrive(text) : { file: null, damaged: false }, remote = got.file;
+      if (got.newer) throw NEWER; // nothing read, nothing written over: the newer El Cantor saved it
+      // The first sync on this device — or the Drive file is new, was deleted or was damaged — merges without a
+      // shared history, so nothing on either side counts as removed. A damaged file is put right from this device
+      // under a new gen, which tells every other device to merge that way once too, so none of them loses tablas
+      // the damage hid.
+      var first = !base || !file || base.fileId !== file.id || got.damaged || (base.gen || '') !== (remote.gen || '');
+      var M = { v: VERSION, gen: !file || got.damaged ? newGen() : remote.gen, at: Date.now(), cols: {} };
       if (first) samePeople(L, colOf(remote, 'people'));
       NAMES.forEach(function (n) { M.cols[n] = mergeCol(COLS[n], L[n], colOf(remote, n), first ? null : colOf(base, n), seen[n] && seen[n].t || {}, first); });
-      var up = file && eq(M.cols, remote && remote.cols) ? Promise.resolve(file) : upload(file, M);
+      var up = file && !got.damaged && eq(M.cols, remote.cols) ? Promise.resolve(file) : upload(file, M);
       return up.then(function (f2) {
         if (canon(readLocal()) !== Lc) throw RETRY; // changed here meanwhile: merge again
         var objs = {}, changed = [];
@@ -281,7 +311,7 @@
           if (changed.indexOf(c.key) < 0) changed.push(c.key);
         });
         changed.forEach(function (k) { put(k, objs[k]); });
-        put(KB, { fileId: f2.id, cols: M.cols });
+        put(KB, { fileId: f2.id, gen: M.gen, cols: M.cols });
         lookNow();
         st.last = Date.now(); saveSt();
         return changed;
@@ -386,7 +416,7 @@
   }
   // The notes say what happened; "try again" is added once, by the ☁ button's title and the card, unless a note
   // already says what comes next.
-  var WHOLE = { 'sync.full': 1, 'sync.busy': 1, 'sync.stillBusy': 1, 'sync.stillLoading': 1 };
+  var WHOLE = { 'sync.full': 1, 'sync.busy': 1, 'sync.stillBusy': 1, 'sync.stillLoading': 1, 'sync.newer': 1 };
   function title() {
     if (status === 'busy') return T('sync.t.busy');
     if ((status === 'tap' || status === 'error') && note) return WHOLE[note] ? T(note) : T('sync.t.error', { note: T(note) });
@@ -440,7 +470,7 @@
     connect: start, now: now, changed: changed, chip: chip, card: card,
     onUpdate: function (f) { ups.push(f); }, // f(keys): synced data landed in these localStorage keys
     onNote: function (f) { says.push(f); }, // f(text): what went wrong after a tap, to show for a few seconds
-    _merge: mergeCol, _cols: COLS // for tests
+    _merge: mergeCol, _cols: COLS, _read: readDrive // for tests
   };
 
   if (!CLIENT_ID) return;

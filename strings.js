@@ -478,7 +478,8 @@
       'sync.offline': 'No connection — your tablas are saved on this device and will sync when you’re back online.',
       'sync.full': 'Your Google Drive is full, so nothing new was saved there. Free some space and tap Sync now.',
       'sync.busy': 'Google Drive is busy — trying again in a minute.',
-      'sync.stillBusy': 'Google Drive is still busy — try again in a few minutes.'
+      'sync.stillBusy': 'Google Drive is still busy — try again in a few minutes.',
+      'sync.newer': 'Google Drive has tablas from a newer El Cantor. Close it and open it again to update, and it’ll sync.'
     },
     es: {
       'lang.label': 'Idioma · Language',
@@ -928,7 +929,8 @@
       'sync.offline': 'Sin conexión — tus tablas están guardadas en este dispositivo y se sincronizan cuando vuelvas a tener conexión.',
       'sync.full': 'Tu Google Drive está lleno, así que no se guardó nada nuevo ahí. Libera espacio y toca Sincronizar ahora.',
       'sync.busy': 'Google Drive está ocupado — se vuelve a intentar en un minuto.',
-      'sync.stillBusy': 'Google Drive sigue ocupado — inténtalo otra vez en unos minutos.'
+      'sync.stillBusy': 'Google Drive sigue ocupado — inténtalo otra vez en unos minutos.',
+      'sync.newer': 'Google Drive tiene tablas de una versión más nueva de El Cantor. Ciérralo y vuelve a abrirlo para actualizarlo, y se sincroniza.'
     }
   };
 

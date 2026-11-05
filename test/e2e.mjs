@@ -2592,6 +2592,61 @@ check('drive: a new phone that set up “ana” keeps the family’s “Ana”, 
   } finally { await A.ctx.close(); await B.ctx.close(); }
 });
 
+check('drive: a damaged Drive copy is put right with no device losing a tabla, and one from a newer El Cantor is left alone', async () => {
+  const g = fakeGoogle();
+  const A = await driveDevice(g, { 'loteria.v1': ANA, 'loteria.print': { tablas: [{ id: 't1', name: 'Hecha a mano', cards: run(1) }] } });
+  const B = await driveDevice(g, {});
+  const file = () => g.files().filter(f => (f.appProperties || {}).loteria === 'sync')[0];
+  const damage = body => { const f = g.drive.files[file().id]; f.body = typeof body === 'function' ? body(JSON.parse(f.body)) : body; f.version++; };
+  const names = async d => (await saved(d.page, 'loteria.v1')).players.flatMap(p => p.boards.map(b => b.name)).sort();
+  const made = async d => ((await saved(d.page, 'loteria.print')) || { tablas: [] }).tablas.map(t => t.name);
+  const sync = async d => { const t = (await saved(d.page, 'loteria.sync')).last; await d.page.evaluate(() => LoteriaSync.now()); await synced(d.page, t); };
+  const whole = d => d.page.evaluate(b => !LoteriaSync._read(b).damaged, file().body);
+  try {
+    await A.page.goto(base + 'board.html'); await synced(A.page);
+    await B.page.goto(base + 'board.html'); await synced(B.page);
+    await until(B.page, () => document.getElementById('sheet').hidden);
+    const gen = JSON.parse(file().body).gen;
+    // B adds a tabla, which reaches Drive; A hasn't synced since. Syncs as usual keep the file whole, under one gen.
+    const t = (await saved(B.page, 'loteria.sync')).last;
+    await B.page.click('#tablasBtn'); await B.page.click('#tbAdd'); await B.page.click('#tbx');
+    await synced(B.page, t);
+    assert.ok(await whole(B), 'a file saved as usual reads as damaged');
+    assert.equal(JSON.parse(file().body).gen, gen, 'a sync as usual changed the gen');
+    // A file that reads as JSON but holds nothing ("null") used to read as every tabla removed, on every device.
+    damage('null');
+    await sync(A);
+    assert.deepEqual(await names(A), ['Mine 1', 'Mine 2'], 'A lost tablas to a damaged file');
+    assert.deepEqual(await made(A), ['Hecha a mano'], 'A lost Make tablas to a damaged file');
+    assert.ok(await whole(A), 'the Drive copy is still damaged');
+    assert.notEqual(JSON.parse(file().body).gen, gen, 'the file was put right under the same gen');
+    assert.equal(await A.page.getAttribute('#syncBtn', 'data-s'), 'ok');
+    // B still has the tabla A never saw, and brings it back to Drive and on to A.
+    await sync(B);
+    assert.deepEqual(await names(B), ['Mine 1', 'Mine 2', 'Tabla 3'], 'B lost the tabla the damage hid');
+    await sync(A);
+    assert.deepEqual(await names(A), ['Mine 1', 'Mine 2', 'Tabla 3']);
+    // An empty file, and one missing a part, sync again straight away and keep what this device has.
+    damage('');
+    await sync(A);
+    assert.ok(await whole(A), 'an empty Drive copy wasn’t put right');
+    damage(o => { delete o.cols.tablas; return JSON.stringify(o); });
+    await sync(A);
+    assert.deepEqual(await made(A), ['Hecha a mano'], 'a file missing Make tablas’ part took them off A');
+    assert.deepEqual(Object.values(JSON.parse(file().body).cols.tablas.items).map(i => i.v.name), ['Hecha a mano']);
+    // A file a newer El Cantor saved is neither read nor written over, and a tap says what to do.
+    damage(o => JSON.stringify({ ...o, v: 2, cols: { people: 'a shape this version can’t read' } }));
+    const kept = file().body;
+    await A.page.click('#syncBtn');
+    await until(A.page, () => document.getElementById('syncBtn').dataset.s === 'error');
+    await until(A.page, t => document.getElementById('toast').textContent === t, 'Google Drive has tablas from a newer El Cantor. Close it and open it again to update, and it’ll sync.');
+    assert.equal(file().body, kept, 'the newer El Cantor’s file was written over');
+    assert.deepEqual(await names(A), ['Mine 1', 'Mine 2', 'Tabla 3']);
+    assert.equal(await A.page.getAttribute('#syncBtn', 'title'), 'Google Drive has tablas from a newer El Cantor. Close it and open it again to update, and it’ll sync.', 'a note that says what’s next gets no “try again”');
+    assert.deepEqual(A.problems, []); assert.deepEqual(B.problems, []);
+  } finally { await A.ctx.close(); await B.ctx.close(); }
+});
+
 check('drive: a shared link on a new phone that saves to Drive asks again once the Drive tablas land', async () => {
   const g = fakeGoogle();
   const A = await driveDevice(g, { 'loteria.v1': ANA });
