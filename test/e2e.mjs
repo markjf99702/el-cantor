@@ -1870,6 +1870,50 @@ check('print: tap a square, then tap cards to fill it in order; a third copy is 
   } finally { await ctx.close(); }
 });
 
+check('print: Play these sends six full tablas at most, picked with Which tablas', async () => {
+  // Eight full tablas, Tabla 1 to 8, and a ninth nine cards in.
+  const EIGHT = Array.from({ length: 8 }, (_, k) => ({ id: 't' + (k + 1), name: 'Tabla ' + (k + 1), cards: Array.from({ length: 16 }, (_, i) => (k * 5 + i) % 54 + 1) }));
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.print': { tablas: EIGHT.concat([{ id: 't9', name: 'Tabla 9', cards: run(1, 9).concat([0, 0, 0, 0, 0, 0, 0]) }]), set: { doubles: true, per: 2, paper: 'letter', names: true, who: '' } } });
+    await page.goto(base + 'print.html');
+    await page.click('#appBtn');
+    const chips = () => page.$$eval('#achips .chip', bs => bs.map(b => b.textContent));
+    // The tablas a link carries, from Copy link.
+    const carried = async () => {
+      await page.evaluate(() => { window.__copied = null; Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: t => { window.__copied = t; return Promise.resolve(); } } }); });
+      await page.click('#apCopy');
+      const url = await page.evaluate(() => window.__copied);
+      return url.split('#t=')[1].split('~').slice(1).map(t => decodeURIComponent(t.split(':')[0]));
+    };
+    assert.deepEqual(await chips(), ['✓ Tabla 1', '✓ Tabla 2', '✓ Tabla 3', '✓ Tabla 4', '✓ Tabla 5', '✓ Tabla 6', 'Tabla 7', 'Tabla 8'], 'the full tablas, the first six on');
+    assert.equal(await page.textContent('#apNote'), 'Makes a link that opens My tablas with these 6 tablas for whoever you name. Open it here, or send it to the phone or iPad that will play. 1 tabla isn’t full yet and stays behind. My tablas keeps six per person, so pick up to six.');
+    assert.deepEqual(await carried(), ['Tabla 1', 'Tabla 2', 'Tabla 3', 'Tabla 4', 'Tabla 5', 'Tabla 6']);
+    await page.locator('#achips .chip', { hasText: 'Tabla 7' }).click(); // a seventh
+    await until(page, () => document.getElementById('toast').textContent === 'Six tablas per person is the most My tablas holds');
+    assert.equal((await chips())[6], 'Tabla 7');
+    for (const t of ['Tabla 1', 'Tabla 2', 'Tabla 3']) await page.locator('#achips .chip', { hasText: t }).click();
+    assert.match(await page.textContent('#apNote'), /^Makes a link that opens My tablas with these 3 tablas /);
+    for (const t of ['Tabla 7', 'Tabla 8']) await page.locator('#achips .chip', { hasText: t }).click();
+    assert.match(await page.textContent('#apNote'), /^Makes a link that opens My tablas with these 5 tablas /);
+    assert.deepEqual(await carried(), ['Tabla 4', 'Tabla 5', 'Tabla 6', 'Tabla 7', 'Tabla 8']);
+    // None picked: nothing to send.
+    await page.click('#apx'); await page.click('#appBtn'); // the choice stays while the page is open
+    assert.deepEqual(await chips(), ['Tabla 1', 'Tabla 2', 'Tabla 3', '✓ Tabla 4', '✓ Tabla 5', '✓ Tabla 6', '✓ Tabla 7', '✓ Tabla 8']);
+    for (const t of ['Tabla 4', 'Tabla 5', 'Tabla 6', 'Tabla 7', 'Tabla 8']) await page.locator('#achips .chip', { hasText: t }).click();
+    assert.match(await page.textContent('#apNote'), /^Pick at least one tabla\. /);
+    assert.ok(await page.isDisabled('#apOpen') && await page.isDisabled('#apCopy'));
+    await page.locator('#achips .chip', { hasText: 'Tabla 8' }).click();
+    // And My tablas offers just the one.
+    await Promise.all([page.waitForURL(/board\.html#t=Family~Tabla%208:/), page.click('#apOpen')]);
+    await until(page, () => (document.querySelector('#sheet h2') || {}).textContent === 'Tablas from Family');
+    assert.deepEqual(await page.$$eval('#sheet .ims .k', ks => ks.map(k => k.textContent)), ['Tabla 8']);
+    await noSideways(page, 'My tablas');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('print: on an iPhone the deck’s last row clears the home indicator', async () => {
   const ctx = await context(PHONE);
   try {

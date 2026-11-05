@@ -261,7 +261,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   } catch (e) { }
   P.set.per = +P.set.per; if ([1, 2, 4].indexOf(P.set.per) < 0) P.set.per = 2; // a damaged save falls back to the defaults
   if (P.set.paper !== 'letter' && P.set.paper !== 'a4') P.set.paper = 'letter';
-  var UI = { active: P.tablas.length ? P.tablas[0].id : null, sel: null, q: '', flash: null, skip: {} };
+  var UI = { active: P.tablas.length ? P.tablas[0].id : null, sel: null, q: '', flash: null, skip: {}, appSkip: {} };
   var H = []; // undo snapshots of P.tablas
   function save() { try { localStorage.setItem(LSP, JSON.stringify(P)); } catch (e) { } if (window.LoteriaSync) LoteriaSync.changed(); }
   function tab(id) { return P.tablas.filter(function (t) { return t.id === id; })[0]; }
@@ -630,21 +630,43 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     return Promise.race([Promise.all(loads), new Promise(function (r) { setTimeout(r, 4000); })]);
   }
 
-  // ---------- hand tablas to the play-along app (same #t= link its Share button makes) ----------
+  // ---------- hand tablas to My tablas (same #t= link its Share button makes) ----------
+  // My tablas keeps six tablas per person, so the full tablas go by Which tablas, as in Print…: all of them to start
+  // with, or the first six of more. The choice is kept while the page is open, like Print…'s.
+  var MOST = 6;
   function appDlg() {
     var full = P.tablas.filter(function (t) { return filled(t) === 16; }), rest = P.tablas.length - full.length;
     if (!full.length) { toast(T('print.fillFirst')); return; }
-    // Each sentence whole, so each language can say it its own way.
-    var says = [T('print.appNote', { n: full.length })]; if (rest) says.push(T('print.appRest', { n: rest })); if (full.length > 6) says.push(T('print.appSix'));
+    var on = 0; full.forEach(function (t) { if (!UI.appSkip[t.id] && ++on > MOST) UI.appSkip[t.id] = 1; });
+    function chosen() { return full.filter(function (t) { return !UI.appSkip[t.id]; }); }
     openDlg('<div class="hd"><h2>' + T('print.appH') + '</h2><button class="btn sec sm" type="button" id="apx">' + T('done') + '</button></div><div class="bd stack">' +
-      '<p class="note">' + esc(says.join(' ')) + '</p>' +
+      '<p class="note" id="apNote"></p>' +
+      '<div class="card"><div class="eyebrow">' + T('print.which') + '</div><div class="row tchips" id="achips" style="margin-top:8px"></div></div>' +
       '<input id="apName" placeholder="' + esc(T('print.whose')) + '" autocomplete="off" autocapitalize="words" enterkeyhint="go" value="' + esc(P.set.who || '') + '">' +
       '<div class="row"><button class="btn red" type="button" id="apOpen">' + T('print.openApp') + '</button><button class="btn sec" type="button" id="apCopy">' + T('copyLink') + '</button></div>' +
       '<p class="note">' + T('print.appAsks') + '</p></div>');
+    function draw() {
+      var list = chosen(), tc = $('achips');
+      // Each sentence whole, so each language can say it its own way.
+      var says = [list.length ? T('print.appNote', { n: list.length }) : T('print.pickOne')]; if (rest) says.push(T('print.appRest', { n: rest })); if (full.length > MOST) says.push(T('print.appSix'));
+      $('apNote').textContent = says.join(' ');
+      tc.innerHTML = '';
+      full.forEach(function (t) {
+        var b = document.createElement('button'), go = !UI.appSkip[t.id]; b.type = 'button';
+        b.className = 'chip' + (go ? ' on' : ''); b.textContent = (go ? '✓ ' : '') + t.name;
+        b.addEventListener('click', function () {
+          if (!go && chosen().length >= MOST) { toast(T('print.appMost')); return; }
+          if (go) UI.appSkip[t.id] = 1; else delete UI.appSkip[t.id];
+          draw();
+        });
+        tc.appendChild(b);
+      });
+      $('apOpen').disabled = $('apCopy').disabled = !list.length;
+    }
     function link() {
       var who = $('apName').value.trim() || T('print.family'); P.set.who = $('apName').value.trim(); save();
       var enc = function (s) { return encodeURIComponent(String(s).replace(/~/g, '-')); };
-      return new URL('board.html', location.href).href + '#t=' + enc(who) + '~' + full.map(function (t) { return enc(t.name) + ':' + t.cards.map(function (n) { return n.toString(36); }).join('.'); }).join('~');
+      return new URL('board.html', location.href).href + '#t=' + enc(who) + '~' + chosen().map(function (t) { return enc(t.name) + ':' + t.cards.map(function (n) { return n.toString(36); }).join('.'); }).join('~');
     }
     $('apx').addEventListener('click', closeDlg);
     $('apOpen').addEventListener('click', function () { location.href = link(); });
@@ -653,6 +675,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       var url = link(), done = function () { toast(T('linkCopied')); }, fail = function () { window.prompt(T('print.copyPrompt'), url); };
       if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, fail); else fail();
     });
+    draw();
   }
 
   // ---------- Google Drive ----------
