@@ -424,7 +424,37 @@
       'print.family': 'Family', // the name sent in the link when none is typed
       'print.openApp': 'Open in the app',
       'print.appAsks': 'If the app already has someone by that name, it asks before replacing their tablas.',
-      'print.copyPrompt': 'Copy this link:'
+      'print.copyPrompt': 'Copy this link:',
+
+      // Google Drive (sync.js): the card in Settings, and the ☁ button's title
+      'sync.offH': 'Save across devices',
+      'sync.offNote': 'Keep your tablas in your own Google Drive, and they’ll be on every phone, tablet and computer where you turn this on. They go in a “Lotería” folder that only the junkdrawer.works apps can open.',
+      'sync.on': 'Save to Google Drive',
+      'sync.savedH': 'Saved to Google Drive',
+      'sync.savedTo_html': 'Tablas are saved to <b>{email}</b> and show up on every device where you turn this on.',
+      'sync.yourDrive': 'your Google Drive',
+      'sync.now': 'Sync now',
+      'sync.stop': 'Stop saving on this device',
+      'sync.stopAgain': 'Tap again to stop',
+      'sync.syncing': 'Syncing…',
+      'sync.tapNow_html': 'Tap <b>Sync now</b> to get your latest tablas.',
+      'sync.last': 'Last synced {ago}.',
+      'sync.justNow': 'just now',
+      'sync.minAgo': '{n} min ago',
+      'sync.hAgo': '{n} h ago',
+      'sync.onDate': '{date}', // "Last synced Nov 5."
+      'sync.t.busy': 'Syncing with Google Drive…',
+      'sync.t.tap': 'Tap to sync your tablas with Google Drive',
+      'sync.t.error': '{note} Tap to try again.',
+      'sync.t.ok': 'Synced with Google Drive — tap to sync now',
+      'sync.t.okAgo': 'Synced with Google Drive {ago} — tap to sync now',
+      // what went wrong, kept until it's said
+      'sync.busyAgain': 'Another device kept saving — try again in a moment.',
+      'sync.noReach': 'Couldn’t reach Google Drive. Check the connection and try again.',
+      'sync.gisLoad': 'Google sign-in didn’t load. Check the connection.',
+      'sync.gisDone': 'Google sign-in didn’t finish.',
+      'sync.denied': 'Google Drive wasn’t allowed, so nothing was saved there.',
+      'sync.stillLoading': 'Google sign-in is still loading — tap again in a second.'
     },
     es: {
       'lang.label': 'Idioma · Language',
@@ -821,7 +851,37 @@
       'print.family': 'Familia',
       'print.openApp': 'Abrir en la app',
       'print.appAsks': 'Si la app ya tiene a alguien con ese nombre, pregunta antes de reemplazar sus tablas.',
-      'print.copyPrompt': 'Copia esta liga:'
+      'print.copyPrompt': 'Copia esta liga:',
+
+      // Google Drive (sync.js): the card in Settings, and the ☁ button's title
+      'sync.offH': 'Guardar en todos tus dispositivos',
+      'sync.offNote': 'Guarda tus tablas en tu propio Google Drive y van a estar en cada teléfono, tableta y computadora donde actives esto. Van en una carpeta “Lotería” que solo pueden abrir las apps de junkdrawer.works.',
+      'sync.on': 'Guardar en Google Drive',
+      'sync.savedH': 'Guardado en Google Drive',
+      'sync.savedTo_html': 'Las tablas se guardan en <b>{email}</b> y aparecen en cada dispositivo donde actives esto.',
+      'sync.yourDrive': 'tu Google Drive',
+      'sync.now': 'Sincronizar ahora',
+      'sync.stop': 'Dejar de guardar en este dispositivo',
+      'sync.stopAgain': 'Toca otra vez para dejar de guardar',
+      'sync.syncing': 'Sincronizando…',
+      'sync.tapNow_html': 'Toca <b>Sincronizar ahora</b> para traer tus tablas más recientes.',
+      'sync.last': 'Última sincronización: {ago}.',
+      'sync.justNow': 'hace un momento',
+      'sync.minAgo': 'hace {n} min',
+      'sync.hAgo': 'hace {n} h',
+      'sync.onDate': 'el {date}',
+      'sync.t.busy': 'Sincronizando con Google Drive…',
+      'sync.t.tap': 'Toca para sincronizar tus tablas con Google Drive',
+      'sync.t.error': '{note} Toca para intentarlo otra vez.',
+      'sync.t.ok': 'Sincronizado con Google Drive — toca para sincronizar ahora',
+      'sync.t.okAgo': 'Sincronizado con Google Drive {ago} — toca para sincronizar ahora',
+      // what went wrong, kept until it's said
+      'sync.busyAgain': 'Otro dispositivo siguió guardando — inténtalo otra vez en un momento.',
+      'sync.noReach': 'No se pudo conectar con Google Drive. Revisa la conexión e inténtalo otra vez.',
+      'sync.gisLoad': 'No cargó el inicio de sesión de Google. Revisa la conexión.',
+      'sync.gisDone': 'No se terminó de iniciar sesión con Google.',
+      'sync.denied': 'No se dio permiso para Google Drive, así que no se guardó nada ahí.',
+      'sync.stillLoading': 'El inicio de sesión de Google todavía está cargando — toca otra vez en un segundo.'
     }
   };
 

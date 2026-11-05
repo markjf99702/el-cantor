@@ -161,21 +161,22 @@ check('strings: every word is there in English and in Spanish, with the same {va
       if (!/_html$/.test(k)) assert.ok(!/[<>&]/.test(x + y), what + ' holds markup, but its key doesn’t end _html');
     }
   }
-  // Each key a page uses is there, and each key there is used. A key is used as data-t…="key", or in the first
-  // argument of T( or T.html(, which may pick one of a few: T(on ? 'on' : 'off'). 'prefix.' + id there uses every key
-  // starting prefix., and each shape, voice and pace then needs its own.
+  // Each key a page uses is there, and each key there is used. A key is used as data-t…="key", in the first
+  // argument of T( or T.html(, which may pick one of a few: T(on ? 'on' : 'off'), or as the note in sync.js's
+  // setStatus(status, note), which it says later. 'prefix.' + id there uses every key starting prefix., and each
+  // shape, voice and pace then needs its own.
   const used = new Set(), prefixes = new Set();
-  for (const f of ['index.html', 'cantor.html', 'board.html', 'print.html', 'deck.js', 'strings.js']) {
+  for (const f of ['index.html', 'cantor.html', 'board.html', 'print.html', 'sync.js', 'deck.js', 'strings.js']) {
     const src = await readFile(join(root, f), 'utf8');
-    for (const m of src.matchAll(/\bT(?:\.html)?\(/g)) {
-      let arg = '', depth = 0;
+    for (const m of src.matchAll(/\b(T(?:\.html)?|setStatus)\(/g)) {
+      let arg = '', depth = 0, nth = m[1] === 'setStatus' ? 1 : 0;
       for (let i = m.index + m[0].length; i < src.length; i++) {
         const c = src[i];
-        if (c === "'") { const j = src.indexOf("'", i + 1); arg += src.slice(i, j + 1); i = j; continue; }
+        if (c === "'") { const j = src.indexOf("'", i + 1); if (!nth) arg += src.slice(i, j + 1); i = j; continue; }
         if ('([{'.includes(c)) depth++;
         else if (')]}'.includes(c) && !depth--) break;
-        else if (c === ',' && !depth) break;
-        arg += c;
+        else if (c === ',' && !depth && !nth--) break;
+        if (!nth) arg += c;
       }
       for (const q of arg.matchAll(/'([\w.]+)'(\s*\+)?/g)) (q[2] ? prefixes : used).add(q[1]);
     }
@@ -215,8 +216,7 @@ check('strings: Spanish for a device in Spanish until a language is chosen, and 
 });
 
 // A page's words a person can see or hear, swept for English: visible text, the options in a list, and every
-// aria-label, title and placeholder. The language switch's English, the Drive card (sync.js's, not in Spanish yet)
-// and junkdrawer.works are left out. An English word is one strings.js's English uses and its Spanish never does
+// aria-label, title and placeholder. The language switch's English and junkdrawer.works are left out. An English word is one strings.js's English uses and its Spanish never does
 // (nor the cards' names and verses), or one of a few more that a page might say.
 let ENGLISH;
 async function englishWords() {
@@ -231,7 +231,7 @@ async function englishWords() {
   return (ENGLISH = '(?<!\\p{L})(' + [...new Set(en)].join('|') + ')(?!\\p{L})');
 }
 const english = async page => page.evaluate(src => {
-  const EN = new RegExp(src, 'iu'), bad = [], skip = el => el.closest('[lang="en"], #syncCard, script, style, noscript');
+  const EN = new RegExp(src, 'iu'), bad = [], skip = el => el.closest('[lang="en"], script, style, noscript');
   const seen = el => el.checkVisibility() || el.closest('select');
   const say = (t, where) => { t = String(t || '').replace(/junkdrawer\.works/g, ''); if (EN.test(t)) bad.push(where + t.trim()); };
   const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
@@ -1784,8 +1784,8 @@ check('saves: a damaged save opens with what can be kept, instead of a blank pag
 });
 
 // ---------------------------------------------------------------- Google Drive (a stand-in for it)
-async function driveDevice(g, data) {
-  const ctx = await context(PHONE);
+async function driveDevice(g, data, extra = {}) {
+  const ctx = await context(PHONE, extra);
   await g.install(ctx, {
     rewrite: {
       '**/sync.js': s => {
@@ -1906,6 +1906,52 @@ check('drive: the Tablas sheet, a card being picked and a printed tabla being ty
     assert.equal(mine[0].cards[0], 54);
     assert.deepEqual(A.problems, []); assert.deepEqual(B.problems, []);
   } finally { await A.ctx.close(); await B.ctx.close(); }
+});
+
+check('espanol: Google Drive’s card and ☁ button in Spanish on every page', async () => {
+  const A = await driveDevice(fakeGoogle(), { 'loteria.v1': ANA, 'loteria.print': { tablas: [{ id: 't1', name: 'Tabla 1', cards: run(1) }] } }, { locale: 'es-MX' });
+  const { page } = A, card = () => page.textContent('#syncCard .note');
+  try {
+    await page.goto(base + 'board.html');
+    await synced(page);
+    await until(page, () => document.getElementById('syncBtn').dataset.s === 'ok');
+    assert.equal(await page.getAttribute('#syncBtn', 'title'), 'Sincronizado con Google Drive hace un momento — toca para sincronizar ahora');
+    await page.click('#setBtn');
+    assert.equal(await card(), 'Las tablas se guardan en mark@gmail.com y aparecen en cada dispositivo donde actives esto. Última sincronización: hace un momento.');
+    assert.deepEqual(await english(page), [], 'English in My tablas’ Settings');
+    for (const [p, open] of [['', null], ['cantor.html', '#setBtn'], ['print.html', null]]) {
+      await page.goto(base + p);
+      if (open) await page.click(open);
+      await until(page, () => /Última sincronización/.test(document.querySelector('#syncCard .note').textContent));
+      assert.deepEqual(await english(page), [], 'English on ' + (p || 'the home screen'));
+    }
+    assert.equal(await page.textContent('#syncCard [data-a="now"]'), 'Sincronizar ahora');
+    await page.click('#syncCard [data-a="off"]');
+    assert.equal(await page.textContent('#syncCard [data-a="off"]'), 'Toca otra vez para dejar de guardar');
+    await page.click('#syncCard [data-a="off"]');
+    assert.deepEqual([await page.textContent('#syncCard .eyebrow'), await page.textContent('#syncCard [data-a="on"]')], ['Guardar en todos tus dispositivos', 'Guardar en Google Drive']);
+    assert.deepEqual(await english(page), [], 'English in the card that turns it on');
+    assert.deepEqual(A.problems, []);
+  } finally { await A.ctx.close(); }
+});
+
+check('espanol: the day Drive last synced is written in the language shown, not the phone’s', async () => {
+  // A phone in Spanish, a day after the last sync: "Last synced Nov 5." in English, "el 5 nov." in Spanish.
+  const t0 = new Date('2026-11-05T18:00:00Z').getTime();
+  for (const [lang, says] of [['en', /Last synced Nov 5\.$/], ['es', /Última sincronización: el 5 nov\.?\.$/]]) {
+    const A = await driveDevice(fakeGoogle(), { 'loteria.v1': ANA, 'loteria.lang': lang, 'junkdrawer.google': { token: 'tok-mark', exp: t0 + 3600e3, scope: 'https://www.googleapis.com/auth/drive.file', email: 'mark@gmail.com' } }, { locale: 'es-MX', timezoneId: 'America/Mexico_City' });
+    try {
+      await A.page.clock.install({ time: t0 });
+      await A.page.goto(base + 'board.html');
+      await synced(A.page);
+      await A.page.waitForTimeout(2500); // the sync a save at the start asks for, a moment later
+      await until(A.page, () => document.getElementById('syncBtn').dataset.s === 'ok');
+      await A.page.clock.fastForward('26:00:00');
+      await A.page.click('#setBtn');
+      assert.match(await A.page.textContent('#syncCard .note'), says, lang);
+      assert.deepEqual(A.problems, []);
+    } finally { await A.ctx.close(); }
+  }
 });
 
 // ---------------------------------------------------------------- offline

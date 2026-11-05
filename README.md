@@ -20,7 +20,7 @@ Install it from the browser (on an iPhone, Share → Add to Home Screen) and it 
 
 Every page has a ⌂ button back to the home screen. They all load the same `deck.js` and card images.
 
-**English or Español.** The home screen has an **English | Español** switch, and so do the top of Settings in El Cantor and My tablas and the foot of Make tablas. The choice is kept on each device (it doesn't go to Google Drive), and a phone or computer set to Spanish starts in Español. All three tools follow it, and so do the tablas El Cantor prints; Google Drive's messages are in English for now. The card names, the verses and the recorded voices are Spanish either way.
+**English or Español.** The home screen has an **English | Español** switch, and so do the top of Settings in El Cantor and My tablas and the foot of Make tablas. The choice is kept on each device (it doesn't go to Google Drive), and a phone or computer set to Spanish starts in Español. All three tools follow it, and so do the tablas El Cantor prints and what Google Drive saving says, dates included. The card names, the verses and the recorded voices are Spanish either way.
 
 ## How it plays
 

@@ -5,9 +5,11 @@
    devices saved there is merged back in.
    Merging is three-way and item by item (a person, a tabla, a win): what this device changed
    since the last sync, what the Drive copy changed, and for an item changed on both, the
-   newer change wins. Nothing about this shows away from junkdrawer.works. */
+   newer change wins. Nothing about this shows away from junkdrawer.works.
+   Its words come from strings.js, which every page loads first, in the language chosen there. */
 (function () {
   'use strict';
+  var T = window.T;
   // The junkdrawer.works OAuth client, shared with Shelfmark and Terraville (README, "Saving to
   // Google Drive"). Google only accepts it from these addresses, so elsewhere nothing shows.
   // El Cantor lives at its own address now; junkdrawer.works/el-cantor/ forwards there.
@@ -187,6 +189,7 @@
   var status = 'off', note = '', busy = null, again = false, client = null, gisLoading = false, pushT = null, ups = [], watchers = [];
   function saveSt() { put(KS, st); }
   function live() { return !!(tok && tok.token && tok.exp - 60000 > Date.now() && String(tok.scope || '').indexOf(SCOPE) >= 0); }
+  // note is a key in strings.js, so it's said in the language the page is in when it's drawn.
   function setStatus(s, n) { status = s; note = n || ''; watchers = watchers.filter(function (f) { try { return f() !== false; } catch (e) { return false; } }); }
   function api(method, path, body, type) {
     if (!tok) return Promise.reject({ auth: true });
@@ -274,7 +277,7 @@
       return changed;
     }, function (e) {
       if (e && e.auth) setStatus('tap');
-      else setStatus('error', e === RETRY ? 'Another device kept saving — try again in a moment.' : 'Couldn’t reach Google Drive. Check the connection and try again.');
+      else setStatus('error', e === RETRY ? 'sync.busyAgain' : 'sync.noReach');
       return [];
     }).then(function (changed) {
       busy = null;
@@ -292,19 +295,19 @@
     gisLoading = true;
     var s = document.createElement('script');
     s.src = 'https://accounts.google.com/gsi/client'; s.async = true;
-    s.onload = init; s.onerror = function () { gisLoading = false; setStatus(st.on ? 'tap' : 'off', 'Google sign-in didn’t load. Check the connection.'); };
+    s.onload = init; s.onerror = function () { gisLoading = false; setStatus(st.on ? 'tap' : 'off', 'sync.gisLoad'); };
     document.head.appendChild(s);
   }
   function init() {
     if (client) return;
     client = google.accounts.oauth2.initTokenClient({
       client_id: CLIENT_ID, scope: SCOPE, callback: gotToken,
-      error_callback: function (e) { setStatus(st.on ? 'tap' : 'off', e && e.type === 'popup_closed' ? '' : 'Google sign-in didn’t finish.'); }
+      error_callback: function (e) { var closed = e && e.type === 'popup_closed'; setStatus(st.on ? 'tap' : 'off', closed ? '' : 'sync.gisDone'); } // closed by hand: nothing to say
     });
     setStatus(status, note);
   }
   function gotToken(r) {
-    if (!r || r.error || !google.accounts.oauth2.hasGrantedAllScopes(r, SCOPE)) { setStatus(st.on ? 'tap' : 'off', 'Google Drive wasn’t allowed, so nothing was saved there.'); return; }
+    if (!r || r.error || !google.accounts.oauth2.hasGrantedAllScopes(r, SCOPE)) { setStatus(st.on ? 'tap' : 'off', 'sync.denied'); return; }
     tok = { token: r.access_token, exp: Date.now() + (+r.expires_in || 3600) * 1000, scope: r.scope || SCOPE, email: st.email || (tok && tok.email) || '' }; put(KT, tok);
     st.on = true; saveSt();
     (st.email ? Promise.resolve() : whoami()).then(sync);
@@ -319,7 +322,7 @@
   // Google only opens its window from a tap, so this has to run inside a click handler.
   function signIn() {
     if (!CLIENT_ID) return;
-    if (!client) { loadGis(); setStatus(status, 'Google sign-in is still loading — tap again in a second.'); return; }
+    if (!client) { loadGis(); setStatus(status, 'sync.stillLoading'); return; }
     var hint = st.email || (tok && tok.email) || '', o = { prompt: hint ? '' : 'select_account' }; if (hint) o.login_hint = hint;
     client.requestAccessToken(o);
   }
@@ -331,15 +334,15 @@
   }
 
   // ---------- the bits of page each tool shows ----------
-  function ago(t) {
+  function ago(t) { // the date in the language shown, not the device's
     var s = Math.round((Date.now() - t) / 1000);
-    if (s < 60) return 'just now';
-    if (s < 3600) return Math.round(s / 60) + ' min ago';
-    if (s < 86400) return Math.round(s / 3600) + ' h ago';
-    return new Date(t).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    if (s < 60) return T('sync.justNow');
+    if (s < 3600) return T('sync.minAgo', { n: Math.round(s / 60) });
+    if (s < 86400) return T('sync.hAgo', { n: Math.round(s / 3600) });
+    return T('sync.onDate', { date: new Date(t).toLocaleDateString(T.locale, { month: 'short', day: 'numeric' }) });
   }
   function line() {
-    return status === 'busy' ? 'Syncing…' : status === 'tap' ? 'Tap <b>Sync now</b> to get your latest tablas.' : status === 'error' ? esc(note) : st.last ? 'Last synced ' + ago(st.last) + '.' : '';
+    return status === 'busy' ? esc(T('sync.syncing')) : status === 'tap' ? T.html('sync.tapNow_html') : status === 'error' ? esc(T(note)) : st.last ? esc(T('sync.last', { ago: ago(st.last) })) : '';
   }
   var CLOUD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18.5h10.5a4 4 0 0 0 .7-7.94A6 6 0 0 0 6.7 9.1 4.7 4.7 0 0 0 7 18.5z"/></svg>';
   function css() {
@@ -354,7 +357,7 @@
     document.head.appendChild(s);
   }
   function title() {
-    return status === 'busy' ? 'Syncing with Google Drive…' : status === 'tap' ? 'Tap to sync your tablas with Google Drive' : status === 'error' ? note + ' Tap to try again.' : 'Synced with Google Drive' + (st.last ? ' ' + ago(st.last) : '') + ' — tap to sync now';
+    return status === 'busy' ? T('sync.t.busy') : status === 'tap' ? T('sync.t.tap') : status === 'error' ? T('sync.t.error', { note: T(note) }) : st.last ? T('sync.t.okAgo', { ago: ago(st.last) }) : T('sync.t.ok');
   }
   // A header button: a cloud with a dot (green synced, gold syncing, red needs a tap).
   function chip(btn) {
@@ -373,10 +376,10 @@
     function draw() {
       if (!host.isConnected) return false; // the sheet it was in has closed
       host.innerHTML = st.on
-        ? '<div class="eyebrow">Saved to Google Drive</div><p class="note">Tablas are saved to <b>' + esc(st.email || 'your Google Drive') + '</b> and show up on every device where you turn this on. ' + line() + '</p>' +
-          '<div class="row"><button class="btn sm" type="button" data-a="now"' + (status === 'busy' ? ' disabled' : '') + '>Sync now</button><button class="btn sec sm" type="button" data-a="off">' + (armed ? 'Tap again to stop' : 'Stop saving on this device') + '</button></div>'
-        : '<div class="eyebrow">Save across devices</div><p class="note">Keep your tablas in your own Google Drive, and they’ll be on every phone, tablet and computer where you turn this on. They go in a “Lotería” folder that only the junkdrawer.works apps can open.' + (note ? ' ' + esc(note) : '') + '</p>' +
-          '<div class="row"><button class="btn red sm" type="button" data-a="on">Save to Google Drive</button></div>';
+        ? '<div class="eyebrow">' + T('sync.savedH') + '</div><p class="note">' + T.html('sync.savedTo_html', { email: st.email || T('sync.yourDrive') }) + ' ' + line() + '</p>' +
+          '<div class="row"><button class="btn sm" type="button" data-a="now"' + (status === 'busy' ? ' disabled' : '') + '>' + T('sync.now') + '</button><button class="btn sec sm" type="button" data-a="off">' + T(armed ? 'sync.stopAgain' : 'sync.stop') + '</button></div>'
+        : '<div class="eyebrow">' + T('sync.offH') + '</div><p class="note">' + esc(T('sync.offNote')) + (note ? ' ' + esc(T(note)) : '') + '</p>' +
+          '<div class="row"><button class="btn red sm" type="button" data-a="on">' + T('sync.on') + '</button></div>';
       host.querySelectorAll('button[data-a]').forEach(function (b) {
         b.addEventListener('click', function () {
           var a = b.dataset.a;
