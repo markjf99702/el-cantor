@@ -862,11 +862,12 @@ a.chip{text-decoration:none}
     chips.forEach(function (b) { b.addEventListener('click', function () { input.value = b.classList.contains('on') ? '' : b.textContent; mark(); }); });
     input.addEventListener('input', mark); mark();
   }
-  // A name typed the way a past winner's was, capitals aside, is saved as theirs, so the tally counts one person.
+  // A name typed the way a past winner's was, capitals aside, is saved as theirs, so the tally counts one person. A
+  // past spelling with no capitals at all gives way to one typed with them: "abuela" once, "Abuela" from then on.
   function winnerName(typed) {
-    var k = nameKey(typed);
-    for (var i = C.wins.length - 1; k && i >= 0; i--) if (nameKey(C.wins[i].who) === k) return String(C.wins[i].who).trim();
-    return String(typed || '').trim();
+    var t = String(typed || '').trim(), k = nameKey(t);
+    for (var i = C.wins.length - 1; k && i >= 0; i--) if (nameKey(C.wins[i].who) === k) { var past = String(C.wins[i].who).trim(); return past === k && t !== k ? t : past; }
+    return t;
   }
   function shuffleNext() { newRound(); patternSheet(T('cantor.roundWhat', { r: C.round })); }
 

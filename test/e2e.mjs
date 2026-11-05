@@ -882,6 +882,15 @@ check('cantor: a winner’s name goes from the ¡Lotería! box to the checker, a
     assert.deepEqual(await wins(), ['1 Tío Beto', '2 tío beto', '3 Abuela', '4 Abuela']);
     await page.click('#setBtn');
     assert.deepEqual(await chips('#winsCard'), ['tío beto · 2', 'Abuela · 2']);
+    await page.click('#stx');
+    // A spelling with no capitals gives way to one typed with them, so the tally can be put right.
+    await page.click('#lotBtn');
+    await page.fill('#clWho', 'Tío Beto');
+    await page.click('#clNew');
+    await page.click('#ptx');
+    assert.deepEqual((await wins()).slice(-1), ['5 Tío Beto'], 'a name typed with capitals was saved without them');
+    await page.click('#setBtn');
+    assert.deepEqual(await chips('#winsCard'), ['Tío Beto · 3', 'Abuela · 2']);
     assert.deepEqual(problems, []);
   } finally { await ctx.close(); }
 });
