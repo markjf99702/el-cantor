@@ -12,7 +12,7 @@
   <img src="docs/phone-print.png" alt="Make tablas on a phone: Tabla 1 full, with Las Jaras on it twice, Tabla 2 nine cards in with its tenth square picked, and the deck of cards below to tap or drag from" width="250">
 </p>
 
-Install it from the browser (on an iPhone, Share → Add to Home Screen) and it runs as its own app. It works offline too: installing keeps the card pictures, and the recorded voices are kept as they play. The home screen has three choices:
+Install it from the browser (on an iPhone, Share → Add to Home Screen) and it runs as its own app, named El Cantor whichever page it was added from. It works offline too: installing keeps the card pictures, and the recorded voices are kept as they play. The home screen has three choices:
 
 - **El Cantor** (`cantor.html`) calls the game: the phone, tablet or laptop at the head of the table that replaces the deck and the person reading it.
 - **My tablas** (`board.html`) is the play-along board: each player marks their own tablas on their phone as cards are called.

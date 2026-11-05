@@ -614,6 +614,17 @@ check('home: El Cantor is the one that prints numbered tablas and Make tablas is
   } finally { await ctx.close(); }
 });
 
+check('install: the icon is named El Cantor whichever page it was added from, as the manifest names it', async () => {
+  // An iPhone names a Home Screen icon after the page's apple-mobile-web-app-title; Android and computers after the
+  // manifest. So every page says El Cantor, and two cousins never end up with two names for one app.
+  const manifest = JSON.parse(await readFile(join(root, 'manifest.webmanifest'), 'utf8'));
+  assert.deepEqual([manifest.name, manifest.short_name], ['El Cantor', 'El Cantor']);
+  for (const f of ['index.html', 'cantor.html', 'board.html', 'print.html']) {
+    const html = await readFile(join(root, f), 'utf8'), m = [...html.matchAll(/<meta name="apple-mobile-web-app-title" content="([^"]*)">/g)].map(x => x[1]);
+    assert.deepEqual(m, ['El Cantor'], f + ' names the icon ' + m.join(', '));
+  }
+});
+
 check('fonts: every page has Bree Serif and Nunito Sans, served from here', async () => {
   const ctx = await context(PHONE);
   try {
