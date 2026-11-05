@@ -1072,6 +1072,28 @@ check('cantor: Print tablas starts on Letter for a phone in plain or Latin Ameri
   }
 });
 
+check('cantor: Print tablas at two per page draws the cut line between two tablas, and none beside a lone one', async () => {
+  // 3 tablas, 2 per page: page 1 has two side by side and a dashed line down the middle; page 2 has tabla 3 alone.
+  const ctx = await context(DESKTOP, { acceptDownloads: true });
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await page.goto(base + 'cantor.html');
+    await page.click('#printBtn');
+    await page.fill('#prName', 'CANELA');
+    await page.fill('#prCount', '3'); await page.press('#prCount', 'Tab');
+    await page.click('#prPer [data-v="2"]');
+    const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#prGo')]);
+    const pdf = await readFile(await dl.path(), 'latin1');
+    // The pages' drawing, in order (left uncompressed); the images are the streams with a /Filter.
+    const pages = [...pdf.matchAll(/<< \/Length \d+ >>\nstream\n([\s\S]*?)\nendstream/g)].map(m => m[1]);
+    assert.equal(pages.length, 2, 'the PDF has 2 pages');
+    const cut = c => /\[4 3\] 0 d/.test(c);
+    assert.deepEqual(pages.map(cut), [true, false], 'the dashed cut line, page by page');
+    assert.ok(/Tabla 3/.test(pages[1]), 'page 2 holds tabla 3');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('badges: the sábana’s call order and a double’s ×2 sit at the top right, off the card’s printed name', async () => {
   // The cards print their number in a tag at the top left and their name along the bottom.
   const high = (page, sel, box) => page.$$eval(sel, (els, box) => els.map(e => { const c = e.closest(box).getBoundingClientRect(), r = e.getBoundingClientRect(); return (r.bottom - c.top) / c.height; }), box);

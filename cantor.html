@@ -1217,7 +1217,8 @@ a.chip{text-decoration:none}
           var box = per === 2 ? { x: j ? W / 2 + m : m, y: m, w: (W - 4 * m) / 2, h: H - 2 * m } : { x: m, y: m, w: W - 2 * m, h: H - 2 * m };
           drawTabla(pdf, ops, used, box, tablas[i + j], name, i + j + 1, imgs, mark);
         }
-        if (per === 2) ops.push(col(RULE, true) + ' 0.5 w [4 3] 0 d ' + num(W / 2) + ' ' + num(m / 2) + ' m ' + num(W / 2) + ' ' + num(H - m / 2) + ' l S [] 0 d');
+        // The cut line, only between two tablas: a lone one (the last of an odd count) has nothing to cut it from.
+        if (per === 2 && i + 1 < tablas.length) ops.push(col(RULE, true) + ' 0.5 w [4 3] 0 d ' + num(W / 2) + ' ' + num(m / 2) + ' m ' + num(W / 2) + ' ' + num(H - m / 2) + ' l S [] 0 d');
         pdf.page(ops, used);
       }
       return pdf.bytes('Lotería · Juego ' + name);
