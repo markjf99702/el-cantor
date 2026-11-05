@@ -137,7 +137,7 @@ check('deck: Clásico already wins with every shape but Siete Loco, and a game�
 // ---------------------------------------------------------------- the words, without a browser
 // The keys whose Spanish reads the same as the English (the language switch's labels by design); every other key's
 // Spanish is a translation.
-const SAME = ['lang.label', 'lang.en', 'lang.es', 'tablas', 'pace.normal', 'cantor.rate.normal', 'cantor.goodLine'];
+const SAME = ['lang.label', 'lang.en', 'lang.es', 'tablas', 'pace.normal', 'cantor.rate.normal', 'cantor.goodLine', 'board.whoTablas'];
 // strings.js as a page loads it on a device in this language, with this choice saved (or none).
 async function loadStrings(language = 'en-US', chosen = null) {
   const box = { navigator: { language, languages: [language] }, document: { documentElement: {} }, localStorage: { getItem: k => k === 'loteria.lang' ? chosen : null } };
@@ -165,7 +165,7 @@ check('strings: every word is there in English and in Spanish, with the same {va
   // argument of T( or T.html(, which may pick one of a few: T(on ? 'on' : 'off'). 'prefix.' + id there uses every key
   // starting prefix., and each shape, voice and pace then needs its own.
   const used = new Set(), prefixes = new Set();
-  for (const f of ['index.html', 'cantor.html', 'deck.js', 'strings.js']) {
+  for (const f of ['index.html', 'cantor.html', 'board.html', 'deck.js', 'strings.js']) {
     const src = await readFile(join(root, f), 'utf8');
     for (const m of src.matchAll(/\bT(?:\.html)?\(/g)) {
       let arg = '', depth = 0;
@@ -382,6 +382,102 @@ check('espanol: El Cantor in Spanish, every sheet and the ¡Lotería! box, and t
     assert.equal(await page.getAttribute('html', 'lang'), 'en');
     await page.reload();
     assert.ok(await page.evaluate(() => document.getElementById('sheet').hidden), 'Settings opens on every reload');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
+check('espanol: My tablas in Spanish, from the first visit and a shared link to Settings, Tablas, Share, Cantaron… and a ¡Lotería!', async () => {
+  for (const kind of [PHONE, DESKTOP]) {
+    const ctx = await context(kind, { locale: 'es-MX' });
+    try {
+      const page = await ctx.newPage(), problems = watch(page), where = kind === PHONE ? 'phone: ' : 'computer: ';
+      const clean = async what => { assert.deepEqual(await english(page), [], where + 'English in ' + what); await noSideways(page, what + ' in Spanish'); };
+      const toast = text => until(page, t => document.getElementById('toast').textContent === t && document.getElementById('toast').classList.contains('show'), text);
+      await page.goto(base + 'board.html');
+      await page.evaluate(() => document.fonts.ready);
+      assert.equal(await page.getAttribute('html', 'lang'), 'es-MX');
+      assert.equal(await page.title(), 'Lotería · Mis tablas');
+      assert.equal(await sheetTitle(page), '¿Quién juega en este dispositivo?');
+      await clean('the first visit');
+      // A shared link with one tabla, El Gallo on it twice.
+      await page.goto(base + 'board.html#t=Mam%C3%A1~Tabla%201:1.1.3.4.5.6.7.8.9.a.b.c.d.e.f.g');
+      await until(page, () => (document.querySelector('#sheet h2') || {}).textContent === 'Tablas de Mamá');
+      assert.equal(await page.textContent('#sheet .note'), 'Esta liga trae 1 tabla para “Mamá”.');
+      await clean('a shared link');
+      await page.click('#imOk');
+      await toast('Juegas como Mamá');
+      assert.equal(await page.textContent('#hist'), 'Aquí salen las cartas cantadas');
+      await clean('My tablas');
+      // Settings: the language first, with Español on; someone added gets two tablas.
+      await page.click('#setBtn');
+      assert.equal(await sheetTitle(page), 'Ajustes');
+      assert.equal(await page.textContent('#sheet .bd > .card:first-child .eyebrow'), 'Idioma · Language');
+      assert.equal(await page.getAttribute('#langSw [lang="es"]', 'aria-pressed'), 'true');
+      assert.deepEqual([await page.textContent('#sndBtn'), await page.textContent('#gdBtn')], ['Sí', 'Sí']);
+      await clean('Settings');
+      await page.fill('#pnew', 'Beto'); await page.click('#padd');
+      await toast('Beto empieza con dos tablas al azar — cámbialas en Tablas');
+      assert.equal(await page.textContent('#who'), 'Beto · 2 tablas');
+      await page.locator('#plist .chip', { hasText: 'Mamá' }).click();
+      assert.equal(await page.textContent('#who'), 'Mamá · 1 tabla');
+      await page.click('#stx');
+      // Tablas: the double, a second tap, a printed tabla, and Share.
+      await page.click('#tablasBtn');
+      assert.equal(await page.textContent('#edb .warn'), 'Dos veces: El Gallo');
+      await page.click('#tbOrig');
+      assert.equal(await page.textContent('#tbOrig'), 'Toca otra vez para reemplazar tu tabla');
+      await clean('Tablas');
+      await page.click('#tbPrinted');
+      assert.equal(await sheetTitle(page), 'Agregar una tabla impresa');
+      await page.fill('#ptJ', 'CANELA'); await page.fill('#ptN', '7');
+      await clean('a printed tabla');
+      await page.click('#ptx');
+      await page.click('#tbShare');
+      assert.equal(await sheetTitle(page), 'Compartir las tablas de Mamá');
+      assert.match(await page.textContent('#sheet .note'), /^Quien abra esta liga recibe una copia de esta tabla en su dispositivo, con el nombre “Mamá”\./);
+      await clean('Share');
+      await page.click('#shx');
+      // Cantaron…: El Gallo, La Dama and El Catrín finish the top row; the ¡Lotería! box, then a new round.
+      await page.click('#callBtn');
+      await clean('Cantaron…');
+      for (const n of ['1', '3', '4']) { await page.fill('#pkq', n); await page.press('#pkq', 'Enter'); }
+      await page.waitForSelector('#winbox .winc');
+      assert.equal(await page.textContent('#winbox .note'), '¡Grítala antes que nadie!');
+      await clean('the ¡Lotería! box');
+      await page.click('#winOk');
+      await page.fill('#pkq', '1'); await page.press('#pkq', 'Enter');
+      await toast('El Gallo ya salió');
+      await page.fill('#pkq', 'zz');
+      assert.equal(await page.textContent('#pk'), 'Ninguna carta coincide con “zz”.');
+      await page.click('#pkx');
+      assert.equal(await page.textContent('#hist .cnt'), '3 cantadas');
+      await page.click('#clearBtn');
+      assert.equal(await sheetTitle(page), '¿Limpiar la ronda?');
+      await clean('Clear the round?');
+      await page.click('#clOk');
+      assert.equal(await sheetTitle(page), 'Ronda nueva — ¿a qué jugamos?');
+      await page.locator('#pats .pat', { hasText: 'La Ele' }).press('Shift+Enter');
+      await toast('Clásico ya gana con La Ele');
+      await clean('the game picker');
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
+  // English chosen in My tablas' Settings brings Settings back up in English, and only that once.
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.v1': ANA, 'loteria.lang': 'es' });
+    await page.goto(base + 'board.html');
+    assert.equal(await page.textContent('#hist'), 'Aquí salen las cartas cantadas');
+    await page.click('#setBtn');
+    await Promise.all([page.waitForEvent('load'), page.click('#langSw [lang="en"]')]);
+    await until(page, () => !document.getElementById('sheet').hidden);
+    assert.equal(await sheetTitle(page), 'Settings', 'Settings didn’t come back after the language changed');
+    assert.equal(await page.getAttribute('html', 'lang'), 'en');
+    assert.equal(await page.title(), 'Lotería · My tablas');
+    await page.reload();
+    assert.ok(await page.evaluate(() => document.getElementById('sheet').hidden), 'Settings opens on every reload');
+    assert.equal(await page.textContent('#hist'), 'Called cards show up here');
     assert.deepEqual(problems, []);
   } finally { await ctx.close(); }
 });

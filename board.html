@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script src="carry.js"></script>
+<script src="strings.js"></script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -184,16 +185,16 @@ a{color:var(--teal);font-weight:700}
 <noscript><p class="noscript"><span>My tablas needs JavaScript to mark your tablas as the cards are called.</span> <span lang="es">Mis tablas necesita JavaScript para marcar tus tablas mientras cantan las cartas.</span></p></noscript>
 <div class="app">
   <div class="top">
-    <a class="chip ic home" href="./" aria-label="Home — all the Lotería tools" title="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5"/><path d="M6.5 10v9h11v-9"/></svg></a>
+    <a class="chip ic home" href="./" aria-label="Home — all the Lotería tools" title="Home" data-t-aria="home.aria" data-t-title="home.title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5"/><path d="M6.5 10v9h11v-9"/></svg></a>
     <h1><span class="t">Lotería</span> <small id="who"></small></h1>
     <button class="chip" id="patBtn" type="button">Línea</button>
     <button class="chip" id="tablasBtn" type="button">Tablas</button>
-    <button class="chip ic" id="clearBtn" type="button" aria-label="New round" title="New round">↺</button>
+    <button class="chip ic" id="clearBtn" type="button" aria-label="New round" title="New round" data-t-aria="newRound" data-t-title="newRound">↺</button>
     <button class="chip ic" id="syncBtn" type="button" hidden></button>
-    <button class="chip ic" id="setBtn" type="button" aria-label="Settings" title="Settings">⋯</button>
+    <button class="chip ic" id="setBtn" type="button" aria-label="Settings" title="Settings" data-t-aria="settings" data-t-title="settings">⋯</button>
   </div>
   <div class="called">
-    <button class="callbtn" id="callBtn" type="button"><b>Cantaron…</b><span>they called</span></button>
+    <button class="callbtn" id="callBtn" type="button"><b>Cantaron…</b><span data-t="board.theyCalled">they called</span></button>
     <div class="last" id="last"></div>
   </div>
   <div class="stage"><div class="boards" id="boards"></div></div>
@@ -202,6 +203,7 @@ a{color:var(--teal);font-weight:700}
 <div id="sheet" hidden></div>
 <div id="winbox" hidden></div>
 <div class="toast" id="toast" role="status"></div>
+<script>T.apply(document); document.title = T('board.title');</script>
 <script src="deck.js" data-cards="cards/"></script>
 <script src="sync.js"></script>
 <script>if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(function () { });</script>
@@ -226,7 +228,7 @@ a{color:var(--teal);font-weight:700}
     s.players = (Array.isArray(s.players) ? s.players : []).filter(function (p) { return p && typeof p === 'object'; });
     s.players.forEach(function (p) {
       if (!p.id) p.id = uid();
-      if (typeof p.name !== 'string' || !p.name) p.name = 'Player';
+      if (typeof p.name !== 'string' || !p.name) p.name = T('board.player');
       p.boards = (Array.isArray(p.boards) ? p.boards : []).filter(function (b) { return b && Array.isArray(b.cards); });
       p.boards.forEach(function (b) { if (!b.id) b.id = uid(); if (typeof b.name !== 'string' || !b.name) b.name = 'Tabla'; });
     });
@@ -288,15 +290,15 @@ a{color:var(--teal);font-weight:700}
   // ---------- render ----------
   function render() { renderTop(); renderLast(); renderBoards(); renderHist(); }
   function renderTop() {
-    var p = player(); $('who').textContent = p.name + (S.players.length > 1 ? ' · ' + p.boards.length + (p.boards.length === 1 ? ' tabla' : ' tablas') : '');
+    var p = player(); $('who').textContent = S.players.length > 1 ? T('board.whoTablas', { name: p.name, n: p.boards.length }) : p.name;
     $('patBtn').textContent = gameName() + ' ▾';
     $('patBtn').classList.toggle('teal', S.patterns.length > 0);
   }
   function renderLast() {
     var el = $('last'), n = G.called[G.called.length - 1];
-    if (!n) { el.innerHTML = '<div class="t"><div class="empty">Nothing called yet. Tap <b>Cantaron…</b> when they call a card, or tap the card on a tabla.</div></div>'; return; }
+    if (!n) { el.innerHTML = '<div class="t"><div class="empty">' + T.html('board.nothingYet_html') + '</div></div>'; return; }
     var c = card(n), onb = player().boards.some(function (b) { return b.cards.indexOf(n) >= 0; });
-    el.innerHTML = '<img src="' + src(n) + '" alt=""><div class="t"><div class="n"><small>' + c.n + '</small>' + c.name + (onb ? '' : ' <small style="color:var(--red)">not on your tablas</small>') + '</div><div class="v">' + c.verse + '</div></div><button class="undo" type="button" id="undoBtn" aria-label="Undo the last call" title="Undo the last call">↶</button>';
+    el.innerHTML = '<img src="' + src(n) + '" alt=""><div class="t"><div class="n"><small>' + c.n + '</small>' + c.name + (onb ? '' : ' <small style="color:var(--red)">' + T('board.notOnYours') + '</small>') + '</div><div class="v">' + c.verse + '</div></div><button class="undo" type="button" id="undoBtn" aria-label="' + esc(T('board.undoCall')) + '" title="' + esc(T('board.undoCall')) + '">↶</button>';
     $('undoBtn').addEventListener('click', function () { G.called.pop(); tick(); evaluate(false); render(); });
   }
   // Where the keyboard's focus is on the tablas, to put it back once they're drawn again: a square, or a label's button.
@@ -315,12 +317,12 @@ a{color:var(--teal);font-weight:700}
       var bd = x.b, hits = checkBoard(bd), hitCells = {}; hits.forEach(function (h) { h.cells.forEach(function (c) { hitCells[c] = 1; }); });
       var t = document.createElement('div'); t.className = 'tabla' + (hits.length ? ' win' : ''); t.dataset.id = bd.id;
       var lbl = document.createElement('div'); lbl.className = 'lbl';
-      lbl.innerHTML = '<button type="button" class="k"><span class="nm">' + esc(bd.name) + '</span>' + (hits.length ? '<span class="w">· ¡' + hits[0].pat.name.toLowerCase() + '!</span>' : '') + '</button><button type="button" class="z" aria-label="Enlarge">' + (UI.focus == null ? (p.boards.length > 1 ? '⤢' : '') : '⤡') + '</button>';
+      lbl.innerHTML = '<button type="button" class="k"><span class="nm">' + esc(bd.name) + '</span>' + (hits.length ? '<span class="w">· ¡' + hits[0].pat.name.toLowerCase() + '!</span>' : '') + '</button><button type="button" class="z" aria-label="' + esc(T(UI.focus == null ? 'board.enlarge' : 'board.showAll')) + '">' + (UI.focus == null ? (p.boards.length > 1 ? '⤢' : '') : '⤡') + '</button>';
       lbl.querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () { if (p.boards.length < 2) return; UI.focus = UI.focus == null ? bd.id : null; renderBoards(); }); });
       var g = document.createElement('div'); g.className = 'grid';
       bd.cards.forEach(function (n, ci) {
         var cell = document.createElement('div'); cell.className = 'cell' + (guide && !guide[ci] ? ' dim' : '') + (hitCells[ci] ? ' hit' : ''); cell.dataset.i = ci;
-        if (real(n)) { cell.innerHTML = '<img src="' + src(n) + '" alt="" loading="lazy" draggable="false">'; cell.setAttribute('role', 'button'); cell.tabIndex = 0; cell.setAttribute('aria-label', card(n).name + (isCalled(n) ? ', called' : '')); }
+        if (real(n)) { cell.innerHTML = '<img src="' + src(n) + '" alt="" loading="lazy" draggable="false">'; cell.setAttribute('role', 'button'); cell.tabIndex = 0; cell.setAttribute('aria-label', isCalled(n) ? T('calledAria', { card: card(n).name }) : card(n).name); }
         if (isCalled(n)) { cell.classList.add('marked'); var mk = document.createElement('div'); mk.className = 'mk' + (G.called[G.called.length - 1] === n ? ' new' : ''); mk.style.setProperty('--rot', rotFor(x.i, ci) + 'deg'); mk.innerHTML = markerSvg(); cell.appendChild(mk); }
         cell.addEventListener('click', function () { if (real(n)) call(n); });
         g.appendChild(cell);
@@ -339,11 +341,11 @@ a{color:var(--teal);font-weight:700}
   }
   function renderHist() {
     var el = $('hist'), p = player(); el.innerHTML = '';
-    if (!G.called.length) { el.innerHTML = '<span class="cnt">Called cards show up here</span>'; return; }
-    var cnt = document.createElement('span'); cnt.className = 'cnt'; cnt.textContent = G.called.length + ' called'; el.appendChild(cnt);
+    if (!G.called.length) { el.innerHTML = '<span class="cnt">' + T('board.histEmpty') + '</span>'; return; }
+    var cnt = document.createElement('span'); cnt.className = 'cnt'; cnt.textContent = T('board.calledN', { n: G.called.length }); el.appendChild(cnt);
     G.called.slice().reverse().forEach(function (n) {
       var onb = p.boards.some(function (b) { return b.cards.indexOf(n) >= 0; });
-      var h = document.createElement('button'); h.type = 'button'; h.className = 'h' + (onb ? '' : ' miss'); h.innerHTML = '<img src="' + src(n) + '" alt="">' + esc(card(n).name); h.title = 'Tap to un-call';
+      var h = document.createElement('button'); h.type = 'button'; h.className = 'h' + (onb ? '' : ' miss'); h.innerHTML = '<img src="' + src(n) + '" alt="">' + esc(card(n).name); h.title = T('board.uncall');
       h.addEventListener('click', function () { call(n); }); el.appendChild(h);
     });
   }
@@ -351,17 +353,17 @@ a{color:var(--teal);font-weight:700}
 
   function call(n) {
     var i = G.called.indexOf(n);
-    if (i >= 0) { G.called.splice(i, 1); toast('Took ' + card(n).name + ' back off'); } else G.called.push(n);
+    if (i >= 0) { G.called.splice(i, 1); toast(T('board.tookBack', { card: card(n).name })); } else G.called.push(n);
     tick(); evaluate(i < 0); render();
   }
-  function clearRound() { G.called = []; G.announced = {}; saveG(); render(); patternSheet('New round — what are we playing?'); }
+  function clearRound() { G.called = []; G.announced = {}; saveG(); render(); patternSheet(T('board.newRoundWhat')); }
 
   // ---------- win ----------
   function showWin(wins) {
     fanfare();
     var w = wins[0], box = $('winbox');
-    var more = wins.length > 1 ? ' — and ' + (wins.length - 1) + ' more' : '';
-    box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p><b>' + esc(w.board.name) + '</b> · ' + esc(w.hit.pat.name) + more + '</p><p class="note">Shout it before somebody else does.</p><div class="row"><button class="btn red" type="button" id="winOk">Keep playing</button><button class="btn sec" type="button" id="winClear">New round</button></div></div></div>';
+    var more = wins.length > 1 ? T('board.andMore', { n: wins.length - 1 }) : '';
+    box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p><b>' + esc(w.board.name) + '</b> · ' + esc(w.hit.pat.name) + more + '</p><p class="note">' + T('board.shout') + '</p><div class="row"><button class="btn red" type="button" id="winOk">' + T('board.keepPlaying') + '</button><button class="btn sec" type="button" id="winClear">' + T('newRound') + '</button></div></div></div>';
     box.hidden = false;
     // Keep playing takes the focus once the key that made the win is done (or that Enter would press it too). Closing
     // the win gives it back to where it was by then: the square the win came from, or Cantaron…'s search box on a
@@ -388,7 +390,8 @@ a{color:var(--teal);font-weight:700}
   function sheetScroll(top) { var b = document.querySelector('#sheet .bd'); if (!b) return 0; if (top != null) b.scrollTop = top; return b.scrollTop; }
 
   function pickerSheet(mode, onPick, taken) {
-    var sh = openSheet('<div class="hd"><input id="pkq" type="search" enterkeyhint="search" placeholder="' + (mode === 'call' ? 'Name or number… “luna”, 23' : 'Pick a card for this square') + '" autocomplete="off"><button class="btn sec sm" type="button" id="pkx">Done</button></div><div class="bd"><div class="pick" id="pk"></div></div>');
+    var calling = mode === 'call'; // Cantaron…, or a card for a square
+    var sh = openSheet('<div class="hd"><input id="pkq" type="search" enterkeyhint="search" placeholder="' + esc(T(calling ? 'board.searchCall' : 'board.searchSquare')) + '" autocomplete="off"><button class="btn sec sm" type="button" id="pkx">' + T('done') + '</button></div><div class="bd"><div class="pick" id="pk"></div></div>');
     var q = $('pkq'), grid = $('pk');
     function draw() {
       var f = fold(q.value.trim()), num = parseInt(f, 10);
@@ -396,7 +399,7 @@ a{color:var(--teal);font-weight:700}
       CARDS.forEach(function (c) {
         if (f && !(c.key.indexOf(f) >= 0 || (num && c.n === num))) return;
         var d = document.createElement('div'); d.className = 'pk' + (mode === 'call' && isCalled(c.n) ? ' called' : '') + (taken && taken.indexOf(c.n) >= 0 ? ' taken' : '');
-        d.setAttribute('role', 'button'); d.tabIndex = 0; d.setAttribute('aria-label', c.name + (mode === 'call' && isCalled(c.n) ? ', called' : '')); d.dataset.n = c.n;
+        d.setAttribute('role', 'button'); d.tabIndex = 0; d.setAttribute('aria-label', mode === 'call' && isCalled(c.n) ? T('calledAria', { card: c.name }) : c.name); d.dataset.n = c.n;
         d.innerHTML = '<span class="num">' + c.n + '</span><img src="' + src(c.n) + '" alt="" loading="lazy"><div class="n">' + c.name + '</div>';
         d.addEventListener('click', function () {
           var had = document.activeElement === d;
@@ -408,7 +411,7 @@ a{color:var(--teal);font-weight:700}
         });
         grid.appendChild(d);
       });
-      if (!grid.children.length) grid.innerHTML = '<div class="note">No card matches “' + esc(q.value) + '”.</div>';
+      if (!grid.children.length) grid.innerHTML = '<div class="note">' + esc(T('noMatch', { q: q.value })) + '</div>';
     }
     q.addEventListener('input', draw);
     q.addEventListener('keydown', function (e) { if (e.key === 'Enter') { var first = grid.querySelector('.pk'); if (first && grid.querySelectorAll('.pk').length === 1) first.click(); } });
@@ -419,7 +422,7 @@ a{color:var(--teal);font-weight:700}
   }
 
   function patternSheet(title) {
-    openSheet('<div class="hd"><h2>' + (title || 'What are we playing?') + '</h2><button class="btn sec sm" type="button" id="ptx">Done</button></div><div class="bd stack"><p class="note">Tap the game for this round. <b>Clásico</b> is the regular game — a tabla wins on 4 in a row, 4 corners, or 4 in a square. The others are single shapes; hold one for a second to add it on top of what’s selected, and a tabla wins on any one of them.</p><div class="pats" id="pats"></div></div>');
+    openSheet('<div class="hd"><h2>' + esc(title || T('whatPlaying')) + '</h2><button class="btn sec sm" type="button" id="ptx">' + T('done') + '</button></div><div class="bd stack"><p class="note">' + T.html('board.patsNote_html') + '</p><div class="pats" id="pats"></div></div>');
     // A held shape is added while the finger is still down, and the shapes are drawn again; the press is kept here,
     // not on its button, so letting go on the new button doesn't pick that shape on its own.
     var press = { held: false, t: 0 };
@@ -428,7 +431,7 @@ a{color:var(--teal);font-weight:700}
       PATS.forEach(function (p) {
         var both = L.hasClasico(S.patterns), on = p.combo ? both : S.patterns.indexOf(p.id) >= 0 && !(both && CLASICO.indexOf(p.id) >= 0), show = p.show || p.sets[0];
         var b = document.createElement('button'); b.type = 'button'; b.className = 'pat' + (on ? ' on' : '');
-        b.innerHTML = '<span class="mini">' + ALL.map(function (i) { return '<i class="' + (show.indexOf(i) >= 0 ? (p.combo || p.min || (p.sets && p.sets.length > 1) ? 'q' : 'f') : '') + '"></i>'; }).join('') + '</span><span><b>' + p.name + '</b><small>' + p.sub + '</small></span>';
+        b.innerHTML = '<span class="mini">' + ALL.map(function (i) { return '<i class="' + (show.indexOf(i) >= 0 ? (p.combo || p.min || (p.sets && p.sets.length > 1) ? 'q' : 'f') : '') + '"></i>'; }).join('') + '</span><span><b>' + p.name + '</b><small>' + T('pat.' + p.id) + '</small></span>';
         function pick(add) {
           if (add) toast(L.holdShape(S.patterns, p.id)); // on top of the game, saying what it did
           else S.patterns = p.combo ? CLASICO.slice() : [p.id];
@@ -447,52 +450,54 @@ a{color:var(--teal);font-weight:700}
 
   function settingsSheet() {
     var st = S.settings;
-    openSheet('<div class="hd"><h2>Settings</h2><button class="btn sec sm" type="button" id="stx">Done</button></div><div class="bd stack">' +
-      '<div class="card"><div class="eyebrow">Marker</div><div class="row" style="margin-top:8px"><div class="seg" id="mkseg"><button type="button" data-v="bean">Frijol</button><button type="button" data-v="chip">Ficha</button><button type="button" data-v="coin">Moneda</button></div></div></div>' +
-      '<div class="card"><div class="row sp"><div><b>Sounds</b><div class="note">A bean drop on each mark, a little fanfare on a win.</div></div><button class="chip" type="button" id="sndBtn"></button></div></div>' +
-      '<div class="card"><div class="row sp"><div><b>Dim squares outside the pattern</b><div class="note">Only for fixed shapes like Esquinas or La Ele.</div></div><button class="chip" type="button" id="gdBtn"></button></div></div>' +
-      '<div class="card"><div class="eyebrow">Who is playing on this device</div><div class="row" id="plist" style="margin-top:8px"></div><div class="row" style="margin-top:10px"><input id="pnew" placeholder="Add a person" autocomplete="off" autocapitalize="words" enterkeyhint="done" style="flex:1"><button class="btn sm" type="button" id="padd">Add</button></div><p class="note" style="margin-top:8px">Each person keeps their own tablas. To send someone your tablas, use <b>Share</b> on the Tablas screen.</p></div>' +
-      '<div class="card"><div class="eyebrow">Calling the game?</div><p class="note" style="margin-top:6px"><a href="cantor.html">El Cantor</a> shuffles a deck and reads each card aloud, prints numbered tablas, and checks a ¡Lotería! by tabla number.</p></div>' +
+    openSheet('<div class="hd"><h2>' + T('settings') + '</h2><button class="btn sec sm" type="button" id="stx">' + T('done') + '</button></div><div class="bd stack">' +
+      '<div class="card"><div class="eyebrow">' + T('lang.label') + '</div><div id="langSw" style="margin-top:8px"></div></div>' +
+      '<div class="card"><div class="eyebrow">' + T('board.marker') + '</div><div class="row" style="margin-top:8px"><div class="seg" id="mkseg"><button type="button" data-v="bean">Frijol</button><button type="button" data-v="chip">Ficha</button><button type="button" data-v="coin">Moneda</button></div></div></div>' +
+      '<div class="card"><div class="row sp"><div><b>' + T('sounds') + '</b><div class="note">' + T('board.soundsNote') + '</div></div><button class="chip" type="button" id="sndBtn"></button></div></div>' +
+      '<div class="card"><div class="row sp"><div><b>' + T('board.dim') + '</b><div class="note">' + T('board.dimNote') + '</div></div><button class="chip" type="button" id="gdBtn"></button></div></div>' +
+      '<div class="card"><div class="eyebrow">' + T('board.whoH') + '</div><div class="row" id="plist" style="margin-top:8px"></div><div class="row" style="margin-top:10px"><input id="pnew" placeholder="' + esc(T('board.addPerson')) + '" autocomplete="off" autocapitalize="words" enterkeyhint="done" style="flex:1"><button class="btn sm" type="button" id="padd">' + T('board.add') + '</button></div><p class="note" style="margin-top:8px">' + T.html('board.eachPerson_html') + '</p></div>' +
+      '<div class="card"><div class="eyebrow">' + T('board.callingH') + '</div><p class="note" style="margin-top:6px">' + T.html('board.calling_html') + '</p></div>' +
       '<div class="card" id="syncCard" hidden></div>' +
-      '<div class="card"><div class="eyebrow">About</div><p class="note" style="margin-top:6px">Everything lives on this device' + (window.LoteriaSync && LoteriaSync.ready ? ', and in your Google Drive if you save there' : ' — nothing is sent anywhere') + '. Reload-safe: the round survives a refresh.</p></div>' +
-      '<footer class="jd-foot"><a href="https://junkdrawer.works/">Part of junkdrawer.works</a> <span aria-hidden="true">·</span> <a href="https://junkdrawer.works/privacy.html">Privacy</a></footer></div>');
+      '<div class="card"><div class="eyebrow">' + T('board.about') + '</div><p class="note" style="margin-top:6px">' + T(window.LoteriaSync && LoteriaSync.ready ? 'board.aboutDrive' : 'board.aboutLocal') + '</p></div>' +
+      '<footer class="jd-foot"><a href="https://junkdrawer.works/">' + T('foot.part') + '</a> <span aria-hidden="true">·</span> <a href="https://junkdrawer.works/privacy.html">' + T('foot.privacy') + '</a></footer></div>');
+    T.switch($('langSw'), 'settings'); // a new language reloads the page, and Settings opens again
     reopen = settingsSheet;
     if (window.LoteriaSync) LoteriaSync.card($('syncCard'));
     function draw() {
       document.querySelectorAll('#mkseg button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === st.marker); });
-      $('sndBtn').textContent = st.sound ? 'On' : 'Off'; $('sndBtn').classList.toggle('on', st.sound);
-      $('gdBtn').textContent = st.guide ? 'On' : 'Off'; $('gdBtn').classList.toggle('on', st.guide);
+      $('sndBtn').textContent = T(st.sound ? 'on' : 'off'); $('sndBtn').classList.toggle('on', st.sound);
+      $('gdBtn').textContent = T(st.guide ? 'on' : 'off'); $('gdBtn').classList.toggle('on', st.guide);
       var pl = $('plist'); pl.innerHTML = '';
       S.players.forEach(function (p) { var b = document.createElement('button'); b.type = 'button'; b.className = 'chip' + (p.id === S.current ? ' on' : ''); b.textContent = p.name; b.addEventListener('click', function () { S.current = p.id; save(); UI.focus = null; draw(); evaluate(false); render(); }); pl.appendChild(b); });
     }
     document.querySelectorAll('#mkseg button').forEach(function (b) { b.addEventListener('click', function () { st.marker = b.dataset.v; save(); draw(); renderBoards(); }); });
     $('sndBtn').addEventListener('click', function () { st.sound = !st.sound; save(); draw(); if (st.sound) tick(); });
     $('gdBtn').addEventListener('click', function () { st.guide = !st.guide; save(); draw(); renderBoards(); });
-    $('padd').addEventListener('click', function () { var n = $('pnew').value.trim(); if (!n) return; var p = { id: uid(), name: n, boards: [randomBoard('Tabla 1'), randomBoard('Tabla 2')] }; S.players.push(p); S.current = p.id; save(); $('pnew').value = ''; draw(); render(); toast(n + ' gets two random tablas to start — edit them under Tablas'); });
+    $('padd').addEventListener('click', function () { var n = $('pnew').value.trim(); if (!n) return; var p = { id: uid(), name: n, boards: [randomBoard('Tabla 1'), randomBoard('Tabla 2')] }; S.players.push(p); S.current = p.id; save(); $('pnew').value = ''; draw(); render(); toast(T('board.gotTwo', { name: n })); });
     $('pnew').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); $('padd').click(); } });
     $('stx').addEventListener('click', closeSheet); draw();
   }
 
   function tablasSheet() {
     var p = player();
-    openSheet('<div class="hd"><input id="tbName" value="' + esc(p.name) + '" aria-label="Player name" autocapitalize="words" style="font:400 18px var(--disp);flex:1"><button class="btn sec sm" type="button" id="tbShare">Share</button><button class="btn sm" type="button" id="tbx">Done</button></div><div class="bd stack"><p class="note">Tap any square to change its card. Doubles are fine (house rules) — when that card is called, both squares get a bean — but not three of a card. Names are editable.</p><div class="edb" id="edb"></div><div class="row"><button class="btn sec sm" type="button" id="tbAdd">+ Add a tabla</button><button class="btn sec sm" type="button" id="tbPrinted">+ A printed tabla</button><button class="btn sec sm" type="button" id="tbOrig">Restore the original four</button><a class="btn sec sm" href="print.html">Make tablas to print</a><button class="btn sec sm" type="button" id="tbDel" style="color:var(--red)">Remove this person</button></div></div>');
+    openSheet('<div class="hd"><input id="tbName" value="' + esc(p.name) + '" aria-label="' + esc(T('board.playerName')) + '" autocapitalize="words" style="font:400 18px var(--disp);flex:1"><button class="btn sec sm" type="button" id="tbShare">' + T('board.share') + '</button><button class="btn sm" type="button" id="tbx">' + T('done') + '</button></div><div class="bd stack"><p class="note">' + T('board.editNote') + '</p><div class="edb" id="edb"></div><div class="row"><button class="btn sec sm" type="button" id="tbAdd">' + T('board.addTabla') + '</button><button class="btn sec sm" type="button" id="tbPrinted">' + T('board.addPrinted') + '</button><button class="btn sec sm" type="button" id="tbOrig">' + T('board.restore') + '</button><a class="btn sec sm" href="print.html">' + T('board.makeToPrint') + '</a><button class="btn sec sm" type="button" id="tbDel" style="color:var(--red)">' + T('board.removePerson') + '</button></div></div>');
     reopen = tablasSheet;
     var origArmed = false; // the tablas a tap would replace or remove are only gone on a second tap
     function draw() {
       var host = $('edb'); host.innerHTML = '';
-      origArmed = false; $('tbOrig').textContent = 'Restore the original four';
+      origArmed = false; $('tbOrig').textContent = T('board.restore');
       p.boards.forEach(function (bd, bi) {
         var counts = {}; bd.cards.forEach(function (n) { counts[n] = (counts[n] || 0) + 1; });
         // Doubles, and how many of a card a tabla saved before the family rule holds: "Twice: El Paraguas · 3×: La Luna".
         var by = {}; Object.keys(counts).forEach(function (n) { if (counts[n] > 1 && real(+n)) (by[counts[n]] = by[counts[n]] || []).push(card(+n).name); });
-        var dups = Object.keys(by).map(function (k) { return (k === '2' ? 'Twice' : k + '×') + ': ' + by[k].join(', '); }).join(' · ');
+        var dups = Object.keys(by).map(function (k) { return (k === '2' ? T('twice') : T('timesN', { k: k })) + ': ' + by[k].join(', '); }).join(' · ');
         var w = document.createElement('div'); w.dataset.id = bd.id;
-        w.innerHTML = '<input value="' + esc(bd.name) + '" aria-label="Tabla name"><div class="eg"></div>' + (dups ? '<div class="warn">' + dups + '</div>' : '') + '<div class="row" style="margin-top:8px"><button class="btn sec sm" type="button" data-a="rnd">Random tabla</button>' + (p.boards.length > 1 ? '<button class="btn sec sm" type="button" data-a="del">Remove</button>' : '') + '</div>';
+        w.innerHTML = '<input value="' + esc(bd.name) + '" aria-label="' + esc(T('tablaName')) + '"><div class="eg"></div>' + (dups ? '<div class="warn">' + esc(dups) + '</div>' : '') + '<div class="row" style="margin-top:8px"><button class="btn sec sm" type="button" data-a="rnd">' + T('board.randomTabla') + '</button>' + (p.boards.length > 1 ? '<button class="btn sec sm" type="button" data-a="del">' + T('remove') + '</button>' : '') + '</div>';
         var inp = w.querySelector('input'); inp.addEventListener('change', function () { bd.name = inp.value.trim() || ('Tabla ' + (bi + 1)); save(); render(); });
         var eg = w.querySelector('.eg');
         bd.cards.forEach(function (n, ci) {
           var cell = document.createElement('div'); cell.className = 'cell'; cell.innerHTML = real(n) ? '<img src="' + src(n) + '" alt="" draggable="false">' : '';
-          cell.setAttribute('role', 'button'); cell.tabIndex = 0; cell.setAttribute('aria-label', real(n) ? card(n).name : 'Empty square');
+          cell.setAttribute('role', 'button'); cell.tabIndex = 0; cell.setAttribute('aria-label', real(n) ? card(n).name : T('emptySquare'));
           cell.addEventListener('click', function () {
             var top = sheetScroll();
             pickerSheet('edit', function (pick) {
@@ -500,8 +505,8 @@ a{color:var(--teal);font-weight:700}
               var now = player().boards.filter(function (b) { return b.id === bd.id; })[0];
               // The family rule, as in Make tablas: a card can go on a tabla twice, but not three times. A card picked
               // for the square it's already in stays, even on a tabla saved with it three times.
-              if (now && now.cards[ci] !== pick && now.cards.filter(function (x, k) { return x === pick && k !== ci; }).length >= 2) { toast(card(pick).name + ' is already on ' + now.name + ' twice'); return; }
-              if (now) { now.cards[ci] = pick; save(); } else toast(bd.name + ' was removed on another device');
+              if (now && now.cards[ci] !== pick && now.cards.filter(function (x, k) { return x === pick && k !== ci; }).length >= 2) { toast(T('alreadyTwice', { card: card(pick).name, tabla: now.name })); return; }
+              if (now) { now.cards[ci] = pick; save(); } else toast(T('board.removedElsewhere', { tabla: bd.name }));
               closeSheet(); tablasSheet(); sheetScroll(top); evaluate(false); render();
               var again = [].filter.call($('edb').children, function (x) { return x.dataset.id === bd.id; })[0]; // back on the square it changed
               if (again) again.querySelectorAll('.eg .cell')[ci].focus({ preventScroll: true });
@@ -510,21 +515,21 @@ a{color:var(--teal);font-weight:700}
           eg.appendChild(cell);
         });
         var rnd = w.querySelector('[data-a="rnd"]'), rndArmed = false; // a hand-made tabla is 16 picks of work
-        rnd.addEventListener('click', function () { if (!rndArmed) { rndArmed = true; this.textContent = 'Tap again to replace ' + bd.name + '’s cards'; return; } var r = randomBoard(bd.name); bd.cards = r.cards; save(); draw(); evaluate(false); render(); });
+        rnd.addEventListener('click', function () { if (!rndArmed) { rndArmed = true; this.textContent = T('board.replaceCardsAgain', { tabla: bd.name }); return; } var r = randomBoard(bd.name); bd.cards = r.cards; save(); draw(); evaluate(false); render(); });
         var del = w.querySelector('[data-a="del"]'), rmArmed = false;
-        if (del) del.addEventListener('click', function () { if (!rmArmed) { rmArmed = true; this.textContent = 'Tap again to remove ' + bd.name; return; } p.boards.splice(bi, 1); save(); UI.focus = null; draw(); evaluate(false); render(); });
+        if (del) del.addEventListener('click', function () { if (!rmArmed) { rmArmed = true; this.textContent = T('board.removeTablaAgain', { tabla: bd.name }); return; } p.boards.splice(bi, 1); save(); UI.focus = null; draw(); evaluate(false); render(); });
         host.appendChild(w);
       });
     }
-    $('tbPrinted').addEventListener('click', function () { if (p.boards.length >= 6) { toast('Six tablas is plenty'); return; } printedSheet(); });
-    $('tbAdd').addEventListener('click', function () { if (p.boards.length >= 6) { toast('Six tablas is plenty'); return; } p.boards.push(randomBoard('Tabla ' + (p.boards.length + 1))); save(); draw(); render(); });
+    $('tbPrinted').addEventListener('click', function () { if (p.boards.length >= 6) { toast(T('board.sixPlenty')); return; } printedSheet(); });
+    $('tbAdd').addEventListener('click', function () { if (p.boards.length >= 6) { toast(T('board.sixPlenty')); return; } p.boards.push(randomBoard('Tabla ' + (p.boards.length + 1))); save(); draw(); render(); });
     $('tbOrig').addEventListener('click', function () {
       var four = origBoards(), same = function (bs) { return JSON.stringify(bs.map(function (b) { return [b.name, b.cards]; })); };
-      if (p.boards.length && same(p.boards) !== same(four) && !origArmed) { origArmed = true; this.textContent = 'Tap again to replace ' + (p.boards.length === 1 ? 'your tabla' : 'all ' + p.boards.length + ' tablas'); return; }
+      if (p.boards.length && same(p.boards) !== same(four) && !origArmed) { origArmed = true; this.textContent = T('board.replaceAllAgain', { n: p.boards.length }); return; }
       p.boards = four; save(); draw(); evaluate(false); render();
     });
     var delArmed = false;
-    $('tbDel').addEventListener('click', function () { if (S.players.length < 2) { toast('Add someone else first — the app needs one player'); return; } if (!delArmed) { delArmed = true; this.textContent = 'Tap again to remove ' + p.name; return; } S.players = S.players.filter(function (x) { return x.id !== p.id; }); S.current = S.players[0].id; save(); closeSheet(); UI.focus = null; evaluate(false); render(); });
+    $('tbDel').addEventListener('click', function () { if (S.players.length < 2) { toast(T('board.needOne')); return; } if (!delArmed) { delArmed = true; this.textContent = T('board.removePersonAgain', { name: p.name }); return; } S.players = S.players.filter(function (x) { return x.id !== p.id; }); S.current = S.players[0].id; save(); closeSheet(); UI.focus = null; evaluate(false); render(); });
     $('tbName').addEventListener('change', function () { p.name = $('tbName').value.trim() || p.name; $('tbName').value = p.name; save(); render(); });
     $('tbShare').addEventListener('click', shareSheet);
     $('tbx').addEventListener('click', closeSheet); draw();
@@ -532,7 +537,7 @@ a{color:var(--teal);font-weight:700}
 
   // ---------- printed tablas (from El Cantor) ----------
   function printedSheet(typed) {
-    openSheet('<div class="hd"><h2>Add a printed tabla</h2><button class="btn sec sm" type="button" id="ptx">Cancel</button></div><div class="bd stack"><p class="note">Tablas printed from El Cantor carry a juego name along the bottom and a number at the top. Type both and the same tabla shows up here, square for square — so the caller can still check it by number.</p><div class="row"><input id="ptJ" placeholder="Juego, like CANELA" autocomplete="off" autocapitalize="characters" spellcheck="false" style="flex:1 1 10em;text-transform:uppercase;font-weight:700"><input id="ptN" placeholder="No." inputmode="numeric" enterkeyhint="done" autocomplete="off" maxlength="3" aria-label="Tabla number" style="width:5.5em"><button class="btn red" type="button" id="ptAdd" disabled>Add it</button></div><div class="edb"><div id="ptPrev"></div></div></div>');
+    openSheet('<div class="hd"><h2>' + T('board.addPrintedH') + '</h2><button class="btn sec sm" type="button" id="ptx">' + T('cancel') + '</button></div><div class="bd stack"><p class="note">' + T('board.printedNote') + '</p><div class="row"><input id="ptJ" placeholder="' + esc(T('board.juegoLike')) + '" autocomplete="off" autocapitalize="characters" spellcheck="false" style="flex:1 1 10em;text-transform:uppercase;font-weight:700"><input id="ptN" placeholder="No." inputmode="numeric" enterkeyhint="done" autocomplete="off" maxlength="3" aria-label="' + esc(T('tablaNumber')) + '" style="width:5.5em"><button class="btn red" type="button" id="ptAdd" disabled>' + T('board.addIt') + '</button></div><div class="edb"><div id="ptPrev"></div></div></div>');
     var pick = null;
     typed = typed || { j: null, n: '' };
     reopen = function () { printedSheet(typed); }; // tablas from Google Drive landed: come back with what was typed
@@ -550,8 +555,8 @@ a{color:var(--teal);font-weight:700}
     $('ptN').addEventListener('input', function () { this.value = this.value.replace(/\D/g, ''); draw(); });
     $('ptN').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); if (!$('ptAdd').disabled) $('ptAdd').click(); } });
     $('ptAdd').addEventListener('click', function () {
-      var p = player(); if (!pick) return; if (p.boards.length >= 6) { toast('Six tablas is plenty'); return; }
-      p.boards.push({ id: uid(), name: pick.name, cards: pick.cards }); save(); closeSheet(); evaluate(true); render(); tablasSheet(); toast(pick.name + ' added');
+      var p = player(); if (!pick) return; if (p.boards.length >= 6) { toast(T('board.sixPlenty')); return; }
+      p.boards.push({ id: uid(), name: pick.name, cards: pick.cards }); save(); closeSheet(); evaluate(true); render(); tablasSheet(); toast(T('board.added', { name: pick.name }));
     });
     $('ptx').addEventListener('click', function () { closeSheet(); tablasSheet(); });
     draw();
@@ -567,25 +572,25 @@ a{color:var(--teal);font-weight:700}
     try {
       var boards = parts.slice(1).map(function (s) { var i = s.indexOf(':'); var cards = s.slice(i + 1).split('.').map(function (x) { return parseInt(x, 36); }); if (cards.length !== 16 || cards.some(function (n) { return !(n >= 1 && n <= 54); })) return null; return { id: uid(), name: decodeURIComponent(s.slice(0, i)) || 'Tabla', cards: cards }; });
       if (boards.some(function (b) { return !b; })) return null;
-      return { name: decodeURIComponent(parts[0]) || 'Guest', boards: boards };
+      return { name: decodeURIComponent(parts[0]) || T('board.guest'), boards: boards };
     } catch (e) { return null; } // a name cut off in the middle of a letter
   }
   function shareUrl(p) { return location.href.split('#')[0] + encodeShare(p); }
   function shareSheet() {
     var p = player(), url = shareUrl(p);
-    openSheet('<div class="hd"><h2>Share ' + esc(p.name) + '’s tablas</h2><button class="btn sec sm" type="button" id="shx">Done</button></div><div class="bd stack"><p class="note">Anyone who opens this link gets a copy of ' + (p.boards.length === 1 ? 'this tabla' : 'these ' + p.boards.length + ' tablas') + ' on their own device, under the name “' + esc(p.name) + '”. The link is the whole thing — nothing is stored anywhere else.</p><input id="shUrl" readonly value="' + esc(url) + '"><div class="row"><button class="btn red" type="button" id="shCopy">Copy link</button>' + (navigator.share ? '<button class="btn sec" type="button" id="shNative">Send…</button>' : '') + '</div></div>');
+    openSheet('<div class="hd"><h2>' + esc(T('board.shareH', { name: p.name })) + '</h2><button class="btn sec sm" type="button" id="shx">' + T('done') + '</button></div><div class="bd stack"><p class="note">' + esc(T('board.shareNote', { n: p.boards.length, name: p.name })) + '</p><input id="shUrl" readonly value="' + esc(url) + '"><div class="row"><button class="btn red" type="button" id="shCopy">' + T('copyLink') + '</button>' + (navigator.share ? '<button class="btn sec" type="button" id="shNative">' + T('board.send') + '</button>' : '') + '</div></div>');
     $('shx').addEventListener('click', closeSheet);
     // It says the link is copied once it is. Where the clipboard refuses (no permission, some installed apps), the
     // browser's older copy command has a go; if that can't either, the link stays selected for the phone's own Copy.
     $('shCopy').addEventListener('click', function () {
       var i = $('shUrl');
       function pick() { i.focus({ preventScroll: true }); i.select(); i.setSelectionRange(0, i.value.length); }
-      function old() { pick(); var ok = false; try { ok = document.execCommand('copy'); } catch (e) { } if (!ok) pick(); toast(ok ? 'Link copied' : 'Select the link and copy it'); }
+      function old() { pick(); var ok = false; try { ok = document.execCommand('copy'); } catch (e) { } if (!ok) pick(); toast(T(ok ? 'linkCopied' : 'board.selectCopy')); }
       pick();
-      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { toast('Link copied'); }, old);
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { toast(T('linkCopied')); }, old);
       else old();
     });
-    var nb = $('shNative'); if (nb) nb.addEventListener('click', function () { navigator.share({ title: 'Lotería tablas', text: p.name + '’s tablas', url: url }).catch(function () { }); });
+    var nb = $('shNative'); if (nb) nb.addEventListener('click', function () { navigator.share({ title: T('board.shareTitle'), text: T('board.shareText', { name: p.name }), url: url }).catch(function () { }); });
   }
   function maybeImport() {
     var imp = decodeShare(location.hash); if (!imp) return;
@@ -596,28 +601,28 @@ a{color:var(--teal);font-weight:700}
   // Who's playing. Nothing is saved before one or the other, so the stand-in Mark never sticks.
   function importSheet(imp) {
     var first = firstRun, existing = first ? null : S.players.filter(function (p) { return p.name.toLowerCase() === imp.name.toLowerCase(); })[0];
-    openSheet('<div class="hd"><h2>Tablas from ' + esc(imp.name) + '</h2></div><div class="bd stack"><p class="note">This link carries ' + imp.boards.length + ' tabla' + (imp.boards.length === 1 ? '' : 's') + ' for “' + esc(imp.name) + '”.' + (existing ? ' You already have a ' + esc(existing.name) + ' on this device — importing replaces their tablas.' : '') + '</p><div class="row"><button class="btn red" type="button" id="imOk">' + (existing ? 'Replace and use' : 'Add and use') + '</button><button class="btn sec" type="button" id="imNo">No thanks</button></div></div>');
+    openSheet('<div class="hd"><h2>' + esc(T('board.importH', { name: imp.name })) + '</h2></div><div class="bd stack"><p class="note">' + esc(T('board.importNote', { n: imp.boards.length, name: imp.name }) + (existing ? ' ' + T('board.importHave', { name: existing.name }) : '')) + '</p><div class="row"><button class="btn red" type="button" id="imOk">' + T(existing ? 'board.replaceUse' : 'board.addUse') + '</button><button class="btn sec" type="button" id="imNo">' + T('board.noThanks') + '</button></div></div>');
     if (first) UI.welcome = true; // waits for a choice, like Who's playing
     reopen = function () { importSheet(imp); }; // tablas from Google Drive landed: ask again with them in place
     $('imNo').addEventListener('click', function () { if (first) welcomeSheet(); else closeSheet(); });
     $('imOk').addEventListener('click', function () {
       if (existing) { existing.boards = imp.boards; S.current = existing.id; }
       else { var p = { id: uid(), name: imp.name, boards: imp.boards }; if (first) S.players = [p]; else S.players.push(p); S.current = p.id; }
-      firstRun = false; save(); closeSheet(); UI.focus = null; evaluate(false); render(); toast('Playing as ' + imp.name);
+      firstRun = false; save(); closeSheet(); UI.focus = null; evaluate(false); render(); toast(T('board.playingAs', { name: imp.name }));
     });
   }
 
   // ---------- first visit ----------
   function welcomeSheet() {
-    openSheet('<div class="hd"><h2>Who’s playing on this device?</h2></div><div class="bd stack"><p class="note">Asked once. Tablas are saved on this phone or tablet' + (window.LoteriaSync && LoteriaSync.ready ? ', and in your own Google Drive if you turn that on below.' : ' only, so what you set up here is yours and nobody else’s.') + '</p><input id="wName" placeholder="Your name" autocomplete="off" autocapitalize="words"><div class="card"><div class="eyebrow">Start with</div><div class="row" style="margin-top:8px"><button class="btn red" type="button" id="wRandom">Random tablas I’ll edit</button><button class="btn sec" type="button" id="wMark">Mark’s four tablas</button></div><p class="note" style="margin-top:8px">Either way you can change every square later under <b>Tablas</b>.</p></div>' +
-      (window.LoteriaSync && LoteriaSync.ready ? '<p class="note">Already saving tablas to Google Drive on another device? Turn it on here and they come right over.</p><div class="card" id="wSync"></div>' : '') + '</div>');
+    openSheet('<div class="hd"><h2>' + T('board.welcomeH') + '</h2></div><div class="bd stack"><p class="note">' + T(window.LoteriaSync && LoteriaSync.ready ? 'board.welcomeDrive' : 'board.welcomeLocal') + '</p><input id="wName" placeholder="' + esc(T('board.yourName')) + '" autocomplete="off" autocapitalize="words"><div class="card"><div class="eyebrow">' + T('board.startWith') + '</div><div class="row" style="margin-top:8px"><button class="btn red" type="button" id="wRandom">' + T('board.wRandom') + '</button><button class="btn sec" type="button" id="wMark">' + T('board.wMark') + '</button></div><p class="note" style="margin-top:8px">' + T.html('board.eitherWay_html') + '</p></div>' +
+      (window.LoteriaSync && LoteriaSync.ready ? '<p class="note">' + T('board.alreadyDrive') + '</p><div class="card" id="wSync"></div>' : '') + '</div>');
     UI.welcome = true; // waits for a choice: no tap outside, no Escape
     if (window.LoteriaSync) LoteriaSync.card($('wSync'));
     function go(mark) {
-      var name = $('wName').value.trim() || (mark ? 'Mark' : 'Player');
+      var name = $('wName').value.trim() || (mark ? 'Mark' : T('board.player'));
       var p = { id: uid(), name: name, boards: mark ? origBoards() : [randomBoard('Tabla 1'), randomBoard('Tabla 2')] };
       S.players = [p]; S.current = p.id; save(); closeSheet(); render();
-      toast(mark ? 'Playing as ' + name : name + ', tap Tablas to set up your cards');
+      toast(T(mark ? 'board.playingAs' : 'board.tapTablas', { name: name }));
     }
     $('wRandom').addEventListener('click', function () { go(false); });
     $('wMark').addEventListener('click', function () { go(true); });
@@ -630,7 +635,7 @@ a{color:var(--teal);font-weight:700}
     try { var o = loaded(JSON.parse(localStorage.getItem(LS))); if (o) { S = o; firstRun = false; } } catch (e) { }
     readG(); // the round as saved, too: evaluate() writes it back, and this window may not have another one's calls yet
     if (reopen) { var f = reopen, top = sheetScroll(); closeSheet(); f(); sheetScroll(top); }
-    else if (UI.welcome && !firstRun) { closeSheet(); toast(fromDrive ? 'Your tablas are here from Google Drive' : 'Playing as ' + player().name); }
+    else if (UI.welcome && !firstRun) { closeSheet(); toast(fromDrive ? T('board.fromDrive') : T('board.playingAs', { name: player().name })); }
     UI.focus = null; evaluate(false); render();
   }
   if (window.LoteriaSync) {
@@ -654,13 +659,13 @@ a{color:var(--teal);font-weight:700}
 
   // ---------- wiring ----------
   // A card called again stays called; one is taken back with ↶, its square, or the row of called cards.
-  $('callBtn').addEventListener('click', function () { pickerSheet('call', function (n) { if (isCalled(n)) toast(card(n).name + ' is already called'); else call(n); }); });
+  $('callBtn').addEventListener('click', function () { pickerSheet('call', function (n) { if (isCalled(n)) toast(T('board.alreadyCalled', { card: card(n).name })); else call(n); }); });
   $('patBtn').addEventListener('click', function () { patternSheet(); });
   $('tablasBtn').addEventListener('click', tablasSheet);
   $('setBtn').addEventListener('click', settingsSheet);
   $('clearBtn').addEventListener('click', function () { // always starts a new round, even with nothing called yet
     if (G.called.length < 3) { clearRound(); return; }
-    openSheet('<div class="hd"><h2>Clear the round?</h2></div><div class="bd stack"><p class="note">Takes the beans off all ' + G.called.length + ' called cards so you can start the next round.</p><div class="row"><button class="btn red" type="button" id="clOk">Clear for a new round</button><button class="btn sec" type="button" id="clNo">Keep playing</button></div></div>');
+    openSheet('<div class="hd"><h2>' + T('board.clearH') + '</h2></div><div class="bd stack"><p class="note">' + T('board.clearNote', { n: G.called.length }) + '</p><div class="row"><button class="btn red" type="button" id="clOk">' + T('board.clearGo') + '</button><button class="btn sec" type="button" id="clNo">' + T('board.keepPlaying') + '</button></div></div>');
     $('clOk').addEventListener('click', function () { closeSheet(); clearRound(); });
     $('clNo').addEventListener('click', closeSheet);
   });
@@ -675,6 +680,8 @@ a{color:var(--teal);font-weight:700}
   render();
   if (!firstRun) save();
   if (firstRun && !decodeShare(location.hash)) welcomeSheet(); else maybeImport();
+  // Back from a change of language in Settings (strings.js reloads the page): Settings again, the switch under the finger.
+  try { if (sessionStorage.getItem('loteria.reopen') === 'settings') { sessionStorage.removeItem('loteria.reopen'); if ($('sheet').hidden) settingsSheet(); } } catch (e) { }
   window.addEventListener('hashchange', maybeImport);
 })();
 </script>
