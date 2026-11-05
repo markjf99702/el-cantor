@@ -201,8 +201,13 @@ a.chip{text-decoration:none}
 .verdict.ok h3{color:var(--green)}
 .verdict.no h3{color:var(--red)}
 .verdict p{margin:5px 0 0;color:var(--ink2)}
-.winrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.winrow input{flex:1 1 12em}
+/* the winner row: kept at the bottom of the checker, in front of Card by card's 54 cards. It covers the sheet's own
+   18px at the bottom, so at the end the last row of cards scrolls clear of it. */
+.vfwin{position:sticky;bottom:-18px;z-index:6;background:var(--bg);margin:0 -16px -18px;padding:4px 16px 18px}
+.vfwin::before{content:"";position:absolute;left:0;right:0;bottom:100%;height:12px;background:linear-gradient(transparent,var(--bg));pointer-events:none}
+.vfwin .card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
+.vfwin input{width:100%;min-width:0}
+.vfwin .btns{display:flex;gap:8px;flex-wrap:wrap}
 /* card picker */
 .pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:7px}
 .pk{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:4px 4px 5px;text-align:center;cursor:pointer;position:relative;font:inherit;color:inherit}
@@ -252,6 +257,7 @@ a.chip{text-decoration:none}
   .nextb span{display:none}.nextb{padding:0 13px}
   .bar{gap:8px}.lotb{font-size:20px;padding:0 15px;height:50px}
   .vf{grid-template-columns:1fr}.vf .grid{max-width:200px;margin:0 auto}
+  .vfwin .card{grid-template-columns:minmax(0,1fr)}
   .cap{min-height:70px}
 }
 @media (max-width:440px){.stat{display:none}.top h1 .t{display:none}}
@@ -846,7 +852,7 @@ a.chip{text-decoration:none}
     openSheet('<div class="hd"><h2>¡Lotería! — check it</h2><button class="btn sec sm" type="button" id="vfx">Keep calling</button></div><div class="bd stack">' +
       '<div class="row sp" style="flex-wrap:wrap"><div class="seg" id="vfSeg"><button type="button" data-v="printed">Printed tabla</button><button type="button" data-v="cards">Card by card</button></div><span class="note">' + esc(L.gameName(C.patterns)) + ' · ' + plural(C.pos, 'card', 'cards') + ' called</span></div>' +
       '<div id="vfBody"></div>' +
-      '<div class="card stack"><div class="winrow"><input id="vfWho" placeholder="Who won? (optional)" autocomplete="off" maxlength="30"><button class="btn red" type="button" id="vfWin">¡Buena! New round</button></div></div></div>');
+      '<div class="vfwin"><div class="card"><input id="vfWho" placeholder="Who won? (optional)" autocomplete="off" maxlength="30" aria-label="Who won"><div class="btns"><button class="btn red" type="button" id="vfBack" hidden>Keep calling</button><button class="btn red" type="button" id="vfWin">¡Buena! New round</button></div></div></div></div>');
     UI.onClose = function () { if (!UI.won) { UI.cheered = 0; if (was) play(); } UI.won = false; };
     function body() {
       document.querySelectorAll('#vfSeg button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === V.mode); });
@@ -867,21 +873,26 @@ a.chip{text-decoration:none}
         pickGrid(); cardsVerdict();
       }
     }
+    // The winner row follows the verdict: on Not yet, Keep calling is the main button, and the caller can still count it.
+    function winRow(no) {
+      var b = $('vfWin'); $('vfBack').hidden = !no;
+      b.className = 'btn ' + (no ? 'sec' : 'red'); b.textContent = no ? 'Count it anyway' : '¡Buena! New round';
+    }
     function printed() {
       var name = L.juegoName($('vfJ').value), k = parseInt($('vfN').value, 10), v = $('vfV'), host = $('vfTabla');
-      V.how = ''; V.tabla = '';
+      V.how = ''; V.tabla = ''; winRow(false);
       if (!name) { host.innerHTML = ''; v.className = 'verdict'; v.innerHTML = '<p class="note" style="margin:0">Type the juego name printed along the bottom of the tabla' + (C.juego ? '' : ' (make a set under <b>Print tablas</b>)') + ', then its number from the top corner.</p>'; return; }
       if (!(k >= 1 && k <= 999)) { host.innerHTML = ''; v.className = 'verdict'; v.innerHTML = '<p class="note" style="margin:0">Now the tabla number — it’s the big number at the top right of their tabla.</p>'; return; }
       var t = L.juegoTabla(name, k), hit = {}, need = {}, best = null;
-      V.tabla = name + ' ' + k;
       C.patterns.forEach(function (pid) { var p = L.pat(pid); if (!p) return; var w = wonAt(t, p); if (w && (!best || w.when < best.when)) best = { when: w.when, cells: w.cells, pat: p }; });
       if (best) {
-        best.cells.forEach(function (c) { hit[c] = 1; }); V.how = best.pat.name;
+        best.cells.forEach(function (c) { hit[c] = 1; }); V.how = best.pat.name; V.tabla = name + ' ' + k; // a win counted anyway has no tabla
         v.className = 'verdict ok'; v.innerHTML = '<h3>¡Buena! ' + esc(best.pat.name) + '</h3><p>' + esc(name) + ' No. ' + k + ' — ' + esc(whenText(best.when)) + '</p>';
       } else {
         var cl = L.closest(t, isOut, C.patterns);
         (cl.missing || []).forEach(function (c) { need[c] = 1; });
         var miss = cl.pat.min ? plural(cl.need, 'more card', 'more cards') : list(cl.missing.map(function (c) { return card(t[c]).name; }));
+        winRow(true);
         v.className = 'verdict no'; v.innerHTML = '<h3>Not yet</h3><p>' + esc(name) + ' No. ' + k + ' is closest to <b>' + esc(cl.pat.name) + '</b> and still needs ' + esc(miss) + '. Squares outlined in red haven’t been called.</p>';
       }
       host.innerHTML = tablaHtml(t, hit, need);
@@ -902,7 +913,7 @@ a.chip{text-decoration:none}
     }
     function cardsVerdict() {
       var v = $('vfV'), out = V.picked.filter(isOut), not = V.picked.filter(function (n) { return !isOut(n); });
-      V.how = ''; V.tabla = '';
+      V.how = ''; V.tabla = ''; winRow(not.length > 0);
       $('vfChips').innerHTML = V.picked.map(function (n) { return '<button type="button" class="chip ' + (isOut(n) ? 'ok' : 'bad') + '" data-n="' + n + '" aria-label="Take ' + esc(card(n).name) + ' off">' + esc(card(n).name) + (isOut(n) ? ' · #' + orderOf(n) : ' · not yet') + ' <span aria-hidden="true">✕</span></button>'; }).join('');
       $('vfChips').querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () { var i = V.picked.indexOf(+b.dataset.n); if (i >= 0) V.picked.splice(i, 1); pickGrid(); cardsVerdict(); }); });
       if (!V.picked.length) { v.className = 'verdict'; v.innerHTML = '<p class="note" style="margin:0">Have them read out their winning cards, and tap each one below. A tabla from a store or another set works this way.</p>'; return; }
@@ -913,6 +924,7 @@ a.chip{text-decoration:none}
     }
     document.querySelectorAll('#vfSeg button').forEach(function (b) { b.addEventListener('click', function () { V.mode = b.dataset.v; body(); }); });
     $('vfx').addEventListener('click', closeSheet);
+    $('vfBack').addEventListener('click', closeSheet);
     $('vfWin').addEventListener('click', function () {
       var who = $('vfWho').value.trim();
       C.wins.push({ round: C.round, who: who, how: V.how || L.gameName(C.patterns), tabla: V.tabla, at: C.pos, t: Date.now() });

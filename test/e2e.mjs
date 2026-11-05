@@ -351,6 +351,15 @@ check('cantor: checks a printed tabla by juego and number (CANELA 7 never change
     assert.deepEqual(names, await page.evaluate(t => t.map(n => Loteria.card(n).name), CANELA7));
     await page.fill('#vfN', '8');
     assert.equal(await page.textContent('#vfV h3'), 'Not yet');
+    // Not yet: Keep calling is the main button, and the caller can still count it, with no tabla to its name.
+    const buttons = () => page.$$eval('.vfwin button', bs => bs.filter(b => b.offsetParent).map(b => b.textContent + (b.classList.contains('red') ? ' (main)' : '')));
+    assert.deepEqual(await buttons(), ['Keep calling (main)', 'Count it anyway']);
+    await page.fill('#vfN', '7');
+    assert.deepEqual(await buttons(), ['¡Buena! New round (main)']);
+    await page.fill('#vfN', '8');
+    await page.fill('#vfWho', 'Tío Beto');
+    await page.click('#vfWin');
+    assert.deepEqual((await saved(page, 'loteria.cantor')).wins.map(w => [w.round, w.who, w.tabla]), [[1, 'Tío Beto', '']], 'a win counted anyway kept the tabla that wasn’t good');
     assert.deepEqual(problems, []);
   } finally { await ctx.close(); }
 });
@@ -371,11 +380,16 @@ check('cantor: checking card by card keeps a card read out twice, and a chip tak
     }
     const verdict = async () => [await page.textContent('#vfV h3'), await page.textContent('#vfV p')];
     const chips = () => page.$$eval('#vfChips .chip', bs => bs.map(b => b.textContent));
+    // The winner row stays on the phone's screen below the 54 cards, with nothing over it.
+    const inView = sel => page.$eval(sel, b => { const r = b.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight && b.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)); });
     await checkAfter(['El Cazo', 'El Negrito', 'La Corona']);
     assert.deepEqual(await verdict(), ['All 3 are out', 'If they make the shape — Clásico — it’s good. It finished on the card just called, La Corona.']);
     assert.deepEqual(await chips(), ['El Cazo · #1 ✕', 'La Corona · #3 ✕', 'El Negrito · #2 ✕']);
+    assert.ok(await inView('#vfWin'), '¡Buena! New round is off the screen after four cards are picked');
     await checkAfter(['El Cazo', 'El Negrito', 'El Gallo']); // La Corona not called yet: the second tap took it off, and the tabla passed
     assert.deepEqual(await verdict(), ['Not yet', 'La Corona hasn’t been called.']);
+    assert.ok(await inView('#vfBack'), 'Keep calling is off the screen');
+    assert.equal(await page.textContent('#vfWin'), 'Count it anyway');
     await page.locator('#vfChips .chip', { hasText: 'La Corona' }).click();
     assert.deepEqual(await chips(), ['El Cazo · #1 ✕', 'El Negrito · #2 ✕']);
     assert.equal((await verdict())[0], 'All 2 are out');
