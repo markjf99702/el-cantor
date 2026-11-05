@@ -1854,6 +1854,37 @@ check('board: on a phone, a ¡Lotería! picked in Cantaron… closes the cards, 
   }
 });
 
+check('board: the ¡Lotería! box’s New round asks “Clear the round?” first, as ↺ does', async () => {
+  for (const kind of [PHONE, DESKTOP]) {
+    const ctx = await context(kind);
+    try {
+      const page = await ctx.newPage(), problems = watch(page), where = kind === PHONE ? 'phone: ' : 'computer: ';
+      await seed(page, { 'loteria.v1': ANA, 'loteria.game': { called: [9, 1, 2, 3], announced: {} } });
+      await page.goto(base + 'board.html');
+      await page.click('#callBtn');
+      await page.locator('#pk .pk[data-n="4"]').click(); // El Catrín finishes Mine 1's top row
+      await page.waitForSelector('#winbox .winc');
+      await page.click('#winClear');
+      assert.ok(await page.evaluate(() => document.getElementById('winbox').hidden), where + 'the ¡Lotería! box is still up');
+      assert.equal(await sheetTitle(page), 'Clear the round?', where + 'New round cleared the round without asking');
+      assert.deepEqual((await saved(page, 'loteria.game')).called, [9, 1, 2, 3, 4], where + 'the called cards went before anyone said so');
+      await page.click('#clNo'); // Keep playing
+      assert.ok(await page.evaluate(() => document.getElementById('sheet').hidden));
+      assert.deepEqual((await saved(page, 'loteria.game')).called, [9, 1, 2, 3, 4], where + 'Keep playing cleared the round');
+      assert.equal(await page.locator('#boards .tabla.win .cell.hit').count(), 4, where + 'the win went');
+      await page.reload();
+      assert.equal(await page.locator('#boards .tabla .cell.marked').count(), 5, where + 'the beans went after a reload');
+      // And the other way: clear it, then pick the game for the new round.
+      await page.click('#clearBtn');
+      assert.equal(await sheetTitle(page), 'Clear the round?');
+      await page.click('#clOk');
+      assert.equal(await sheetTitle(page), 'New round — what are we playing?');
+      assert.deepEqual((await saved(page, 'loteria.game')).called, []);
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
+});
+
 // ---------------------------------------------------------------- damaged saves
 check('saves: a damaged save opens with what can be kept, instead of a blank page or an error', async () => {
   for (const tool of ['board', 'cantor', 'print']) {

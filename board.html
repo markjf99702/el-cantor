@@ -357,6 +357,14 @@ a{color:var(--teal);font-weight:700}
     tick(); evaluate(i < 0); render();
   }
   function clearRound() { G.called = []; G.announced = {}; saveG(); render(); patternSheet(T('board.newRoundWhat')); }
+  // ↺ and the ¡Lotería! box's New round: a round with 3 or more cards called asks first, as the caller may still be
+  // checking a tabla card by card. It always starts a new round, even with nothing called yet.
+  function newRoundAsk() {
+    if (G.called.length < 3) { clearRound(); return; }
+    openSheet('<div class="hd"><h2>' + T('board.clearH') + '</h2></div><div class="bd stack"><p class="note">' + T('board.clearNote', { n: G.called.length }) + '</p><div class="row"><button class="btn red" type="button" id="clOk">' + T('board.clearGo') + '</button><button class="btn sec" type="button" id="clNo">' + T('board.keepPlaying') + '</button></div></div>');
+    $('clOk').addEventListener('click', function () { closeSheet(); clearRound(); });
+    $('clNo').addEventListener('click', closeSheet);
+  }
 
   // ---------- win ----------
   function showWin(wins) {
@@ -380,7 +388,7 @@ a{color:var(--teal);font-weight:700}
       else if (back !== document.body && back.isConnected && !(back.tagName === 'INPUT' && 'ontouchstart' in window)) back.focus({ preventScroll: true });
     }
     $('winOk').addEventListener('click', done);
-    $('winClear').addEventListener('click', function () { done(); clearRound(); });
+    $('winClear').addEventListener('click', function () { done(); newRoundAsk(); });
     box.querySelector('.winbg').addEventListener('click', function (e) { if (e.target === e.currentTarget) done(); });
   }
 
@@ -679,12 +687,7 @@ a{color:var(--teal);font-weight:700}
   $('patBtn').addEventListener('click', function () { patternSheet(); });
   $('tablasBtn').addEventListener('click', tablasSheet);
   $('setBtn').addEventListener('click', settingsSheet);
-  $('clearBtn').addEventListener('click', function () { // always starts a new round, even with nothing called yet
-    if (G.called.length < 3) { clearRound(); return; }
-    openSheet('<div class="hd"><h2>' + T('board.clearH') + '</h2></div><div class="bd stack"><p class="note">' + T('board.clearNote', { n: G.called.length }) + '</p><div class="row"><button class="btn red" type="button" id="clOk">' + T('board.clearGo') + '</button><button class="btn sec" type="button" id="clNo">' + T('board.keepPlaying') + '</button></div></div>');
-    $('clOk').addEventListener('click', function () { closeSheet(); clearRound(); });
-    $('clNo').addEventListener('click', closeSheet);
-  });
+  $('clearBtn').addEventListener('click', newRoundAsk);
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') { if (!UI.welcome) closeSheet(); if (!$('winbox').hidden && $('winOk')) $('winOk').click(); else $('winbox').hidden = true; return; } // the first-visit sheet waits for a choice
     // Squares and cards are buttons, as in Make tablas: Enter or Space taps one.
