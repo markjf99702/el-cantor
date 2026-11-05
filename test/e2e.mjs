@@ -2647,6 +2647,36 @@ check('drive: a damaged Drive copy is put right with no device losing a tabla, a
   } finally { await A.ctx.close(); await B.ctx.close(); }
 });
 
+check('drive: the dot turns red when the hour runs out with a page open, and a change made just before leaving goes as the page is left', async () => {
+  // The sign-in has a little over a minute left as the page opens; sync.js stops trusting it a minute early.
+  const g = fakeGoogle();
+  const A = await driveDevice(g, { 'loteria.v1': ANA, 'junkdrawer.google': { token: 'tok-mark', exp: Date.now() + 66e3, scope: 'https://www.googleapis.com/auth/drive.file', email: 'mark@gmail.com' } });
+  try {
+    await A.page.goto(base + 'board.html'); await synced(A.page);
+    assert.equal(await A.page.getAttribute('#syncBtn', 'data-s'), 'ok');
+    await until(A.page, () => document.getElementById('syncBtn').dataset.s === 'tap', null, 15000);
+    assert.equal(await A.page.getAttribute('#syncBtn', 'title'), 'Tap to sync your tablas with Google Drive');
+    assert.deepEqual(A.problems, []);
+  } finally { await A.ctx.close(); }
+  // A phone stops a page's timers once it's out of sight, so here the few seconds a change waits before it syncs never end.
+  const B = await driveDevice(g, { 'loteria.v1': ANA });
+  await B.ctx.addInitScript(() => { const later = window.setTimeout; window.setTimeout = (f, ms, ...a) => String(f).includes('pushT') ? 1e9 : later(f, ms, ...a); });
+  const file = () => JSON.parse(g.files().filter(f => (f.appProperties || {}).loteria === 'sync')[0].body);
+  try {
+    await B.page.goto(base + 'board.html'); await synced(B.page);
+    const t = (await saved(B.page, 'loteria.sync')).last;
+    await B.page.click('#tablasBtn');
+    await B.page.locator('#edb input').first().fill('Antes de irme');
+    await B.page.locator('#edb input').first().dispatchEvent('change');
+    await B.page.waitForTimeout(500);
+    assert.ok(!Object.values(file().cols.boards.items).some(i => i.v.name === 'Antes de irme'), 'the change went before the page was left');
+    await B.page.evaluate(() => { Object.defineProperty(document, 'hidden', { value: true, configurable: true }); Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true }); document.dispatchEvent(new Event('visibilitychange')); });
+    await synced(B.page, t);
+    assert.ok(Object.values(file().cols.boards.items).some(i => i.v.name === 'Antes de irme'), 'the change made just before leaving waited');
+    assert.deepEqual(B.problems, []);
+  } finally { await B.ctx.close(); }
+});
+
 check('drive: a shared link on a new phone that saves to Drive asks again once the Drive tablas land', async () => {
   const g = fakeGoogle();
   const A = await driveDevice(g, { 'loteria.v1': ANA });
@@ -2747,10 +2777,11 @@ check('espanol: Google Drive’s card and ☁ button in Spanish on every page', 
 });
 
 check('espanol: the day Drive last synced is written in the language shown, not the phone’s', async () => {
-  // A phone in Spanish, a day after the last sync: "Last synced Nov 5." in English, "el 5 nov." in Spanish.
+  // A phone in Spanish, a day after the last sync: "Last synced Nov 5." in English, "el 5 nov." in Spanish. The sign-in
+  // here outlasts the day, as the card says "Tap Sync now" in place of the date once Google's hour runs out.
   const t0 = new Date('2026-11-05T18:00:00Z').getTime();
   for (const [lang, says] of [['en', /Last synced Nov 5\.$/], ['es', /Última sincronización: el 5 nov\.?\.$/]]) {
-    const A = await driveDevice(fakeGoogle(), { 'loteria.v1': ANA, 'loteria.lang': lang, 'junkdrawer.google': { token: 'tok-mark', exp: t0 + 3600e3, scope: 'https://www.googleapis.com/auth/drive.file', email: 'mark@gmail.com' } }, { locale: 'es-MX', timezoneId: 'America/Mexico_City' });
+    const A = await driveDevice(fakeGoogle(), { 'loteria.v1': ANA, 'loteria.lang': lang, 'junkdrawer.google': { token: 'tok-mark', exp: t0 + 27 * 3600e3, scope: 'https://www.googleapis.com/auth/drive.file', email: 'mark@gmail.com' } }, { locale: 'es-MX', timezoneId: 'America/Mexico_City' });
     try {
       await A.page.clock.install({ time: t0 });
       await A.page.goto(base + 'board.html');

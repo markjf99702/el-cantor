@@ -328,7 +328,7 @@
     setStatus('busy');
     busy = run(0).then(function (changed) {
       clearTimeout(busyT); busyT = null; busyTried = false;
-      setStatus('ok');
+      setStatus('ok'); lapse();
       if (changed.length) ups.forEach(function (f) { try { f(changed); } catch (e) { if (window.console) console.error("Loteria sync: applying synced data failed", e); } });
       return changed;
     }, function (e) {
@@ -461,7 +461,19 @@
   function changed() { // a page saved something
     if (!CLIENT_ID || !st.on || !track()) return;
     clearTimeout(pushT);
-    if (live()) pushT = setTimeout(sync, 1500); else setStatus('tap');
+    if (live()) pushT = setTimeout(function () { pushT = null; sync(); }, 1500); else setStatus('tap');
+  }
+  // Leaving the page (another app, the phone locked, the tab closed) sends a change still waiting to go now: a phone
+  // stops a page's timers once it's out of sight, and the change would wait until El Cantor was opened again.
+  function leaving() { if (pushT && st.on) { clearTimeout(pushT); pushT = null; if (live()) sync(); } }
+  // The hour runs out with a page open: the dot turns red then, not at the next change.
+  var lapseT = null;
+  function lapse() {
+    clearTimeout(lapseT); lapseT = null;
+    if (!st.on || !tok || !tok.token) return;
+    var ms = tok.exp - 60000 - Date.now(); // live() stops trusting a token a minute early
+    if (ms > 0) lapseT = setTimeout(lapse, Math.min(ms + 100, 864e5));
+    else if (status === 'ok') setStatus('tap');
   }
 
   window.LoteriaSync = {
@@ -477,12 +489,18 @@
   if (st.on) {
     loadGis(); // ready before the first tap
     status = live() ? 'ok' : 'tap';
-    if (live()) setTimeout(sync, 0);
+    if (live()) { setTimeout(sync, 0); lapse(); }
   }
-  document.addEventListener('visibilitychange', function () { if (!document.hidden && st.on && live() && Date.now() - st.last > 30000) sync(); });
+  document.addEventListener('visibilitychange', function () {
+    if (!st.on) return;
+    if (document.hidden) leaving();
+    else if (!live()) lapse(); // back after the hour: red, as it would have turned had the phone been awake
+    else if (Date.now() - st.last > 30000) sync();
+  });
+  window.addEventListener('pagehide', leaving);
   window.addEventListener('online', function () { if (st.on && live() && status === 'error') sync(); }); // back from no connection
   window.addEventListener('storage', function (e) { // another tab saved: pick it up here too
-    if (e.key === KS || e.key === KT) { st = Object.assign({ on: false, email: '', name: '', last: 0 }, get(KS) || {}); tok = get(KT); setStatus(st.on ? (live() ? 'ok' : 'tap') : 'off'); return; }
+    if (e.key === KS || e.key === KT) { st = Object.assign({ on: false, email: '', name: '', last: 0 }, get(KS) || {}); tok = get(KT); setStatus(st.on ? (live() ? 'ok' : 'tap') : 'off'); lapse(); return; }
     if (KEYS.indexOf(e.key) >= 0) ups.forEach(function (f) { try { f([e.key]); } catch (x) { } });
   });
 })();
