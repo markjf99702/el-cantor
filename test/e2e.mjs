@@ -737,6 +737,42 @@ check('cantor: Escape on the ¡Lotería! box keeps calling, as Keep calling does
   } finally { await ctx.close(); }
 });
 
+check('cantor: ¡Lotería! before the first card says ▶ starts the round, with no cheer and no winner', async () => {
+  for (const lang of ['en', 'es']) {
+    const ctx = await context(DESKTOP);
+    await ctx.addInitScript(() => { // counts the notes played: a fanfare is six
+      window.__notes = 0; const AC = window.AudioContext; if (!AC) return;
+      const make = AC.prototype.createOscillator; AC.prototype.createOscillator = function () { window.__notes++; return make.apply(this, arguments); };
+    });
+    try {
+      const page = await ctx.newPage(), problems = watch(page);
+      await seed(page, { 'loteria.lang': lang, 'loteria.cantor': { order: run(1, 54), pos: 0, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], juego: '', wins: [], settings: { speak: false, sound: true, awake: false, check: false, pace: 'slow' } } });
+      await page.goto(base + 'cantor.html');
+      const says = lang === 'en' ? 'No cards called yet — ▶ starts the round' : 'Todavía no sale ninguna carta — ▶ empieza la ronda';
+      for (const how of ['the button', 'L']) {
+        await page.evaluate(() => { const t = document.getElementById('toast'); t.textContent = ''; t.classList.remove('show'); });
+        if (how === 'L') { await page.locator('body').focus(); await page.keyboard.press('l'); } else await page.click('#lotBtn');
+        await until(page, t => document.getElementById('toast').textContent === t, says);
+        assert.ok(await page.evaluate(() => document.getElementById('winbox').hidden), lang + ', ' + how + ': the ¡Lotería! box opened with nothing called');
+        assert.ok(await page.evaluate(() => document.getElementById('sheet').hidden), lang + ', ' + how + ': a sheet opened with nothing called');
+        assert.equal(await page.evaluate(() => window.__notes), 0, lang + ', ' + how + ': the fanfare played with nothing called');
+      }
+      // Even set to check a tabla first, nothing opens.
+      await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('loteria.cantor')); s.settings.check = true; localStorage.setItem('loteria.cantor', JSON.stringify(s)); });
+      await page.reload();
+      await page.click('#lotBtn');
+      await until(page, t => document.getElementById('toast').textContent === t, says);
+      assert.ok(await page.evaluate(() => document.getElementById('sheet').hidden && document.getElementById('winbox').hidden), lang + ': the checker opened with nothing called');
+      assert.deepEqual((await saved(page, 'loteria.cantor')).wins, [], lang + ': a win was saved with nothing called');
+      // One card in, it's a ¡Lotería! as ever.
+      await page.click('#nextBtn');
+      await page.click('#lotBtn');
+      await page.waitForSelector('#sheet:not([hidden]) #vfWin');
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
+});
+
 check('cantor: Space starts and pauses after a sheet closed with the mouse, and presses a button the keyboard is on', async () => {
   const ctx = await context(DESKTOP);
   try {
@@ -1817,6 +1853,7 @@ check('saves: a damaged save opens with what can be kept, instead of a blank pag
         await page.click('#setBtn');
         assert.match(await page.textContent('#winsCard'), /Ana · 1/);
         await page.click('#stx');
+        await page.click('#nextBtn'); // a card first: with nothing called, ¡Lotería! only says ▶ starts the round
         await page.click('#lotBtn');
         await page.waitForSelector('#winbox .winc');
         assert.equal(await page.textContent('#clNames .chip'), 'Ana');

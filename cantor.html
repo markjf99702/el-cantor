@@ -841,7 +841,8 @@ a.chip{text-decoration:none}
     if (R.opening) { R.opening = false; renderCaption(); }
     renderBar();
   }
-  function shout() { if (C.settings.check) verifySheet(); else claim(); }
+  // A ¡Lotería! with nothing called yet is a slip of the finger: no cheer, and nothing for the winners.
+  function shout() { if (!C.pos) { toast(T('cantor.noCardsYet')); return; } if (C.settings.check) verifySheet(); else claim(); }
 
   // ---------- winners' names ----------
   // One person whatever the capitals: "Abuela" and "abuela " are the same winner.

@@ -143,6 +143,7 @@
       'cantor.patsNote_html': 'Tell the table what wins this round. <b>Clásico</b> is the regular game — 4 in a row, 4 corners, or 4 in a square. Hold a shape for a second to add it on top of what’s picked; a tabla wins on any one of them. El Cantor checks winning tablas against this.',
       'cantor.otherWindow': 'Paused — another window turned a card',
       'cantor.tapToKeep': 'Paused — tap the card to keep calling',
+      'cantor.noCardsYet': 'No cards called yet — ▶ starts the round',
 
       // El Cantor: Settings
       'cantor.readAloud': 'Read the cards aloud',
@@ -574,6 +575,7 @@
       'cantor.patsNote_html': 'Dile a la mesa qué gana esta ronda. <b>Clásico</b> es lo de siempre — 4 en línea, 4 esquinas o 4 en cuadro. Mantén presionada una figura un segundo para sumarla a lo elegido; una tabla gana con cualquiera de ellas. El Cantor revisa las tablas ganadoras con esto.',
       'cantor.otherWindow': 'En pausa — otra ventana volteó una carta',
       'cantor.tapToKeep': 'En pausa — toca la carta para seguir cantando',
+      'cantor.noCardsYet': 'Todavía no sale ninguna carta — ▶ empieza la ronda',
 
       // El Cantor: Settings
       'cantor.readAloud': 'Cantar las cartas en voz alta',
