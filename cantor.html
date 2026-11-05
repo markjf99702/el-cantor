@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script src="carry.js"></script>
+<script src="strings.js"></script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -169,6 +170,8 @@ a.chip{text-decoration:none}
 .sheet:focus{outline:none} /* it takes the focus when it opens, for the keyboard and screen readers */
 .sheet .hd{display:flex;gap:8px;align-items:center;padding:14px 16px 8px;flex:none}
 .sheet .hd h2{margin:0;font:400 21px/1.1 var(--disp);flex:1}
+.sheet .hd.wrap{flex-wrap:wrap}
+.sheet .hd.wrap h2{flex:1 0 auto;max-width:100%} /* the checker's title keeps its line, and on a narrow phone its button goes under it */
 .sheet .bd{overflow:auto;padding:4px 16px 18px;flex:1;min-height:0;-webkit-overflow-scrolling:touch}
 .jd-foot{margin:4px 0 0;text-align:center;color:var(--ink3);font-size:13px}
 .jd-foot a{color:var(--ink2);font-weight:400;text-decoration:none}
@@ -278,18 +281,18 @@ a.chip{text-decoration:none}
 <div class="app" id="app">
   <div class="picado" id="picado" aria-hidden="true"></div>
   <div class="top">
-    <a class="chip ic home" href="./" aria-label="Home — all the Lotería tools" title="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5"/><path d="M6.5 10v9h11v-9"/></svg></a>
+    <a class="chip ic home" href="./" aria-label="Home — all the Lotería tools" title="Home" data-t-aria="home.aria" data-t-title="home.title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11.5 12 5l8 6.5"/><path d="M6.5 10v9h11v-9"/></svg></a>
     <h1><span class="t">El Cantor</span> <small id="sub"></small></h1>
     <button class="chip" id="patBtn" type="button">Clásico</button>
-    <button class="chip lb" id="sabBtn" type="button" aria-label="Sábana" title="Sábana — every card, called or not"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 4h4v6H4zM10 4h4v6h-4zM16 4h4v6h-4zM4 14h4v6H4zM10 14h4v6h-4zM16 14h4v6h-4z"/></svg><span>Sábana</span></button>
-    <button class="chip lb" id="printBtn" type="button" aria-label="Print tablas" title="Print tablas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3h10v6M7 17H4v-7a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v7h-3"/><path d="M7 14h10v7H7z"/></svg><span>Print tablas</span></button>
-    <button class="chip ic" id="newBtn" type="button" aria-label="New round" title="New round">↺</button>
-    <button class="chip ic" id="setBtn" type="button" aria-label="Settings" title="Settings">⋯</button>
+    <button class="chip lb" id="sabBtn" type="button" aria-label="Sábana" title="Sábana — every card, called or not" data-t-title="cantor.sabanaTitle"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 4h4v6H4zM10 4h4v6h-4zM16 4h4v6h-4zM4 14h4v6H4zM10 14h4v6h-4zM16 14h4v6h-4z"/></svg><span>Sábana</span></button>
+    <button class="chip lb" id="printBtn" type="button" aria-label="Print tablas" title="Print tablas" data-t-aria="printTablas" data-t-title="printTablas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3h10v6M7 17H4v-7a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v7h-3"/><path d="M7 14h10v7H7z"/></svg><span data-t="printTablas">Print tablas</span></button>
+    <button class="chip ic" id="newBtn" type="button" aria-label="New round" title="New round" data-t-aria="newRound" data-t-title="newRound">↺</button>
+    <button class="chip ic" id="setBtn" type="button" aria-label="Settings" title="Settings" data-t-aria="settings" data-t-title="settings">⋯</button>
   </div>
   <div class="stage">
     <div class="deal">
       <div class="cardarea" id="cardarea">
-        <button class="flip" id="flip" type="button" aria-label="Start calling">
+        <button class="flip" id="flip" type="button" aria-label="Start calling" data-t-aria="cantor.start">
           <span class="inner down" id="inner">
             <span class="face front"><img id="bigImg" alt="" draggable="false"></span>
             <span class="face back"><span class="pat"></span><span class="seal"><b>Lotería</b><span>54 cartas</span></span></span>
@@ -305,12 +308,12 @@ a.chip{text-decoration:none}
     </div>
   </div>
   <div class="bar">
-    <button class="cbtn" id="backBtn" type="button" aria-label="Put the last card back" title="Put the last card back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
-    <button class="playb" id="playBtn" type="button" aria-label="Start calling"><svg class="ring" viewBox="0 0 74 74"><circle class="tr" cx="37" cy="37" r="33"/><circle class="pr" id="ringPr" cx="37" cy="37" r="33"/></svg><svg class="ic" id="playIc" viewBox="0 0 24 24" fill="currentColor"></svg></button>
-    <button class="nextb" id="nextBtn" type="button"><span>Next card</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg></button>
+    <button class="cbtn" id="backBtn" type="button" aria-label="Put the last card back" title="Put the last card back" data-t-aria="cantor.back" data-t-title="cantor.back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+    <button class="playb" id="playBtn" type="button" aria-label="Start calling" data-t-aria="cantor.start"><svg class="ring" viewBox="0 0 74 74"><circle class="tr" cx="37" cy="37" r="33"/><circle class="pr" id="ringPr" cx="37" cy="37" r="33"/></svg><svg class="ic" id="playIc" viewBox="0 0 24 24" fill="currentColor"></svg></button>
+    <button class="nextb" id="nextBtn" type="button"><span data-t="cantor.next">Next card</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M13 6l6 6-6 6"/></svg></button>
     <button class="pacec" id="paceChip" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M10 2h4"/></svg><span id="paceTxt"></span></button>
     <div class="stat" id="stat" aria-live="polite"></div>
-    <div class="seg" id="paceBar" role="group" aria-label="Time between cards"><button type="button" data-v="slow">Slow</button><button type="button" data-v="normal">Normal</button><button type="button" data-v="fast">Fast</button></div>
+    <div class="seg" id="paceBar" role="group" aria-label="Time between cards" data-t-aria="cantor.paceGroup"><button type="button" data-v="slow" data-t="pace.slow">Slow</button><button type="button" data-v="normal" data-t="pace.normal">Normal</button><button type="button" data-v="fast" data-t="pace.fast">Fast</button></div>
     <button class="lotb" id="lotBtn" type="button">¡Lotería!</button>
   </div>
 </div>
@@ -318,6 +321,7 @@ a.chip{text-decoration:none}
 <div id="sheet" hidden></div>
 <div id="winbox" hidden></div>
 <div class="toast" id="toast" role="status"></div>
+<script>T.apply(document);</script>
 <script src="deck.js" data-cards="cards/"></script>
 <script src="sync.js"></script>
 <script>if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(function () { });</script>
@@ -327,8 +331,6 @@ a.chip{text-decoration:none}
   var L = window.Loteria, CARDS = L.CARDS, card = L.card, src = L.src, PATS = L.PATS, ALL = L.ALL;
   var reduced = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-  function list(names) { return names.length < 2 ? names.join('') : names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1]; }
-  function plural(n, one, many) { return n + ' ' + (n === 1 ? one : many); }
 
   // ---------- state ----------
   var LS = 'loteria.cantor';
@@ -373,10 +375,10 @@ a.chip{text-decoration:none}
   function cur() { return C.pos ? C.order[C.pos - 1] : 0; }
   function orderOf(n) { var i = C.order.indexOf(n); return i >= 0 && i < C.pos ? i + 1 : 0; }
   function isOut(n) { return orderOf(n) > 0; }
-  function ordinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
 
   var R = { playing: false, phase: 'idle', timer: 0, raf: 0, waitStart: 0, waitMs: 0, token: 0, down: false, opening: false };
-  var PACE = { slow: 7000, normal: 4000, fast: 2000 }, PACE_NAME = { slow: 'Slow', normal: 'Normal', fast: 'Fast' };
+  var PACE = { slow: 7000, normal: 4000, fast: 2000 };
+  function paceName(v) { return T('pace.' + v); }
 
   var toastT; function toast(m) { var t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove('show'); }, 2400); }
 
@@ -536,7 +538,7 @@ a.chip{text-decoration:none}
     pause(); hush(); R.phase = 'idle'; R.opening = false;
     C.pos--; save();
     showCard(false, true); renderAll();
-    toast(C.pos ? 'Put it back — ' + card(cur()).name + ' is showing' : 'Back to a full deck');
+    toast(C.pos ? T('cantor.putBack', { card: card(cur()).name }) : T('cantor.fullDeck'));
   }
   function finish() { R.playing = false; R.phase = 'idle'; clearTimeout(R.timer); wake(false); renderAll(); }
   function newRound() {
@@ -545,10 +547,10 @@ a.chip{text-decoration:none}
     wake(false); showCard(false, true); renderAll();
   }
   function newRoundAsk() {
-    if (!C.pos) { patternSheet('What are we playing?'); return; }
+    if (!C.pos) { patternSheet(T('whatPlaying')); return; }
     var was = R.playing; pause();
-    openSheet('<div class="hd"><h2>Start round ' + (C.round + 1) + '?</h2></div><div class="bd stack"><p class="note">The ' + plural(C.pos, 'card', 'cards') + ' called so far ' + (C.pos === 1 ? 'goes' : 'go') + ' back in the deck and it gets shuffled. Tell everyone to clear their tablas.</p><div class="row"><button class="btn red" type="button" id="nrOk">Shuffle — new round</button><button class="btn sec" type="button" id="nrNo">Keep this round</button></div></div>');
-    $('nrOk').addEventListener('click', function () { closeSheet(); newRound(); patternSheet('Round ' + C.round + ' — what are we playing?'); });
+    openSheet('<div class="hd"><h2>' + T('cantor.startRoundQ', { n: C.round + 1 }) + '</h2></div><div class="bd stack"><p class="note">' + T('cantor.startRoundNote', { n: C.pos }) + '</p><div class="row"><button class="btn red" type="button" id="nrOk">' + T('cantor.shuffleNew') + '</button><button class="btn sec" type="button" id="nrNo">' + T('cantor.keepRound') + '</button></div></div>');
+    $('nrOk').addEventListener('click', function () { closeSheet(); newRound(); patternSheet(T('cantor.roundWhat', { r: C.round })); });
     $('nrNo').addEventListener('click', function () { closeSheet(); if (was) play(); });
   }
   function preload() { for (var i = C.pos; i < Math.min(54, C.pos + 2); i++) { var im = new Image(); im.src = src(C.order[i]); } }
@@ -566,20 +568,21 @@ a.chip{text-decoration:none}
   function reveal() { R.down = false; var inner = $('inner'); inner.className = 'inner'; if (!reduced) { void inner.offsetWidth; inner.className = 'inner turn'; } renderCaption(); renderSabana(); }
   function renderCaption() {
     var n = cur(), el = $('cap');
-    if (R.opening) { el.innerHTML = '<div class="no">Round ' + C.round + ' · ' + esc(L.gameName(C.patterns)) + '</div><h2>¡Se va y se corre…</h2><p>…con la vieja en el coche!</p>'; return; }
+    var head = '<div class="no">' + esc(T('cantor.roundGame', { r: C.round, game: L.gameName(C.patterns) })) + '</div>';
+    if (R.opening) { el.innerHTML = head + '<h2>¡Se va y se corre…</h2><p>…con la vieja en el coche!</p>'; return; }
     if (!n) {
-      el.innerHTML = '<div class="no">Round ' + C.round + ' · ' + esc(L.gameName(C.patterns)) + '</div><h2>Ready when you are</h2><p>All 54 cards are shuffled. El Cantor turns them over one at a time and reads each one out.</p><button class="btn red big" type="button" id="startBtn">Start calling</button>';
+      el.innerHTML = head + '<h2>' + T('cantor.readyH') + '</h2><p>' + T('cantor.readyP') + '</p><button class="btn red big" type="button" id="startBtn">' + T('cantor.start') + '</button>';
       $('startBtn').addEventListener('click', play);
       return;
     }
     var c = card(n);
-    el.innerHTML = '<div class="no">No. ' + c.n + ' · ' + ordinal(C.pos) + ' card</div><h2>' + (R.down ? '¿Cuál será?' : esc(c.name)) + '</h2><p>“' + esc(c.verse) + '”</p>';
+    el.innerHTML = '<div class="no">' + T('cantor.capNo', { n: c.n, ord: T.ord(C.pos) }) + '</div><h2>' + (R.down ? '¿Cuál será?' : esc(c.name)) + '</h2><p>“' + esc(c.verse) + '”</p>';
   }
   function renderAntes() {
     var el = $('antes'), prev = C.order.slice(Math.max(0, C.pos - 6), Math.max(0, C.pos - 1)).reverse();
-    if (C.pos >= 54 && R.phase === 'idle') { el.innerHTML = '<span class="lb">That was the last card — ↺ below starts a new round</span>'; return; }
-    if (!prev.length) { el.innerHTML = C.pos ? '<span class="lb">First card of the round</span>' : ''; return; }
-    el.innerHTML = '<span class="lb">Before</span>' + prev.map(function (n) { return '<span class="a"><img src="' + src(n) + '" alt="">' + esc(card(n).name) + '</span>'; }).join('');
+    if (C.pos >= 54 && R.phase === 'idle') { el.innerHTML = '<span class="lb">' + T('cantor.lastCard') + '</span>'; return; }
+    if (!prev.length) { el.innerHTML = C.pos ? '<span class="lb">' + T('cantor.firstCard') + '</span>' : ''; return; }
+    el.innerHTML = '<span class="lb">' + T('cantor.before') + '</span>' + prev.map(function (n) { return '<span class="a"><img src="' + src(n) + '" alt="">' + esc(card(n).name) + '</span>'; }).join('');
   }
   var SB = {};
   function sabanaInto(host) {
@@ -604,10 +607,11 @@ a.chip{text-decoration:none}
   function renderSabana() {
     if (!SB.main) SB.main = sabanaInto($('sbgrid'));
     paintSabana(SB.main); if (SB.sheet && SB.sheet.host.isConnected) paintSabana(SB.sheet.map);
-    $('sabCount').textContent = C.pos + ' called · ' + (54 - C.pos) + ' left';
+    $('sabCount').textContent = counts();
   }
+  function counts() { return T('cantor.calledN', { n: C.pos }) + ' · ' + T('cantor.leftN', { n: 54 - C.pos }); }
   function renderTop() {
-    $('sub').textContent = 'Round ' + C.round + ' · ' + C.pos + ' of 54';
+    $('sub').textContent = T('cantor.sub', { r: C.round, n: C.pos });
     $('patBtn').textContent = L.gameName(C.patterns) + ' ▾';
     $('patBtn').classList.toggle('teal', C.patterns.length > 0);
   }
@@ -616,7 +620,7 @@ a.chip{text-decoration:none}
   function renderBar() {
     var done = C.pos >= 54, pb = $('playBtn');
     $('playIc').innerHTML = done ? ICON.again : R.playing ? ICON.pause : ICON.play;
-    pb.setAttribute('aria-label', done ? 'New round' : R.playing ? 'Pause' : C.pos ? 'Keep calling' : 'Start calling');
+    pb.setAttribute('aria-label', T(done ? 'newRound' : R.playing ? 'cantor.pause' : C.pos ? 'cantor.keepCalling' : 'cantor.start'));
     pb.classList.toggle('talk', R.playing && R.phase === 'speaking');
     $('ringPr').style.strokeDasharray = RC; if (R.phase !== 'waiting') $('ringPr').style.strokeDashoffset = R.playing && R.phase === 'speaking' ? 0 : RC;
     $('backBtn').disabled = !C.pos;
@@ -624,17 +628,17 @@ a.chip{text-decoration:none}
     $('stat').textContent = status();
     document.querySelectorAll('#paceBar button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === C.settings.pace); });
     var secs = (PACE[C.settings.pace] || 4000) / 1000;
-    $('paceTxt').textContent = secs + 's';
-    $('paceChip').setAttribute('aria-label', PACE_NAME[C.settings.pace] + ': ' + secs + ' seconds between cards. Tap to change.');
+    $('paceTxt').textContent = T('cantor.paceChip', { s: secs });
+    $('paceChip').setAttribute('aria-label', T('cantor.paceAria', { pace: paceName(C.settings.pace), s: secs }));
     $('flip').setAttribute('aria-label', pb.getAttribute('aria-label'));
   }
   function status() {
-    if (C.pos >= 54) return 'That’s the whole deck';
-    if (R.opening) return 'Here we go…';
-    if (R.phase === 'speaking') return voiceOn() ? 'Calling…' : 'Reading…';
-    if (R.phase === 'waiting' && R.playing) return 'Next card in ' + Math.max(1, Math.ceil((R.waitMs - (performance.now() - R.waitStart)) / 1000)) + 's';
-    if (!C.pos) return 'Ready';
-    return R.playing ? '' : 'Paused';
+    if (C.pos >= 54) return T('cantor.st.done');
+    if (R.opening) return T('cantor.st.go');
+    if (R.phase === 'speaking') return T(voiceOn() ? 'cantor.st.calling' : 'cantor.st.reading');
+    if (R.phase === 'waiting' && R.playing) return T('cantor.st.next', { s: Math.max(1, Math.ceil((R.waitMs - (performance.now() - R.waitStart)) / 1000)) });
+    if (!C.pos) return T('cantor.st.ready');
+    return R.playing ? '' : T('cantor.st.paused');
   }
   function ringLoop() {
     cancelAnimationFrame(R.raf);
@@ -699,7 +703,7 @@ a.chip{text-decoration:none}
   function closeSheet() { var s = $('sheet'); if (s.hidden) return; s.hidden = true; s.innerHTML = ''; UI.sheet = null; UI.onVoices = null; var o = UI.opener; UI.opener = null; if (o && o !== document.body && o.isConnected) o.focus({ preventScroll: true }); if (UI.onClose) { var f = UI.onClose; UI.onClose = null; f(); } }
 
   function patternSheet(title) {
-    openSheet('<div class="hd"><h2>' + esc(title || 'What are we playing?') + '</h2><button class="btn sec sm" type="button" id="ptx">Done</button></div><div class="bd stack"><p class="note">Tell the table what wins this round. <b>Clásico</b> is the regular game — 4 in a row, 4 corners, or 4 in a square. Hold a shape for a second to add it on top of what’s picked; a tabla wins on any one of them. El Cantor checks winning tablas against this.</p><div class="pats" id="pats"></div></div>');
+    openSheet('<div class="hd"><h2>' + esc(title || T('whatPlaying')) + '</h2><button class="btn sec sm" type="button" id="ptx">' + T('done') + '</button></div><div class="bd stack"><p class="note">' + T.html('cantor.patsNote_html') + '</p><div class="pats" id="pats"></div></div>');
     // A held shape is added while the finger is still down, and the shapes are drawn again; the press is kept here,
     // not on its button, so letting go on the new button doesn't pick that shape on its own.
     var press = { held: false, t: 0 };
@@ -708,7 +712,7 @@ a.chip{text-decoration:none}
       PATS.forEach(function (p) {
         var both = L.hasClasico(C.patterns), on = p.combo ? both : C.patterns.indexOf(p.id) >= 0 && !(both && L.CLASICO.indexOf(p.id) >= 0), show = p.show || p.sets[0];
         var b = document.createElement('button'); b.type = 'button'; b.className = 'pat' + (on ? ' on' : '');
-        b.innerHTML = '<span class="mini">' + ALL.map(function (i) { return '<i class="' + (show.indexOf(i) >= 0 ? (p.combo || p.min || (p.sets && p.sets.length > 1) ? 'q' : 'f') : '') + '"></i>'; }).join('') + '</span><span><b>' + p.name + '</b><small>' + p.sub + '</small></span>';
+        b.innerHTML = '<span class="mini">' + ALL.map(function (i) { return '<i class="' + (show.indexOf(i) >= 0 ? (p.combo || p.min || (p.sets && p.sets.length > 1) ? 'q' : 'f') : '') + '"></i>'; }).join('') + '</span><span><b>' + p.name + '</b><small>' + T('pat.' + p.id) + '</small></span>';
         function pick(add) {
           if (add) toast(L.holdShape(C.patterns, p.id)); // on top of the game, saying what it did
           else C.patterns = p.combo ? L.CLASICO.slice() : [p.id];
@@ -726,9 +730,9 @@ a.chip{text-decoration:none}
   }
 
   function sabanaSheet() {
-    openSheet('<div class="hd"><h2>Sábana</h2><span class="eyebrow" id="ssCount"></span><button class="btn sec sm" type="button" id="ssx">Done</button></div><div class="bd"><div class="sbgrid" id="ssgrid"></div></div>');
+    openSheet('<div class="hd"><h2>Sábana</h2><span class="eyebrow" id="ssCount"></span><button class="btn sec sm" type="button" id="ssx">' + T('done') + '</button></div><div class="bd"><div class="sbgrid" id="ssgrid"></div></div>');
     var host = $('ssgrid'); SB.sheet = { host: host, map: sabanaInto(host) }; paintSabana(SB.sheet.map);
-    $('ssCount').textContent = C.pos + ' called · ' + (54 - C.pos) + ' left';
+    $('ssCount').textContent = counts();
     host.style.setProperty('--cols', 6); host.style.setProperty('--tg', '6px');
     host.style.setProperty('--tw', Math.floor(Math.min(90, (host.clientWidth - 30) / 6)) + 'px');
     $('ssx').addEventListener('click', closeSheet);
@@ -736,51 +740,59 @@ a.chip{text-decoration:none}
 
   function settingsSheet() {
     var st = C.settings;
-    openSheet('<div class="hd"><h2>Settings</h2><button class="btn sec sm" type="button" id="stx">Done</button></div><div class="bd stack">' +
-      '<div class="card stack"><div class="row sp"><div><b>Read the cards aloud</b><p class="note" id="vNote"></p></div><button class="chip" type="button" id="spBtn"></button></div>' +
-      '<div class="row" id="vRow" style="align-items:flex-end;flex-wrap:nowrap"><label class="fld" style="flex:1"><span>Voice</span><select id="vSel"></select></label><button class="btn sec" type="button" id="vTest">Try it</button></div>' +
-      '<label class="fld" id="rRow"><span>Reading speed · <b id="rateV"></b></span><input type="range" id="rate" min="0.7" max="1.3" step="0.05"></label></div>' +
-      '<div class="card"><div class="eyebrow">How each card is called</div><div class="styles" id="styles"></div></div>' +
-      '<div class="card"><div class="eyebrow">Time between cards</div><div class="row" style="margin-top:8px"><div class="seg" id="paceSeg"><button type="button" data-v="slow">Slow · 7s</button><button type="button" data-v="normal">Normal · 4s</button><button type="button" data-v="fast">Fast · 2s</button></div></div><p class="note" style="margin-top:8px">Counted after the card is read. ▶ turns the next card automatically; Next card turns it now.</p></div>' +
-      '<div class="card"><div class="eyebrow">When someone shouts ¡Lotería!</div><div class="row" style="margin-top:8px"><div class="seg" id="chkSeg"><button type="button" data-v="trust">Take their word</button><button type="button" data-v="check">Check the tabla</button></div></div><p class="note" style="margin-top:8px" id="chkNote"></p></div>' +
-      '<div class="card"><div class="row sp"><div><b>Sounds</b><p class="note">A card snap on each turn, a fanfare for a good ¡Lotería!</p></div><button class="chip" type="button" id="sndBtn"></button></div></div>' +
-      '<div class="card"><div class="row sp"><div><b>Keep the screen on</b><p class="note">While a round is going, if this device allows it.</p></div><button class="chip" type="button" id="awBtn"></button></div></div>' +
+    var paceOpt = function (v) { return '<button type="button" data-v="' + v + '">' + T('cantor.paceOpt', { pace: paceName(v), s: PACE[v] / 1000 }) + '</button>'; };
+    openSheet('<div class="hd"><h2>' + T('settings') + '</h2><button class="btn sec sm" type="button" id="stx">' + T('done') + '</button></div><div class="bd stack">' +
+      '<div class="card"><div class="eyebrow">' + T('lang.label') + '</div><div id="langSw" style="margin-top:8px"></div></div>' +
+      '<div class="card stack"><div class="row sp"><div><b>' + T('cantor.readAloud') + '</b><p class="note" id="vNote"></p></div><button class="chip" type="button" id="spBtn"></button></div>' +
+      '<div class="row" id="vRow" style="align-items:flex-end;flex-wrap:nowrap"><label class="fld" style="flex:1"><span>' + T('cantor.voice') + '</span><select id="vSel"></select></label><button class="btn sec" type="button" id="vTest">' + T('cantor.tryIt') + '</button></div>' +
+      '<label class="fld" id="rRow"><span>' + T('cantor.rate') + ' · <b id="rateV"></b></span><input type="range" id="rate" min="0.7" max="1.3" step="0.05"></label></div>' +
+      '<div class="card"><div class="eyebrow">' + T('cantor.styleH') + '</div><div class="styles" id="styles"></div></div>' +
+      '<div class="card"><div class="eyebrow">' + T('cantor.paceGroup') + '</div><div class="row" style="margin-top:8px"><div class="seg" id="paceSeg">' + ['slow', 'normal', 'fast'].map(paceOpt).join('') + '</div></div><p class="note" style="margin-top:8px">' + T('cantor.paceNote') + '</p></div>' +
+      '<div class="card"><div class="eyebrow">' + T('cantor.shoutH') + '</div><div class="row" style="margin-top:8px"><div class="seg" id="chkSeg"><button type="button" data-v="trust">' + T('cantor.trust') + '</button><button type="button" data-v="check">' + T('cantor.check') + '</button></div></div><p class="note" style="margin-top:8px" id="chkNote"></p></div>' +
+      '<div class="card"><div class="row sp"><div><b>' + T('sounds') + '</b><p class="note">' + T('cantor.soundsNote') + '</p></div><button class="chip" type="button" id="sndBtn"></button></div></div>' +
+      '<div class="card"><div class="row sp"><div><b>' + T('cantor.awake') + '</b><p class="note">' + T('cantor.awakeNote') + '</p></div><button class="chip" type="button" id="awBtn"></button></div></div>' +
       '<div class="card" id="winsCard"></div>' +
       '<div class="card" id="syncCard" hidden></div>' +
-      '<div class="card"><div class="eyebrow">Playing along</div><p class="note" style="margin-top:6px">Anyone can mark their tablas on their own phone with <a href="board.html">My tablas</a> — tap <b>Cantaron…</b> there as you call. Printed tablas work too: <b>Print tablas</b> makes a numbered set, or <a href="print.html">make your own</a> card by card.</p></div>' +
-      '<div class="card"><div class="eyebrow">Keyboard</div><p class="note" style="margin-top:6px">Space starts or pauses · → next card · ← puts the last card back · L checks a ¡Lotería!</p></div>' +
-      '<footer class="jd-foot"><a href="https://junkdrawer.works/">Part of junkdrawer.works</a> <span aria-hidden="true">·</span> <a href="https://junkdrawer.works/privacy.html">Privacy</a></footer></div>');
+      '<div class="card"><div class="eyebrow">' + T('cantor.alongH') + '</div><p class="note" style="margin-top:6px">' + T.html('cantor.along_html') + '</p></div>' +
+      '<div class="card"><div class="eyebrow">' + T('cantor.keyboardH') + '</div><p class="note" style="margin-top:6px">' + T('cantor.keyboard') + '</p></div>' +
+      '<footer class="jd-foot"><a href="https://junkdrawer.works/">' + T('foot.part') + '</a> <span aria-hidden="true">·</span> <a href="https://junkdrawer.works/privacy.html">' + T('foot.privacy') + '</a></footer></div>');
+    T.switch($('langSw'), 'settings'); // a new language reloads the page, and Settings opens again
     var STYLES = [
-      ['name', 'Name only', 'Just the card: “¡La Luna!” The verse still shows on screen.'],
-      ['verse', 'Verse, then name', '“El farol de los enamorados… ¡La Luna!” The card turns over right away.'],
-      ['riddle', 'Adivinanza', 'Reads the verse with the card face down so the table can guess, then turns it over and says the name.']
+      ['name', T('cantor.style.name'), T('cantor.style.nameNote')],
+      ['verse', T('cantor.style.verse'), T('cantor.style.verseNote')],
+      ['riddle', 'Adivinanza', T('cantor.style.riddleNote')]
     ];
+    function onOff(b, on) { b.textContent = T(on ? 'on' : 'off'); b.classList.toggle('on', on); }
+    function rateWord() { return T(st.rate === 1 ? 'cantor.rate.normal' : st.rate < 1 ? 'cantor.rate.slower' : 'cantor.rate.faster'); }
+    // A recorded voice is described in the chosen language (voices.json's own words are English).
+    function about(p) { var k = 'voice.' + p.id, t = T('voice.' + p.id); return t !== k ? t : p.about || ''; }
     function draw() {
       var has = !!TTS || PACKS.length > 0, ch = choice();
-      $('spBtn').textContent = st.speak && has ? 'On' : 'Off'; $('spBtn').classList.toggle('on', st.speak && has); $('spBtn').disabled = !has;
-      $('vNote').textContent = !has ? 'This browser can’t speak, so El Cantor shows each card and you read it.' : !st.speak ? 'Off — El Cantor shows each card and you read it out.' : ch.pack ? 'A recorded Spanish voice — it sounds the same on every phone and tablet.' : VOICES.length ? 'This device’s own Spanish voice.' : 'This device has no Spanish voice, so it reads with its default one and mangles the words. On an iPhone or iPad, add one under Settings › Accessibility › Spoken Content › Voices › Spanish.';
+      onOff($('spBtn'), st.speak && has); $('spBtn').disabled = !has;
+      $('vNote').textContent = T(!has ? 'cantor.v.cant' : !st.speak ? 'cantor.v.off' : ch.pack ? 'cantor.v.pack' : VOICES.length ? 'cantor.v.device' : 'cantor.v.none');
       $('vRow').hidden = !(has && st.speak); $('rRow').hidden = !(has && st.speak && !ch.pack);
-      var sel = $('vSel'), opts = PACKS.map(function (p) { return '<option value="pack:' + esc(p.id) + '"' + (ch.pack === p ? ' selected' : '') + '>' + esc(p.name) + ' · recorded' + (p.about ? ', ' + esc(p.about) : '') + '</option>'; });
-      opts = opts.concat(VOICES.map(function (v) { return '<option value="dev:' + esc(v.voiceURI) + '"' + (ch.dev === v ? ' selected' : '') + '>' + esc(v.name) + ' · ' + esc(v.lang) + ' · this device</option>'; }));
-      sel.innerHTML = opts.length ? opts.join('') : '<option value="">This device’s default voice</option>';
-      $('rate').value = st.rate; $('rateV').textContent = st.rate === 1 ? 'normal' : st.rate < 1 ? 'slower' : 'faster';
+      // The recorded voices and this device's own, each under its heading, so a line is short enough for a phone.
+      var packs = PACKS.map(function (p) { var a = about(p); return '<option value="pack:' + esc(p.id) + '"' + (ch.pack === p ? ' selected' : '') + '>' + esc(p.name) + (a ? ' · ' + esc(a) : '') + '</option>'; });
+      var devs = VOICES.map(function (v) { return '<option value="dev:' + esc(v.voiceURI) + '"' + (ch.dev === v ? ' selected' : '') + '>' + esc(v.name) + ' · ' + esc(v.lang) + '</option>'; });
+      $('vSel').innerHTML = packs.length || devs.length ? (packs.length ? '<optgroup label="' + esc(T('cantor.v.groupPack')) + '">' + packs.join('') + '</optgroup>' : '') + (devs.length ? '<optgroup label="' + esc(T('cantor.v.groupDevice')) + '">' + devs.join('') + '</optgroup>' : '') : '<option value="">' + T('cantor.v.default') + '</option>';
+      $('rate').value = st.rate; $('rateV').textContent = rateWord();
       $('styles').innerHTML = STYLES.map(function (s) { return '<button type="button" class="opt' + (st.style === s[0] ? ' on' : '') + '" data-v="' + s[0] + '"><b>' + s[1] + '</b><small>' + s[2] + '</small></button>'; }).join('');
       $('styles').querySelectorAll('.opt').forEach(function (b) { b.addEventListener('click', function () { st.style = b.dataset.v; save(); draw(); }); });
       document.querySelectorAll('#paceSeg button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === st.pace); });
       document.querySelectorAll('#chkSeg button').forEach(function (b) { b.classList.toggle('on', (b.dataset.v === 'check') === !!st.check); });
-      $('chkNote').textContent = st.check ? 'The ¡Lotería! button opens the checker first: type a printed tabla’s number, or tap the cards they read out.' : 'The ¡Lotería! button goes straight to the celebration and the next round. Checking a tabla is still one tap away there.';
-      $('sndBtn').textContent = st.sound ? 'On' : 'Off'; $('sndBtn').classList.toggle('on', st.sound);
-      $('awBtn').textContent = st.awake ? 'On' : 'Off'; $('awBtn').classList.toggle('on', st.awake);
+      $('chkNote').textContent = T(st.check ? 'cantor.chk.on' : 'cantor.chk.off');
+      onOff($('sndBtn'), st.sound);
+      onOff($('awBtn'), st.awake);
       winsCard();
     }
     function winsCard() {
       var el = $('winsCard'), w = C.wins;
-      if (!w.length) { el.innerHTML = '<div class="eyebrow">Winners</div><p class="note" style="margin-top:6px">When you confirm a ¡Lotería!, add the winner’s name and it’s kept here.</p>'; return; }
+      if (!w.length) { el.innerHTML = '<div class="eyebrow">' + T('cantor.winners') + '</div><p class="note" style="margin-top:6px">' + T('cantor.winnersNone') + '</p>'; return; }
       // One count per person whatever the capitals, under the name as it was last typed.
-      var tally = {}, shown = {}; w.forEach(function (x) { var k = nameKey(x.who); tally[k] = (tally[k] || 0) + 1; shown[k] = k ? String(x.who).trim() : 'Unnamed'; });
-      el.innerHTML = '<div class="row sp"><div class="eyebrow">Winners</div><button class="btn sec sm" type="button" id="wClr">Clear</button></div><div class="chips" style="margin-top:8px">' + Object.keys(tally).sort(function (a, b) { return tally[b] - tally[a]; }).map(function (k) { return '<span class="chip">' + esc(shown[k]) + ' · ' + tally[k] + '</span>'; }).join('') + '</div><div class="wins">' + w.slice(-8).reverse().map(function (x) { return '<div><span>Round ' + x.round + '</span><b>' + esc(x.who || 'Unnamed') + '</b><span>' + esc(x.how) + (x.tabla ? ' · ' + esc(x.tabla) : '') + ' · ' + plural(x.at, 'card', 'cards') + '</span></div>'; }).join('') + '</div>';
+      var tally = {}, shown = {}; w.forEach(function (x) { var k = nameKey(x.who); tally[k] = (tally[k] || 0) + 1; shown[k] = k ? String(x.who).trim() : T('cantor.unnamed'); });
+      el.innerHTML = '<div class="row sp"><div class="eyebrow">' + T('cantor.winners') + '</div><button class="btn sec sm" type="button" id="wClr">' + T('cantor.clear') + '</button></div><div class="chips" style="margin-top:8px">' + Object.keys(tally).sort(function (a, b) { return tally[b] - tally[a]; }).map(function (k) { return '<span class="chip">' + esc(shown[k]) + ' · ' + tally[k] + '</span>'; }).join('') + '</div><div class="wins">' + w.slice(-8).reverse().map(function (x) { return '<div><span>' + T('cantor.round', { r: x.round }) + '</span><b>' + esc(x.who || T('cantor.unnamed')) + '</b><span>' + esc(x.how) + (x.tabla ? ' · ' + esc(x.tabla) : '') + ' · ' + T('cards', { n: x.at }) + '</span></div>'; }).join('') + '</div>';
       var armed = false;
-      $('wClr').addEventListener('click', function () { if (!armed) { armed = true; this.textContent = 'Tap again to clear'; return; } C.wins = []; save(); winsCard(); });
+      $('wClr').addEventListener('click', function () { if (!armed) { armed = true; this.textContent = T('cantor.clearAgain'); return; } C.wins = []; save(); winsCard(); });
     }
     $('spBtn').addEventListener('click', function () {
       st.speak = !st.speak; save();
@@ -789,10 +801,10 @@ a.chip{text-decoration:none}
     });
     $('vSel').addEventListener('change', function () { st.voice = this.value; save(); draw(); });
     $('vTest').addEventListener('click', function () {
-      if (R.phase === 'speaking') { toast('Try it between cards'); return; }
+      if (R.phase === 'speaking') { toast(T('cantor.tryBetween')); return; }
       unlock(); say([st.style === 'name' ? { n: 23, part: 'name', text: 'La Luna' } : { n: 23, part: 'all', text: 'El farol de los enamorados. La Luna.' }], null);
     });
-    $('rate').addEventListener('input', function () { st.rate = parseFloat(this.value) || 1; save(); $('rateV').textContent = st.rate === 1 ? 'normal' : st.rate < 1 ? 'slower' : 'faster'; });
+    $('rate').addEventListener('input', function () { st.rate = parseFloat(this.value) || 1; save(); $('rateV').textContent = rateWord(); });
     document.querySelectorAll('#paceSeg button').forEach(function (b) { b.addEventListener('click', function () { setPace(b.dataset.v); draw(); }); });
     document.querySelectorAll('#chkSeg button').forEach(function (b) { b.addEventListener('click', function () { st.check = b.dataset.v === 'check'; save(); draw(); }); });
     $('sndBtn').addEventListener('click', function () { st.sound = !st.sound; save(); draw(); if (st.sound) snap(); });
@@ -816,12 +828,12 @@ a.chip{text-decoration:none}
   function tablaHtml(t, hit, need) {
     return '<div class="grid">' + t.map(function (n, i) {
       var out = isOut(n);
-      return '<div class="cell' + (out ? ' marked' : '') + (hit[i] ? ' hit' : '') + (need[i] ? ' need' : '') + '"><img src="' + src(n) + '" alt="' + esc(card(n).name) + (out ? ', called' : '') + '" draggable="false">' + (out ? '<div class="mk" style="--rot:' + (((i * 53) % 70) - 35) + 'deg">' + BEAN + '</div>' : '') + '</div>';
+      return '<div class="cell' + (out ? ' marked' : '') + (hit[i] ? ' hit' : '') + (need[i] ? ' need' : '') + '"><img src="' + src(n) + '" alt="' + esc(out ? T('calledAria', { card: card(n).name }) : card(n).name) + '" draggable="false">' + (out ? '<div class="mk" style="--rot:' + (((i * 53) % 70) - 35) + 'deg">' + BEAN + '</div>' : '') + '</div>';
     }).join('') + '</div>';
   }
   function whenText(when) {
     var ago = C.pos - when, c = card(C.order[when - 1]).name;
-    return ago === 0 ? 'It finished on the card just called, ' + c + '.' : 'It was already good ' + plural(ago, 'card', 'cards') + ' ago, on ' + c + ' — the ' + ordinal(when) + ' card.';
+    return ago === 0 ? T('cantor.when.now', { card: c }) : T('cantor.when.ago', { n: ago, card: c, ord: T.ord(when) });
   }
   function stopCalling() {
     pause(); hush();
@@ -856,16 +868,16 @@ a.chip{text-decoration:none}
     for (var i = C.wins.length - 1; k && i >= 0; i--) if (nameKey(C.wins[i].who) === k) return String(C.wins[i].who).trim();
     return String(typed || '').trim();
   }
-  function shuffleNext() { newRound(); patternSheet('Round ' + C.round + ' — what are we playing?'); }
+  function shuffleNext() { newRound(); patternSheet(T('cantor.roundWhat', { r: C.round })); }
 
   // Take their word: straight to the celebration, with the winner's name and the next round.
   function claim() {
     var was = R.playing; stopCalling(); cheer();
     var box = $('winbox'), r = C.round;
-    box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p>Round ' + r + ' · ' + esc(L.gameName(C.patterns)) + ' · ' + plural(C.pos, 'card', 'cards') + ' called</p>' +
-      '<div class="who"><input id="clWho" placeholder="Who won? (optional)" autocomplete="off" autocapitalize="words" enterkeyhint="go" maxlength="30" aria-label="Who won">' + namesHtml('clNames') + '</div>' +
-      '<div class="row"><button class="btn red" type="button" id="clNew">Shuffle for round ' + (r + 1) + '</button><button class="btn sec" type="button" id="clBack">Keep calling</button></div>' +
-      '<button type="button" class="linkb" id="clCheck">Check a tabla first</button></div></div>';
+    box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p>' + esc(T('cantor.roundGame', { r: r, game: L.gameName(C.patterns) })) + ' · ' + T('cantor.cardsCalled', { n: C.pos }) + '</p>' +
+      '<div class="who"><input id="clWho" placeholder="' + T('cantor.whoWon') + '" autocomplete="off" autocapitalize="words" enterkeyhint="go" maxlength="30" aria-label="' + T('cantor.whoWonAria') + '">' + namesHtml('clNames') + '</div>' +
+      '<div class="row"><button class="btn red" type="button" id="clNew">' + T('cantor.shuffleFor', { r: r + 1 }) + '</button><button class="btn sec" type="button" id="clBack">' + T('cantor.keepCalling') + '</button></div>' +
+      '<button type="button" class="linkb" id="clCheck">' + T('cantor.checkFirst') + '</button></div></div>';
     box.hidden = false;
     wireNames('clNames', $('clWho'));
     $('clWho').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); $('clNew').click(); } });
@@ -881,10 +893,10 @@ a.chip{text-decoration:none}
   function verifySheet(resume, who) {
     var was = arguments.length ? resume : R.playing; stopCalling();
     var V = { mode: C.juego ? 'printed' : 'cards', picked: [], how: '', tabla: '', q: '' };
-    openSheet('<div class="hd"><h2>¡Lotería! — check it</h2><button class="btn sec sm" type="button" id="vfx">Keep calling</button></div><div class="bd stack">' +
-      '<div class="row sp" style="flex-wrap:wrap"><div class="seg" id="vfSeg"><button type="button" data-v="printed">Printed tabla</button><button type="button" data-v="cards">Card by card</button></div><span class="note">' + esc(L.gameName(C.patterns)) + ' · ' + plural(C.pos, 'card', 'cards') + ' called</span></div>' +
+    openSheet('<div class="hd wrap"><h2>' + T('cantor.checkIt') + '</h2><button class="btn sec sm" type="button" id="vfx">' + T('cantor.keepCalling') + '</button></div><div class="bd stack">' +
+      '<div class="row sp" style="flex-wrap:wrap"><div class="seg" id="vfSeg"><button type="button" data-v="printed">' + T('cantor.printedTabla') + '</button><button type="button" data-v="cards">' + T('cantor.cardByCard') + '</button></div><span class="note">' + esc(L.gameName(C.patterns)) + ' · ' + T('cantor.cardsCalled', { n: C.pos }) + '</span></div>' +
       '<div id="vfBody"></div>' +
-      '<div class="vfwin"><div class="card"><input id="vfWho" placeholder="Who won? (optional)" autocomplete="off" autocapitalize="words" enterkeyhint="go" maxlength="30" aria-label="Who won">' + namesHtml('vfNames') + '<div class="btns"><button class="btn red" type="button" id="vfBack" hidden>Keep calling</button><button class="btn red" type="button" id="vfWin">¡Buena! New round</button></div></div></div></div>');
+      '<div class="vfwin"><div class="card"><input id="vfWho" placeholder="' + T('cantor.whoWon') + '" autocomplete="off" autocapitalize="words" enterkeyhint="go" maxlength="30" aria-label="' + T('cantor.whoWonAria') + '">' + namesHtml('vfNames') + '<div class="btns"><button class="btn red" type="button" id="vfBack" hidden>' + T('cantor.keepCalling') + '</button><button class="btn red" type="button" id="vfWin">' + T('cantor.buenaNew') + '</button></div></div></div></div>');
     UI.onClose = function () { if (!UI.won) { UI.cheered = 0; if (was) play(); } UI.won = false; };
     $('vfWho').value = who || ''; wireNames('vfNames', $('vfWho'));
     // Enter is ¡Buena! New round; on a Not yet it only puts the keyboard away, so the caller sees both buttons.
@@ -892,7 +904,7 @@ a.chip{text-decoration:none}
     function body() {
       document.querySelectorAll('#vfSeg button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === V.mode); });
       if (V.mode === 'printed') {
-        $('vfBody').innerHTML = '<div class="vf"><div id="vfTabla"></div><div class="stack"><div class="vfin"><label class="fld"><span>Juego</span><input id="vfJ" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="14"></label><div class="fld"><span>Tabla No.</span><span class="stepper"><button type="button" id="vfM" aria-label="Previous tabla">−</button><input id="vfN" inputmode="numeric" autocomplete="off" maxlength="3" aria-label="Tabla number"><button type="button" id="vfP" aria-label="Next tabla">+</button></span></div></div><div class="verdict" id="vfV"></div></div></div>';
+        $('vfBody').innerHTML = '<div class="vf"><div id="vfTabla"></div><div class="stack"><div class="vfin"><label class="fld"><span>Juego</span><input id="vfJ" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="14"></label><div class="fld"><span>Tabla No.</span><span class="stepper"><button type="button" id="vfM" aria-label="' + T('cantor.prevTabla') + '">−</button><input id="vfN" inputmode="numeric" autocomplete="off" maxlength="3" aria-label="' + T('tablaNumber') + '"><button type="button" id="vfP" aria-label="' + T('cantor.nextTabla') + '">+</button></span></div></div><div class="verdict" id="vfV"></div></div></div>';
         $('vfJ').value = V.j != null ? V.j : C.juego; $('vfN').value = V.n || '';
         $('vfJ').addEventListener('input', function () { V.j = this.value; printed(); });
         $('vfN').addEventListener('input', function () { this.value = this.value.replace(/\D/g, ''); V.n = this.value; printed(); });
@@ -901,7 +913,7 @@ a.chip{text-decoration:none}
         printed();
         if (!('ontouchstart' in window)) (C.juego ? $('vfN') : $('vfJ')).focus();
       } else {
-        $('vfBody').innerHTML = '<div class="stack"><div class="verdict" id="vfV"></div><div class="chips" id="vfChips"></div><input id="vfQ" type="search" enterkeyhint="search" placeholder="Find a card — name or number" autocomplete="off"><div class="pick" id="vfPick"></div></div>';
+        $('vfBody').innerHTML = '<div class="stack"><div class="verdict" id="vfV"></div><div class="chips" id="vfChips"></div><input id="vfQ" type="search" enterkeyhint="search" placeholder="' + T('cantor.findCard') + '" autocomplete="off"><div class="pick" id="vfPick"></div></div>';
         $('vfQ').value = V.q;
         $('vfQ').addEventListener('input', function () { V.q = this.value; pickGrid(); });
         $('vfQ').addEventListener('keydown', function (e) { if (e.key === 'Enter') { var only = $('vfPick').querySelectorAll('.pk'); if (only.length === 1) only[0].click(); } });
@@ -911,26 +923,27 @@ a.chip{text-decoration:none}
     // The winner row follows the verdict: on Not yet, Keep calling is the main button, and the caller can still count it.
     function winRow(no) {
       var b = $('vfWin'); $('vfBack').hidden = !no;
-      b.className = 'btn ' + (no ? 'sec' : 'red'); b.textContent = no ? 'Count it anyway' : '¡Buena! New round';
+      b.className = 'btn ' + (no ? 'sec' : 'red'); b.textContent = T(no ? 'cantor.countAnyway' : 'cantor.buenaNew');
     }
     function printed() {
       var name = L.juegoName($('vfJ').value), k = parseInt($('vfN').value, 10), v = $('vfV'), host = $('vfTabla');
       V.how = ''; V.tabla = ''; winRow(false);
-      if (!name) { host.innerHTML = ''; v.className = 'verdict'; v.innerHTML = '<p class="note" style="margin:0">Type the juego name printed along the bottom of the tabla' + (C.juego ? '' : ' (make a set under <b>Print tablas</b>)') + ', then its number from the top corner.</p>'; return; }
-      if (!(k >= 1 && k <= 999)) { host.innerHTML = ''; v.className = 'verdict'; v.innerHTML = '<p class="note" style="margin:0">Now the tabla number — it’s the big number at the top right of their tabla.</p>'; return; }
+      if (!name) { host.innerHTML = ''; v.className = 'verdict'; v.innerHTML = '<p class="note" style="margin:0">' + (C.juego ? T('cantor.typeJuegoHave') : T.html('cantor.typeJuego_html')) + '</p>'; return; }
+      if (!(k >= 1 && k <= 999)) { host.innerHTML = ''; v.className = 'verdict'; v.innerHTML = '<p class="note" style="margin:0">' + T('cantor.typeNumber') + '</p>'; return; }
       var t = L.juegoTabla(name, k), hit = {}, need = {}, best = null;
       // Remembered, so the next check opens on this juego (and My tablas' + A printed tabla starts with it).
       if (C.juego !== name) { C.juego = name; save(); }
       C.patterns.forEach(function (pid) { var p = L.pat(pid); if (!p) return; var w = wonAt(t, p); if (w && (!best || w.when < best.when)) best = { when: w.when, cells: w.cells, pat: p }; });
       if (best) {
         best.cells.forEach(function (c) { hit[c] = 1; }); V.how = best.pat.name; V.tabla = name + ' ' + k; // a win counted anyway has no tabla
-        v.className = 'verdict ok'; v.innerHTML = '<h3>¡Buena! ' + esc(best.pat.name) + '</h3><p>' + esc(name) + ' No. ' + k + ' — ' + esc(whenText(best.when)) + '</p>';
+        v.className = 'verdict ok'; v.innerHTML = '<h3>¡Buena! ' + esc(best.pat.name) + '</h3><p>' + esc(T('cantor.goodLine', { juego: name, k: k, when: whenText(best.when) })) + '</p>';
       } else {
         var cl = L.closest(t, isOut, C.patterns);
         (cl.missing || []).forEach(function (c) { need[c] = 1; });
-        var miss = cl.pat.min ? plural(cl.need, 'more card', 'more cards') : list(cl.missing.map(function (c) { return card(t[c]).name; }));
+        // The sentence agrees with how many are missing: le falta El Gallo, le faltan El Gallo y La Luna.
+        var many = cl.pat.min ? cl.need : cl.missing.length, miss = cl.pat.min ? T('cantor.moreCards', { n: cl.need }) : T.list(cl.missing.map(function (c) { return card(t[c]).name; }));
         winRow(true);
-        v.className = 'verdict no'; v.innerHTML = '<h3>Not yet</h3><p>' + esc(name) + ' No. ' + k + ' is closest to <b>' + esc(cl.pat.name) + '</b> and still needs ' + esc(miss) + '. Squares outlined in red haven’t been called.</p>';
+        v.className = 'verdict no'; v.innerHTML = '<h3>' + T('cantor.notYet') + '</h3><p>' + T.html('cantor.closest_html', { n: many, juego: name, k: k, shape: cl.pat.name, miss: miss }) + '</p>';
       }
       host.innerHTML = tablaHtml(t, hit, need);
       // On a short screen the winner row would cover the verdict: the sheet scrolls just enough to show it above the row.
@@ -949,18 +962,18 @@ a.chip{text-decoration:none}
         d.addEventListener('click', function () { if (V.picked.indexOf(c.n) < 0) V.picked.push(c.n); V.q = ''; $('vfQ').value = ''; pickGrid(); cardsVerdict(); });
         host.appendChild(d);
       });
-      if (!host.children.length) host.innerHTML = '<p class="note">No card matches “' + esc(V.q) + '”.</p>';
+      if (!host.children.length) host.innerHTML = '<p class="note">' + esc(T('noMatch', { q: V.q })) + '</p>';
     }
     function cardsVerdict() {
       var v = $('vfV'), out = V.picked.filter(isOut), not = V.picked.filter(function (n) { return !isOut(n); });
       V.how = ''; V.tabla = ''; winRow(not.length > 0);
-      $('vfChips').innerHTML = V.picked.map(function (n) { return '<button type="button" class="chip ' + (isOut(n) ? 'ok' : 'bad') + '" data-n="' + n + '" aria-label="Take ' + esc(card(n).name) + ' off">' + esc(card(n).name) + (isOut(n) ? ' · #' + orderOf(n) : ' · not yet') + ' <span aria-hidden="true">✕</span></button>'; }).join('');
+      $('vfChips').innerHTML = V.picked.map(function (n) { return '<button type="button" class="chip ' + (isOut(n) ? 'ok' : 'bad') + '" data-n="' + n + '" aria-label="' + esc(T('cantor.takeOff', { card: card(n).name })) + '">' + esc(card(n).name) + (isOut(n) ? ' · #' + orderOf(n) : T('cantor.notYetChip')) + ' <span aria-hidden="true">✕</span></button>'; }).join('');
       $('vfChips').querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () { var i = V.picked.indexOf(+b.dataset.n); if (i >= 0) V.picked.splice(i, 1); pickGrid(); cardsVerdict(); }); });
-      if (!V.picked.length) { v.className = 'verdict'; v.innerHTML = '<p class="note" style="margin:0">Have them read out their winning cards, and tap each one below. A tabla from a store or another set works this way.</p>'; return; }
-      if (not.length) { v.className = 'verdict no'; v.innerHTML = '<h3>Not yet</h3><p>' + esc(list(not.map(function (n) { return card(n).name; }))) + (not.length === 1 ? ' hasn’t' : ' haven’t') + ' been called.</p>'; return; }
+      if (!V.picked.length) { v.className = 'verdict'; v.innerHTML = '<p class="note" style="margin:0">' + T('cantor.readOut') + '</p>'; return; }
+      if (not.length) { v.className = 'verdict no'; v.innerHTML = '<h3>' + T('cantor.notYet') + '</h3><p>' + esc(T('cantor.notCalled', { n: not.length, list: T.list(not.map(function (n) { return card(n).name; })) })) + '</p>'; return; }
       var last = Math.max.apply(null, out.map(orderOf));
       V.how = L.gameName(C.patterns);
-      v.className = 'verdict ok'; v.innerHTML = '<h3>' + (out.length === 1 ? 'It’s out' : 'All ' + out.length + ' are out') + '</h3><p>If they make the shape — ' + esc(L.gameName(C.patterns)) + ' — it’s good. ' + esc(whenText(last)) + '</p>';
+      v.className = 'verdict ok'; v.innerHTML = '<h3>' + T('cantor.allOut', { n: out.length }) + '</h3><p>' + esc(T('cantor.ifShape', { game: L.gameName(C.patterns), when: whenText(last) })) + '</p>';
     }
     document.querySelectorAll('#vfSeg button').forEach(function (b) { b.addEventListener('click', function () { V.mode = b.dataset.v; body(); }); });
     $('vfx').addEventListener('click', closeSheet);
@@ -975,7 +988,8 @@ a.chip{text-decoration:none}
   function celebrate(who) {
     var box = $('winbox'), r = C.round, first = UI.cheered !== r;
     if (first) { UI.cheered = r; fanfare(); }
-    box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p>' + (who ? '<b>' + esc(who) + '</b> wins round ' + r : 'Round ' + r + ' is won') + ' after ' + plural(C.pos, 'card', 'cards') + '.</p><div class="row"><button class="btn red" type="button" id="celOk">Shuffle for round ' + (r + 1) + '</button></div></div></div>';
+    var cards = T('cards', { n: C.pos });
+    box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p>' + (who ? T.html('cantor.won_html', { who: who, r: r, cards: cards }) : esc(T('cantor.wonNobody', { r: r, cards: cards }))) + '</p><div class="row"><button class="btn red" type="button" id="celOk">' + T('cantor.shuffleFor', { r: r + 1 }) + '</button></div></div></div>';
     box.hidden = false;
     var lines = (first ? [{ clip: 'loteria', text: '¡Lotería!', gap: 200 }] : []).concat(who && !choice().pack ? [{ text: 'Felicidades, ' + who + '.' }] : []);
     if (voiceOn() && lines.length) say(lines, null);
@@ -988,25 +1002,25 @@ a.chip{text-decoration:none}
   if (window.claude && typeof window.claude.use === 'function') { try { window.claude.use('downloads').then(function (d) { DL = d; }, function () { }); } catch (e) { } }
   function printSheet() {
     var P = C.print; if (!P.name) { P.name = C.juego || L.randomJuego(); save(); }
-    openSheet('<div class="hd"><h2>Print tablas</h2><button class="btn sec sm" type="button" id="prx">Done</button></div><div class="bd stack">' +
-      '<p class="note">Makes a PDF of numbered tablas to print at home. A set of tablas — a <b>juego</b> — is built from its name, so the same name always gives the same tablas. When someone shouts ¡Lotería!, you check their tabla here by its number.</p>' +
-      '<p class="note">Rather pick the cards yourself, doubles and all? <a href="print.html">Make tablas by hand</a> — you check those card by card.</p>' +
-      '<div class="prform"><label class="fld"><span>Juego name</span><span class="row" style="flex-wrap:nowrap"><input id="prName" maxlength="12" autocomplete="off" autocapitalize="characters" spellcheck="false" style="flex:1;text-transform:uppercase;font-weight:800;letter-spacing:.06em"><button class="btn sec sm" type="button" id="prNew">New name</button></span></label>' +
-      '<div class="fld"><span>How many</span><span class="stepper"><button type="button" id="prMinus" aria-label="Fewer">−</button><input id="prCount" inputmode="numeric" maxlength="3" aria-label="Number of tablas"><button type="button" id="prPlus" aria-label="More">+</button></span></div>' +
-      '<div class="fld"><span>Per page</span><div class="seg" id="prPer"><button type="button" data-v="1">One, big</button><button type="button" data-v="2">Two</button></div></div>' +
-      '<div class="fld"><span>Paper</span><div class="seg" id="prPaper"><button type="button" data-v="letter">Letter</button><button type="button" data-v="a4">A4</button></div></div></div>' +
-      '<div class="row sp" style="flex-wrap:wrap"><p class="note" id="prInfo"></p><button class="btn red" type="button" id="prGo">Make the PDF</button></div>' +
+    openSheet('<div class="hd"><h2>' + T('printTablas') + '</h2><button class="btn sec sm" type="button" id="prx">' + T('done') + '</button></div><div class="bd stack">' +
+      '<p class="note">' + T.html('cantor.prIntro_html') + '</p>' +
+      '<p class="note">' + T.html('cantor.prByHand_html') + '</p>' +
+      '<div class="prform"><label class="fld"><span>' + T('cantor.prName') + '</span><span class="row" style="flex-wrap:nowrap"><input id="prName" maxlength="12" autocomplete="off" autocapitalize="characters" spellcheck="false" style="flex:1;text-transform:uppercase;font-weight:800;letter-spacing:.06em"><button class="btn sec sm" type="button" id="prNew">' + T('cantor.prNew') + '</button></span></label>' +
+      '<div class="fld"><span>' + T('cantor.prHowMany') + '</span><span class="stepper"><button type="button" id="prMinus" aria-label="' + T('cantor.prFewer') + '">−</button><input id="prCount" inputmode="numeric" maxlength="3" aria-label="' + T('cantor.prCountAria') + '"><button type="button" id="prPlus" aria-label="' + T('cantor.prMore') + '">+</button></span></div>' +
+      '<div class="fld"><span>' + T('cantor.prPer') + '</span><div class="seg" id="prPer"><button type="button" data-v="1">' + T('cantor.prOneBig') + '</button><button type="button" data-v="2">' + T('cantor.prTwo') + '</button></div></div>' +
+      '<div class="fld"><span>' + T('paper') + '</span><div class="seg" id="prPaper"><button type="button" data-v="letter">' + T('paper.letter') + '</button><button type="button" data-v="a4">A4</button></div></div></div>' +
+      '<div class="row sp" style="flex-wrap:wrap"><p class="note" id="prInfo"></p><button class="btn red" type="button" id="prGo">' + T('cantor.prGo') + '</button></div>' +
       '<div class="prgrid" id="prGrid"></div></div>');
     function info() {
       var pages = Math.ceil(P.count / P.per);
-      $('prInfo').innerHTML = '<b>' + plural(P.count, 'tabla', 'tablas') + '</b> from juego <b>' + esc(P.name || '—') + '</b> · ' + plural(pages, 'page', 'pages') + ', ' + (P.paper === 'a4' ? 'A4' : 'Letter') + (P.per === 2 ? ' sideways' : '');
+      $('prInfo').innerHTML = T.html('cantor.prInfo_html', { tablas: T('tablas', { n: P.count }), name: P.name || '—', pages: T('pages', { n: pages }), paper: P.paper === 'a4' ? 'A4' : T('paper.letterSize') }) + (P.per === 2 ? T('cantor.prSideways') : '');
       document.querySelectorAll('#prPer button').forEach(function (b) { b.classList.toggle('on', +b.dataset.v === P.per); });
       document.querySelectorAll('#prPaper button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === P.paper); });
       $('prGo').disabled = !P.name;
     }
     function preview() {
       var host = $('prGrid'); host.innerHTML = '';
-      if (!P.name) { host.innerHTML = '<p class="note">Give the juego a name — letters and numbers.</p>'; return; }
+      if (!P.name) { host.innerHTML = '<p class="note">' + T('cantor.prNoName') + '</p>'; return; }
       L.juego(P.name, P.count).forEach(function (t, i) {
         var d = document.createElement('div'); d.className = 'prt';
         d.innerHTML = '<div class="lb"><span>' + esc(P.name) + '</span><b>' + (i + 1) + '</b></div><div class="g">' + t.map(function (n) { return '<img src="' + src(n) + '" alt="" loading="lazy" draggable="false">'; }).join('') + '</div>';
@@ -1026,16 +1040,16 @@ a.chip{text-decoration:none}
     $('prGo').addEventListener('click', function () {
       var btn = this, name = P.name, count = P.count;
       if (!name) return;
-      if (window.claude && !DL) { toast('Saving files isn’t available in this view'); return; }
-      btn.disabled = true; btn.textContent = 'Making…';
+      if (window.claude && !DL) { toast(T('cantor.prNoSave')); return; }
+      btn.disabled = true; btn.textContent = T('cantor.prMaking');
       makePdf(name, count, P.per, P.paper).then(function (bytes) {
         C.juego = name; save();
         return savePdf(bytes, 'loteria-' + name.toLowerCase() + '-' + count + '.pdf').then(function (how) {
-          if (how) toast(how + ' — ' + plural(count, 'tabla', 'tablas') + ', ' + (bytes.length / 1048576).toFixed(1) + ' MB. Keep the name ' + name + '.');
+          if (how) toast(T('cantor.prDone', { how: how, tablas: T('tablas', { n: count }), mb: (bytes.length / 1048576).toFixed(1), name: name }));
         });
       }).catch(function (e) {
-        toast(e && e.message ? e.message : 'Couldn’t make the PDF — try again');
-      }).then(function () { if (btn.isConnected) { btn.disabled = false; btn.textContent = 'Make the PDF'; } });
+        toast(e && e.message ? e.message : T('cantor.prFail'));
+      }).then(function () { if (btn.isConnected) { btn.disabled = false; btn.textContent = T('cantor.prGo'); } });
     });
     $('prx').addEventListener('click', closeSheet);
     info(); preview();
@@ -1043,16 +1057,16 @@ a.chip{text-decoration:none}
   function savePdf(bytes, filename) {
     var blob = new Blob([bytes], { type: 'application/pdf' });
     if (DL) {
-      return DL.save({ filename: filename, data: blob }).then(function () { return 'Saved'; }, function (e) {
+      return DL.save({ filename: filename, data: blob }).then(function () { return T('cantor.prSaved'); }, function (e) {
         var code = e && e.code;
         if (code === 'declined') return '';
-        if (code === 'rate_limited') throw new Error('A save is already waiting for an answer');
-        throw new Error('Saving files isn’t available in this view');
+        if (code === 'rate_limited') throw new Error(T('cantor.prWaiting'));
+        throw new Error(T('cantor.prNoSave'));
       });
     }
     var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; document.body.appendChild(a); a.click();
     setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 60000);
-    return Promise.resolve('Downloaded');
+    return Promise.resolve(T('cantor.prDownloaded'));
   }
 
   // A small PDF writer: JPEG card images as-is, the standard fonts, vector rules.
@@ -1096,7 +1110,7 @@ a.chip{text-decoration:none}
     this.W = W; this.H = H;
     this.image = function (key, bytes) {
       if (imgs[key]) return imgs[key];
-      var inf = jpegInfo(bytes); if (!inf) throw new Error('A card image couldn’t be read');
+      var inf = jpegInfo(bytes); if (!inf) throw new Error(T('cantor.prBadImage'));
       var cs = inf.c === 1 ? '/DeviceGray' : inf.c === 4 ? '/DeviceCMYK /Decode [1 0 1 0 1 0 1 0]' : '/DeviceRGB';
       var id = add(['<< /Type /XObject /Subtype /Image /Width ' + inf.w + ' /Height ' + inf.h + ' /ColorSpace ' + cs + ' /BitsPerComponent 8 /Filter /DCTDecode /Length ' + bytes.length + ' >>\nstream\n', bytes, '\nendstream']);
       return (imgs[key] = { id: id, name: 'Im' + id, w: inf.w, h: inf.h });
@@ -1158,7 +1172,7 @@ a.chip{text-decoration:none}
       ops.push('q ' + num(cw) + ' 0 0 ' + num(ch) + ' ' + num(x) + ' ' + Y(y + ch) + ' cm /' + im.name + ' Do Q'); used.push(im);
       ops.push(num(0.6 * s) + ' w ' + num(x) + ' ' + Y(y + ch) + ' ' + num(cw) + ' ' + num(ch) + ' re S');
     });
-    var foot = 'Juego ' + name + ' · Tabla ' + k + ' · El Cantor can check this tabla by its number', fsz = 7 * s;
+    var foot = T('pdf.footer', { name: name, k: k }), fsz = 7 * s; // in the language chosen (it fits, in Spanish too, on every layout)
     text('H', fsz, gx + (gw - textW('H', fsz, foot)) / 2, box.y + box.h - 2 * s, foot, GREY);
   }
   function fontsReady() {
@@ -1179,8 +1193,8 @@ a.chip{text-decoration:none}
     function viaCanvas() {
       return new Promise(function (ok, bad) {
         var im = new Image();
-        im.onload = function () { try { var cv = document.createElement('canvas'); cv.width = im.naturalWidth; cv.height = im.naturalHeight; cv.getContext('2d').drawImage(im, 0, 0); ok(dataBytes(cv.toDataURL('image/jpeg', 0.92))); } catch (e) { bad(new Error('Open El Cantor from a web address to make PDFs')); } };
-        im.onerror = function () { bad(new Error('A card image didn’t load — check the connection')); };
+        im.onload = function () { try { var cv = document.createElement('canvas'); cv.width = im.naturalWidth; cv.height = im.naturalHeight; cv.getContext('2d').drawImage(im, 0, 0); ok(dataBytes(cv.toDataURL('image/jpeg', 0.92))); } catch (e) { bad(new Error(T('cantor.prFileUrl'))); } };
+        im.onerror = function () { bad(new Error(T('cantor.prImgLoad'))); };
         im.src = src(n);
       });
     }
@@ -1225,7 +1239,7 @@ a.chip{text-decoration:none}
     if (C.round + ':' + C.pos + ':' + C.order.join() !== was) {
       pause(); hush(); R.phase = 'idle'; R.opening = false;
       showCard(false, true);
-      if (busy) toast('Paused — another window turned a card');
+      if (busy) toast(T('cantor.otherWindow'));
     }
     renderCaption(); renderAll();
   }
@@ -1235,11 +1249,11 @@ a.chip{text-decoration:none}
   // ---------- wiring ----------
   function playPause() { if (C.pos >= 54) newRoundAsk(); else if (R.playing) pause(); else play(); }
   // Tapping the card pauses and resumes, like the play button; Next card turns one by hand.
-  $('flip').addEventListener('click', function () { var was = R.playing; playPause(); if (was && !R.playing) toast('Paused — tap the card to keep calling'); });
+  $('flip').addEventListener('click', function () { var was = R.playing; playPause(); if (was && !R.playing) toast(T('cantor.tapToKeep')); });
   $('playBtn').addEventListener('click', playPause);
   $('paceChip').addEventListener('click', function () {
     var order = ['slow', 'normal', 'fast'], v = order[(order.indexOf(C.settings.pace) + 1) % 3];
-    setPace(v); toast(PACE_NAME[v] + ' — ' + PACE[v] / 1000 + ' seconds between cards');
+    setPace(v); toast(T('cantor.paceToast', { pace: paceName(v), s: PACE[v] / 1000 }));
   });
   $('nextBtn').addEventListener('click', next);
   $('backBtn').addEventListener('click', back);
@@ -1267,6 +1281,8 @@ a.chip{text-decoration:none}
   showCard(false, true); renderAll(); picado(); layout();
   function fromHash() { if (location.hash === '#print') { history.replaceState(null, '', location.pathname + location.search); printSheet(); } } // cantor.html#print, from Make tablas
   fromHash(); window.addEventListener('hashchange', fromHash);
+  // Back from a change of language in Settings (strings.js reloads the page): Settings again, the switch under the finger.
+  try { if (sessionStorage.getItem('loteria.reopen') === 'settings') { sessionStorage.removeItem('loteria.reopen'); settingsSheet(); } } catch (e) { }
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(layout);
 })();
 </script>

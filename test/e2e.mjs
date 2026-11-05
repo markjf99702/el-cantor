@@ -135,6 +135,9 @@ check('deck: Clásico already wins with every shape but Siete Loco, and a game�
 });
 
 // ---------------------------------------------------------------- the words, without a browser
+// The keys whose Spanish reads the same as the English (the language switch's labels by design); every other key's
+// Spanish is a translation.
+const SAME = ['lang.label', 'lang.en', 'lang.es', 'tablas', 'pace.normal', 'cantor.rate.normal', 'cantor.goodLine'];
 // strings.js as a page loads it on a device in this language, with this choice saved (or none).
 async function loadStrings(language = 'en-US', chosen = null) {
   const box = { navigator: { language, languages: [language] }, document: { documentElement: {} }, localStorage: { getItem: k => k === 'loteria.lang' ? chosen : null } };
@@ -158,18 +161,35 @@ check('strings: every word is there in English and in Spanish, with the same {va
       if (!/_html$/.test(k)) assert.ok(!/[<>&]/.test(x + y), what + ' holds markup, but its key doesn’t end _html');
     }
   }
-  // Each key a page uses is there, and each key there is used: T('key'), T.html('key') and data-t…="key", and
-  // T('prefix.' + id), which covers every key starting prefix.
+  // Each key a page uses is there, and each key there is used. A key is used as data-t…="key", or in the first
+  // argument of T( or T.html(, which may pick one of a few: T(on ? 'on' : 'off'). 'prefix.' + id there uses every key
+  // starting prefix., and each shape, voice and pace then needs its own.
   const used = new Set(), prefixes = new Set();
   for (const f of ['index.html', 'cantor.html', 'deck.js', 'strings.js']) {
     const src = await readFile(join(root, f), 'utf8');
-    for (const m of src.matchAll(/\bT(?:\.html)?\(\s*'([\w.]+)'(\s*\+)?/g)) (m[2] ? prefixes : used).add(m[1]);
+    for (const m of src.matchAll(/\bT(?:\.html)?\(/g)) {
+      let arg = '', depth = 0;
+      for (let i = m.index + m[0].length; i < src.length; i++) {
+        const c = src[i];
+        if (c === "'") { const j = src.indexOf("'", i + 1); arg += src.slice(i, j + 1); i = j; continue; }
+        if ('([{'.includes(c)) depth++;
+        else if (')]}'.includes(c) && !depth--) break;
+        else if (c === ',' && !depth) break;
+        arg += c;
+      }
+      for (const q of arg.matchAll(/'([\w.]+)'(\s*\+)?/g)) (q[2] ? prefixes : used).add(q[1]);
+    }
     for (const m of src.matchAll(/\bdata-t(?:-html|-aria|-title|-ph)?="([\w.]+)"/g)) used.add(m[1]);
   }
   for (const k of used) assert.ok(k in en, k + ' is used but isn’t in strings.js');
   for (const k in en) assert.ok(used.has(k) || [...prefixes].some(p => k.startsWith(p)), k + ' is in strings.js, but nothing uses it');
-  // The language switch's labels read the same in either language.
-  for (const k of ['lang.label', 'lang.en', 'lang.es']) assert.equal(es[k], en[k], k);
+  const L = await loadDeck(), voices = JSON.parse(await readFile(join(root, 'audio/voices.json'), 'utf8')).voices;
+  assert.deepEqual([...prefixes].sort(), ['pace.', 'pat.', 'voice.']);
+  for (const id of L.PATS.map(p => p.id)) assert.ok('pat.' + id in en, 'no words for the shape ' + id);
+  for (const v of voices) assert.ok('voice.' + v.id in en, 'no words for the voice ' + v.id);
+  for (const v of ['slow', 'normal', 'fast']) assert.ok('pace.' + v in en, 'no word for the pace ' + v);
+  // The Spanish is a translation: only these read the same in both (the language switch's labels by design).
+  assert.deepEqual(Object.keys(en).filter(k => JSON.stringify(es[k]) === JSON.stringify(en[k])), SAME, 'Spanish left the same as the English');
 });
 
 check('strings: Spanish for a device in Spanish until a language is chosen, and counts, lists and ordinals in each', async () => {
@@ -196,10 +216,22 @@ check('strings: Spanish for a device in Spanish until a language is chosen, and 
 
 // A page's words a person can see or hear, swept for English: visible text, the options in a list, and every
 // aria-label, title and placeholder. The language switch's English, the Drive card (sync.js's, not in Spanish yet)
-// and junkdrawer.works are left out.
-const ENGLISH = /\b(the|and|or|to|of|is|it|on|off|in|with|your|this|that|tap|cards?|round|settings|done|print|copy|link|called|calling|reading|keep|clear|remove|share|undo|sync|saved|player|winners?|next|start|shuffle|voice|check|who|won|first|more|game|pause|paused|ready|try|before|only|name|number|page|paper|letter|sideways|make|left|again|anyway|new|home|tools|everything|privacy|part|play|along|open|drag|drop)\b/i;
-const english = page => page.evaluate(src => {
-  const EN = new RegExp(src, 'i'), bad = [], skip = el => el.closest('[lang="en"], #syncCard, script, style, noscript, .sr');
+// and junkdrawer.works are left out. An English word is one strings.js's English uses and its Spanish never does
+// (nor the cards' names and verses), or one of a few more that a page might say.
+let ENGLISH;
+async function englishWords() {
+  if (ENGLISH) return ENGLISH;
+  const { T } = await loadStrings(), L = await loadDeck();
+  const words = list => new Set(list.join(' ').replace(/<[^>]*>|\{\w+\}/g, ' ').toLowerCase().match(/\p{L}+/gu) || []);
+  const flat = o => Object.values(o).flatMap(v => typeof v === 'object' ? [v.one, v.other] : [v]);
+  const translated = Object.keys(T.S.es).filter(k => SAME.includes(k) || JSON.stringify(T.S.es[k]) !== JSON.stringify(T.S.en[k])).map(k => T.S.es[k]);
+  const not = words(flat(translated).concat(L.CARDS.map(c => c.name + ' ' + c.verse), L.PATS.map(p => p.name)));
+  const more = 'the and or to of is it on off in with your this that tap card cards round settings done print copy link called keep clear remove share undo sync saved player winner winners next previous start shuffle game home tools privacy play along open'.split(' ');
+  const en = [...words(flat(T.S.en))].filter(w => w.length > 1 && !not.has(w)).concat(more);
+  return (ENGLISH = '(?<!\\p{L})(' + [...new Set(en)].join('|') + ')(?!\\p{L})');
+}
+const english = async page => page.evaluate(src => {
+  const EN = new RegExp(src, 'iu'), bad = [], skip = el => el.closest('[lang="en"], #syncCard, script, style, noscript');
   const seen = el => el.checkVisibility() || el.closest('select');
   const say = (t, where) => { t = String(t || '').replace(/junkdrawer\.works/g, ''); if (EN.test(t)) bad.push(where + t.trim()); };
   const walk = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
@@ -210,7 +242,7 @@ const english = page => page.evaluate(src => {
   }
   say(document.title, 'title: ');
   return bad;
-}, ENGLISH.source);
+}, await englishWords());
 
 check('espanol: a phone in Spanish opens the home screen in Spanish, and English / Español changes it and stays', async () => {
   for (const kind of [PHONE, { viewport: { width: 360, height: 740 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true }, DESKTOP]) {
@@ -245,6 +277,111 @@ check('espanol: a phone in Spanish opens the home screen in Spanish, and English
     await Promise.all([page.waitForEvent('load'), page.click('#langSw [lang="en"]')]);
     assert.equal(await page.getAttribute('html', 'lang'), 'en');
     assert.equal(await page.evaluate(() => sessionStorage.getItem('loteria.reopen')), null, 'the home screen asks a page to open its Settings');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
+check('espanol: El Cantor in Spanish, every sheet and the ¡Lotería! box, and the PDF it prints', async () => {
+  const CANTOR = { order: run(1, 54), pos: 5, round: 2, patterns: ['linea', 'esquinas', 'cuadro'], juego: 'CANELA', wins: [{ round: 1, who: 'Abuela', how: 'Clásico', tabla: 'CANELA 7', at: 17, t: 1 }], print: { name: 'CAPIROTADA', count: 2, per: 1, paper: 'letter' }, settings: { speak: true, sound: false, awake: false, check: false, pace: 'slow' } };
+  for (const kind of [PHONE, DESKTOP]) {
+    const ctx = await context(kind, { locale: 'es-MX' });
+    try {
+      const page = await ctx.newPage(), problems = watch(page), phone = kind === PHONE, where = phone ? 'phone: ' : 'computer: ';
+      await seed(page, { 'loteria.cantor': CANTOR });
+      await page.goto(base + 'cantor.html');
+      await page.evaluate(() => document.fonts.ready);
+      assert.equal(await page.getAttribute('html', 'lang'), 'es-MX');
+      assert.deepEqual([await page.textContent('#cap .no'), await page.textContent('#sabCount'), await page.textContent('#sub')], ['No. 5 · 5.ª en salir', '5 cantadas · faltan 49', 'Ronda 2 · 5 de 54']);
+      assert.deepEqual(await english(page), [], where + 'English on El Cantor');
+      const sheet = async (open, what) => {
+        await page.click(open);
+        await until(page, () => !document.getElementById('sheet').hidden);
+        assert.deepEqual(await english(page), [], where + 'English in ' + what);
+        await noSideways(page, what + ' in Spanish');
+      };
+      // Settings: the language comes first, with Español on; the voices are in Spanish, under their headings.
+      await sheet('#setBtn', 'Settings');
+      assert.equal(await sheetTitle(page), 'Ajustes');
+      assert.equal(await page.textContent('#sheet .bd > .card:first-child .eyebrow'), 'Idioma · Language');
+      assert.equal(await page.getAttribute('#langSw [lang="es"]', 'aria-pressed'), 'true');
+      await until(page, () => document.querySelectorAll('#vSel option').length >= 3);
+      assert.deepEqual(await page.$$eval('#vSel optgroup', gs => gs.map(g => [g.label, [...g.children].map(o => o.textContent)])).then(gs => gs.slice(0, 1)), [['Voces grabadas', ['Dora · voz de mujer', 'Alex · voz de hombre', 'Santa · voz de hombre más grave']]]);
+      assert.deepEqual(await english(page), [], where + 'English in Settings');
+      await page.click('#stx');
+      // The game picker, and what holding a shape says.
+      await sheet('#patBtn', 'the game picker');
+      assert.equal(await sheetTitle(page), '¿A qué jugamos?');
+      await page.locator('#pats .pat', { hasText: 'La Ele' }).press('Shift+Enter');
+      assert.equal(await page.textContent('#toast'), 'Clásico ya gana con La Ele');
+      await page.click('#ptx');
+      if (phone) { await sheet('#sabBtn', 'the sábana'); await page.click('#ssx'); }
+      await sheet('#newBtn', 'a new round');
+      assert.equal(await sheetTitle(page), '¿Empezar la ronda 3?');
+      await page.click('#nrNo');
+      // Print tablas, and the PDF: its footer is in Spanish (the writer leaves the page's words uncompressed).
+      await sheet('#printBtn', 'Print tablas');
+      assert.equal(await page.textContent('#prInfo'), '2 tablas del juego CAPIROTADA · 2 hojas, tamaño carta');
+      if (!phone) {
+        const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#prGo')]);
+        const pdf = await readFile(await dl.path(), 'latin1');
+        assert.ok(pdf.includes('Juego CAPIROTADA · Tabla 2 · El Cantor puede revisar esta tabla por su número'.replace('·', '·')), 'the PDF’s footer isn’t in Spanish');
+        assert.ok(!/check this tabla/.test(pdf), 'the PDF still has the English footer');
+        await until(page, () => document.getElementById('toast').textContent.indexOf('Descargado') === 0);
+        assert.deepEqual(await english(page), [], where + 'English after the PDF');
+      }
+      await page.click('#prx');
+      // ¡Lotería!: the box, then the checker in both modes, Not yet and ¡Buena!. (On the computer the checker opens on
+      // the juego just printed.)
+      await page.click('#lotBtn');
+      await page.waitForSelector('#winbox .winc #clCheck');
+      assert.deepEqual(await english(page), [], where + 'English in the ¡Lotería! box');
+      await page.click('#clCheck');
+      await until(page, () => !document.getElementById('sheet').hidden);
+      assert.equal(await sheetTitle(page), '¡Lotería! — a revisar');
+      await page.fill('#vfN', '7');
+      assert.equal(await page.textContent('#vfV h3'), 'Todavía no');
+      assert.match(await page.textContent('#vfV p'), /^(CANELA|CAPIROTADA) No\. 7 va más cerca de \S.* y le faltan? .+\. Las casillas con borde rojo todavía no salen\.$/);
+      assert.equal(await page.textContent('#vfWin'), 'Darla por buena');
+      assert.deepEqual(await english(page), [], where + 'English on Not yet');
+      await page.click('#vfSeg [data-v="cards"]');
+      assert.deepEqual(await english(page), [], where + 'English in Card by card');
+      const pick = name => page.locator('#vfPick .pk', { has: page.locator('.n', { hasText: new RegExp('^' + name + '$') }) }).click();
+      await pick('El Gallo'); await pick('La Luna');
+      assert.deepEqual([await page.textContent('#vfV h3'), await page.textContent('#vfV p')], ['Todavía no', 'La Luna todavía no sale.']);
+      await page.locator('#vfChips .chip', { hasText: 'La Luna' }).click();
+      assert.deepEqual([await page.textContent('#vfV h3'), await page.textContent('#vfV p')], ['Ya salió', 'Si forman la figura — Clásico — es buena. Ya estaba completa desde hace 4 cartas: El Gallo, la 1.ª en salir.']);
+      assert.equal(await page.textContent('#vfWin'), '¡Buena! Ronda nueva');
+      assert.deepEqual(await english(page), [], where + 'English on ¡Buena!');
+      await page.fill('#vfWho', 'Tía Lupe');
+      await page.click('#vfWin');
+      await page.waitForSelector('#winbox .winc #celOk');
+      assert.equal(await page.textContent('#winbox .winc p'), 'Tía Lupe gana la ronda 2 con 5 cartas.');
+      assert.deepEqual(await english(page), [], where + 'English in the celebration');
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
+  // A phone in English opens El Cantor in English. Español chosen on the home screen carries over and stays; English
+  // chosen in El Cantor's Settings brings Settings back up in English.
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await page.goto(base + 'cantor.html');
+    assert.equal(await page.getAttribute('html', 'lang'), 'en');
+    assert.match(await page.textContent('#cap h2'), /Ready when you are/);
+    await page.goto(base);
+    await Promise.all([page.waitForEvent('load'), page.click('#langSw [lang="es"]')]);
+    await page.goto(base + 'cantor.html');
+    assert.equal(await page.getAttribute('html', 'lang'), 'es-MX');
+    assert.equal(await page.textContent('#cap h2'), 'Cuando quieras');
+    await page.reload();
+    assert.equal(await page.textContent('#cap h2'), 'Cuando quieras', 'Español didn’t stay chosen');
+    await page.click('#setBtn');
+    await Promise.all([page.waitForEvent('load'), page.click('#langSw [lang="en"]')]);
+    await until(page, () => !document.getElementById('sheet').hidden);
+    assert.equal(await sheetTitle(page), 'Settings', 'Settings didn’t come back after the language changed');
+    assert.equal(await page.getAttribute('html', 'lang'), 'en');
+    await page.reload();
+    assert.ok(await page.evaluate(() => document.getElementById('sheet').hidden), 'Settings opens on every reload');
     assert.deepEqual(problems, []);
   } finally { await ctx.close(); }
 });

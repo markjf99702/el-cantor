@@ -100,25 +100,28 @@
   function pat(id) { return PATS.filter(function (p) { return p.id === id; })[0]; }
   function hasClasico(ids) { return CLASICO.every(function (x) { return ids.indexOf(x) >= 0; }); }
   function isClasico(ids) { return ids.length === 3 && hasClasico(ids); }
+  // The words below come from strings.js on a page that loads it, in the language chosen there; elsewhere (and in
+  // node, for the tests) they're English. The juego generator further down has no words, and doesn't change.
+  var T = window.T || null;
   // Clásico already wins with every shape but Siete Loco (each way to make one holds a Clásico four), so the only
   // game on top of it is Clásico + Siete Loco.
   function gameName(ids) {
     if (isClasico(ids)) return 'Clásico';
     var both = hasClasico(ids), names = ids.filter(function (id) { return !both || CLASICO.indexOf(id) < 0; }).map(function (id) { var q = pat(id); return q ? q.name : id; });
-    return (both ? 'Clásico + ' : '') + (names.length ? (names.length > 2 || (both && names.length > 1) ? names[0] + ' +' + (names.length - 1) : names.join(' · ')) : 'Pick a game');
+    return (both ? 'Clásico + ' : '') + (names.length ? (names.length > 2 || (both && names.length > 1) ? names[0] + ' +' + (names.length - 1) : names.join(' · ')) : T ? T('pat.none') : 'Pick a game');
   }
   // A shape held in a game picker goes on top of the game `ids` (changed in place); says what it did, for a toast.
   // Holding Clásico keeps Siete Loco, and on Clásico any other shape changes nothing: Clásico already wins with it.
   function holdShape(ids, id) {
     var both = hasClasico(ids), p = pat(id);
     if (id === 'clasico') {
-      if (both) return 'Clásico is already in the game';
+      if (both) return T ? T('shapeIn', { shape: 'Clásico' }) : 'Clásico is already in the game';
       var keep = ids.indexOf('siete') >= 0 ? ['siete'] : [];
-      ids.splice.apply(ids, [0, ids.length].concat(CLASICO, keep)); return 'Clásico added';
+      ids.splice.apply(ids, [0, ids.length].concat(CLASICO, keep)); return T ? T('shapeAdded', { shape: 'Clásico' }) : 'Clásico added';
     }
-    if (both && id !== 'siete') return 'Clásico already wins with ' + p.name;
-    if (ids.indexOf(id) >= 0) return p.name + ' is already in the game';
-    ids.push(id); return p.name + ' added';
+    if (both && id !== 'siete') return T ? T('shapeClasico', { shape: p.name }) : 'Clásico already wins with ' + p.name;
+    if (ids.indexOf(id) >= 0) return T ? T('shapeIn', { shape: p.name }) : p.name + ' is already in the game';
+    ids.push(id); return T ? T('shapeAdded', { shape: p.name }) : p.name + ' added';
   }
 
   // Which patterns a tabla has completed. `called(n)` says whether card n is out.
