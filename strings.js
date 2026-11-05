@@ -338,6 +338,7 @@
       'board.guest': 'Guest', // the name of someone a link doesn't name, saved as it is
       'board.importH': 'Tablas from {name}',
       'board.importNote': { one: 'This link carries 1 tabla for “{name}”.', other: 'This link carries {n} tablas for “{name}”.' },
+      'board.importMany': 'This link carries {n} tablas for “{name}”; My tablas keeps six per person, so the first six come in.',
       'board.importYours': { one: 'Change the name if this tabla is for you.', other: 'Change the name if these tablas are for you.' },
       'board.importHave': { one: '{name} is already on this device with 1 tabla.', other: '{name} is already on this device with {n} tablas.' },
       'board.addTo': 'Add to {name}’s tablas',
@@ -783,6 +784,7 @@
       'board.guest': 'Invitado',
       'board.importH': 'Tablas de {name}',
       'board.importNote': { one: 'Esta liga trae 1 tabla para “{name}”.', other: 'Esta liga trae {n} tablas para “{name}”.' },
+      'board.importMany': 'Esta liga trae {n} tablas para “{name}”; Mis tablas guarda hasta seis por persona, así que entran las primeras seis.',
       'board.importYours': { one: 'Cambia el nombre si esta tabla es para ti.', other: 'Cambia el nombre si estas tablas son para ti.' },
       'board.importHave': { one: '{name} ya está en este dispositivo con 1 tabla.', other: '{name} ya está en este dispositivo con {n} tablas.' },
       'board.addTo': 'Agregar a las tablas de {name}',

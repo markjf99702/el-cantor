@@ -639,7 +639,8 @@ a{color:var(--teal);font-weight:700}
     try {
       var boards = parts.slice(1).map(function (s) { var i = s.indexOf(':'); var cards = s.slice(i + 1).split('.').map(function (x) { return parseInt(x, 36); }); if (cards.length !== 16 || cards.some(function (n) { return !(n >= 1 && n <= 54); })) return null; return { id: uid(), name: decodeURIComponent(s.slice(0, i)) || 'Tabla', cards: cards }; });
       if (boards.some(function (b) { return !b; })) return null;
-      return { name: decodeURIComponent(parts[0]) || T('board.guest'), boards: boards };
+      // My tablas keeps six per person, so a link with more (an old one, or one made by hand) brings the first six.
+      return { name: decodeURIComponent(parts[0]) || T('board.guest'), boards: boards.slice(0, 6), total: boards.length };
     } catch (e) { return null; } // a name cut off in the middle of a letter
   }
   function shareUrl(p) { return location.href.split('#')[0] + encodeShare(p); }
@@ -694,7 +695,7 @@ a{color:var(--teal);font-weight:700}
     // any they already have, card for card, and stopping at six. Replace takes the place of theirs, on a second tap.
     function draw() {
       var existing = have(), n = existing && existing.boards.length, armed = false;
-      $('imNote').textContent = T('board.importNote', { n: imp.boards.length, name: imp.name }) + (existing ? ' ' + T('board.importHave', { name: existing.name, n: n }) : '');
+      $('imNote').textContent = T(imp.total > 6 ? 'board.importMany' : 'board.importNote', { n: imp.total, name: imp.name }) + (existing ? ' ' + T('board.importHave', { name: existing.name, n: n }) : '');
       $('imBtns').innerHTML = '<button class="btn red" type="button" id="imOk">' + (existing ? esc(T('board.addTo', { name: existing.name })) : T('board.addUse')) + '</button>' +
         (n ? '<button class="btn sec" type="button" id="imAlt">' + esc(T('board.replaceThem', { name: existing.name, n: n })) + '</button>' : '') + '<button class="btn sec" type="button" id="imNo">' + T('board.noThanks') + '</button>';
       function boards() { return imp.boards.map(function (b) { return { id: uid(), name: b.name, cards: b.cards.slice() }; }); }

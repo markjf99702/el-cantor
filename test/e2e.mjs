@@ -1273,6 +1273,20 @@ check('board: a link for someone already on the phone adds to their tablas, up t
   } finally { await es.close(); }
 });
 
+check('board: a link with more than six tablas brings the first six, and says so', async () => {
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    const EIGHT = Array.from({ length: 8 }, (_, k) => Array.from({ length: 16 }, (_, i) => (k * 5 + i) % 54 + 1));
+    await page.goto(base + 'board.html#t=Beto~' + EIGHT.map((c, k) => 'T' + (k + 1) + ':' + c.map(n => n.toString(36)).join('.')).join('~'));
+    assert.equal(await page.textContent('#imNote'), 'This link carries 8 tablas for “Beto”; My tablas keeps six per person, so the first six come in.');
+    assert.deepEqual(await page.$$eval('#sheet .ims .k', ks => ks.map(k => k.textContent)), ['T1', 'T2', 'T3', 'T4', 'T5', 'T6']);
+    await page.click('#imOk');
+    assert.deepEqual((await saved(page, 'loteria.v1')).players.map(p => [p.name, p.boards.map(b => b.name + ':' + b.cards.join('.'))]), [['Beto', EIGHT.slice(0, 6).map((c, k) => 'T' + (k + 1) + ':' + c.join('.'))]]);
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('espanol: on a first visit, English | Español on the shared-link sheet keeps the link, and on Who’s playing the name typed', async () => {
   // A phone in English, opening a link with two tablas for Mamá: Español there brings the same offer back in Spanish.
   let ctx = await context(PHONE);
