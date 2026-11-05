@@ -9,6 +9,7 @@ import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
 import { fakeGoogle } from './fake-google.mjs';
@@ -79,6 +80,39 @@ const DRIVE_ON = () => ({
 
 const checks = [];
 function check(name, fn) { checks.push({ name, fn }); }
+
+// ---------------------------------------------------------------- the deck, without a browser
+async function loadDeck() {
+  const box = { window: {}, document: { currentScript: null } };
+  vm.runInNewContext(await readFile(join(root, 'deck.js'), 'utf8'), box);
+  return box.window.Loteria;
+}
+const plain = x => JSON.parse(JSON.stringify(x)); // arrays made in the vm, as this file's own
+
+check('deck: the juego generator never changes', async () => {
+  // Printed tablas outlive the code (deck.js), so these are written out as they were at aae7748. CANELA 1–12 take the
+  // generator's plain path. CAJETA 13 is the first here that needed another layout, so that no Clásico four on it is the
+  // same four cards as on an earlier tabla. On J19X355 861 none of the 24 layouts tried was clear, and the first was
+  // kept. The fingerprint is the sha256 of JSON.stringify(juego('CANELA', 100)).
+  const L = await loadDeck();
+  assert.deepEqual(plain(L.juego('CANELA', 12)), [
+    [18, 24, 9, 36, 51, 50, 22, 34, 54, 38, 41, 25, 47, 2, 8, 42], // 1
+    [52, 1, 6, 12, 30, 29, 35, 33, 48, 31, 16, 11, 32, 27, 3, 43], // 2
+    [39, 46, 13, 53, 49, 4, 40, 7, 45, 44, 17, 21, 23, 19, 5, 28], // 3
+    [18, 42, 14, 9, 26, 10, 45, 15, 50, 30, 37, 34, 17, 20, 1, 38], // 4
+    [24, 15, 31, 44, 27, 3, 49, 16, 28, 48, 46, 7, 6, 2, 19, 37], // 5
+    [5, 39, 43, 36, 47, 11, 54, 35, 26, 52, 53, 10, 20, 32, 22, 12], // 6
+    [21, 51, 23, 6, 16, 33, 8, 4, 14, 20, 9, 40, 29, 41, 13, 25], // 7
+    [34, 13, 33, 22, 35, 43, 2, 5, 26, 48, 28, 40, 3, 14, 51, 30], // 8
+    [54, 21, 44, 12, 45, 50, 39, 25, 1, 38, 49, 42, 52, 27, 18, 4], // 9
+    [15, 8, 37, 24, 29, 32, 41, 19, 47, 17, 23, 10, 7, 36, 53, 31], // 10
+    [48, 22, 46, 29, 50, 14, 4, 27, 12, 34, 19, 11, 1, 26, 20, 28], // 11
+    [54, 39, 5, 42, 9, 41, 7, 40, 43, 52, 36, 24, 11, 49, 10, 51] // 12
+  ], 'CANELA 1–12');
+  assert.deepEqual(plain(L.juegoTabla('CAJETA', 13)), [41, 8, 38, 50, 30, 48, 25, 37, 1, 43, 17, 6, 54, 36, 39, 26], 'CAJETA 13, another layout');
+  assert.deepEqual(plain(L.juegoTabla('J19X355', 861)), [22, 30, 15, 44, 29, 4, 14, 6, 36, 16, 52, 5, 35, 38, 39, 32], 'J19X355 861, the first of 24 layouts');
+  assert.equal(createHash('sha256').update(JSON.stringify(L.juego('CANELA', 100))).digest('hex'), '21071b06ce6c859639716856ffe35117501be108b4d13880e561ae3b3e4d62b3', 'CANELA 1–100');
+});
 
 // ---------------------------------------------------------------- the home screen
 check('home: the three tools, at phone and desktop width', async () => {
