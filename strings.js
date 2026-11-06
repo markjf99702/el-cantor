@@ -207,7 +207,9 @@
       'cantor.alongH': 'Playing along',
       'cantor.along_html': 'Anyone can mark their tablas on their own phone with <a href="board.html">My tablas</a> — tap <b>Cantaron…</b> there as you call. Printed tablas work too: <b>Print tablas</b> makes a numbered set, or <a href="print.html">make your own</a> card by card.',
       'cantor.keyboardH': 'Keyboard',
-      'cantor.keyboard': 'Space starts or pauses · → next card · ← puts the last card back · L checks a ¡Lotería!',
+      'cantor.keyboard': 'Space starts or pauses · → next card · ← puts the last card back · R says the card again (or tap its name) · L checks a ¡Lotería!',
+      'cantor.againTitle': 'Say it again',
+      'cantor.againAria': '{card} — say it again',
 
       // El Cantor: ¡Lotería!
       'cantor.cardsCalled': { one: '1 card called', other: '{n} cards called' },
@@ -724,7 +726,9 @@
       'cantor.alongH': 'Jugar en el teléfono',
       'cantor.along_html': 'Cada quien puede marcar sus tablas en su propio teléfono con <a href="board.html">Mis tablas</a> — ahí tocan <b>Cantaron…</b> mientras cantas. También sirven tablas impresas: <b>Imprimir tablas</b> hace un juego numerado, o <a href="print.html">haz las tuyas</a> carta por carta.',
       'cantor.keyboardH': 'Teclado',
-      'cantor.keyboard': 'Espacio empieza o pausa · → siguiente carta · ← regresa la última carta · L revisa una ¡Lotería!',
+      'cantor.keyboard': 'Espacio empieza o pausa · → siguiente carta · ← regresa la última carta · R la vuelve a cantar (o toca su nombre) · L revisa una ¡Lotería!',
+      'cantor.againTitle': 'Cántala otra vez',
+      'cantor.againAria': '{card} — cántala otra vez',
 
       // El Cantor: ¡Lotería!
       'cantor.cardsCalled': { one: '1 carta cantada', other: '{n} cartas cantadas' },

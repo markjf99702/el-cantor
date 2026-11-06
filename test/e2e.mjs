@@ -938,6 +938,55 @@ check('cantor: the screen off mid-round pauses calling and says so when it’s b
   } finally { await ctx.close(); }
 });
 
+check('cantor: a tap on the card’s name, or R, says it again and then waits its usual time; Adivinanza says the verse and the name', async () => {
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await page.addInitScript(FAKE_TTS);
+    await page.addInitScript(DEALS);
+    const said = () => page.evaluate(() => window.__said.map(s => s.text));
+    const settings = style => ({ speak: true, style, voice: 'dev:none', rate: 1, pace: 'normal', sound: false, awake: false, check: false });
+    await seed(page, { 'loteria.cantor': { order: run(1, 54), pos: 0, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], wins: [], settings: settings('name') } });
+    await page.goto(base + 'cantor.html');
+    await page.click('#nextBtn');
+    await until(page, () => window.__said.length === 1);
+    await page.click('#cap h2 button');
+    await until(page, () => window.__said.length === 2);
+    await page.waitForTimeout(800);
+    assert.deepEqual(await said(), ['El Gallo', 'El Gallo'], 'paused, the name tapped is said once more and nothing else');
+    assert.equal(await page.getAttribute('#playBtn', 'aria-label'), 'Keep calling', 'it started calling');
+    // Calling at the normal pace (4 seconds): the name tapped halfway through the wait, and the next card waits 4
+    // seconds from then. R does the same.
+    await page.click('#playBtn');
+    await until(page, () => window.__said.length === 3, null, 10000);
+    await page.waitForTimeout(1500);
+    await page.click('#cap h2 button');
+    await until(page, () => window.__said.length === 4);
+    await until(page, () => window.__dealt.length === 3, null, 10000);
+    let r = await page.evaluate(() => ({ said: window.__said, dealt: window.__dealt }));
+    assert.deepEqual(r.said.slice(0, 4).map(s => s.text), ['El Gallo', 'El Gallo', 'El Diablito', 'El Diablito']);
+    assert.ok(r.dealt[2].at - r.said[3].at > 3900, 'the next card came ' + Math.round(r.dealt[2].at - r.said[3].at) + ' ms after the card said again, not 4 s');
+    await until(page, () => window.__said.length === 5);
+    await page.waitForTimeout(1000);
+    await page.keyboard.press('r');
+    await until(page, () => window.__said.length === 6);
+    assert.deepEqual((await said()).slice(4), ['La Dama', 'La Dama']);
+    await page.click('#playBtn'); // pause
+    // Adivinanza: the verse face down, then the name; said again face up, the verse and the name.
+    await seed(page, { 'loteria.cantor': { order: run(1, 54), pos: 0, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], wins: [], settings: settings('riddle') } });
+    await page.goto(base + 'cantor.html');
+    await page.click('#nextBtn');
+    await until(page, () => window.__said.length === 2);
+    await page.click('#cap h2 button');
+    await until(page, () => window.__said.length === 4);
+    assert.deepEqual(await said(), ['El que le cantó a San Pedro no le volverá a cantar.', 'El Gallo', 'El que le cantó a San Pedro no le volverá a cantar.', 'El Gallo']);
+    // The keyboard line in Settings says so, in both languages.
+    await page.click('#setBtn');
+    assert.match(await page.textContent('#sheet'), /R says the card again \(or tap its name\)/);
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('cantor: the card called is the card itself, edge to edge on its own cream paper, with no white mat round it', async () => {
   // The cards are drawn on cream (#FBF4E4) with their own rounded frame; a white mat round them made a second frame,
   // and the brightest thing on a dark screen.
