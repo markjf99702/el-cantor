@@ -3607,6 +3607,14 @@ check('taps: on a phone the small buttons take a tap 44 px tall, and a tabla’s
     await tall(page, '.top .chip:not([hidden]), .bar .cbtn, .bar .nextb, .bar .pacec', 'El Cantor');
     await page.click('#setBtn');
     await tall(page, '.sheet .hd .btn, .sheet .seg button, .sheet .row.sp .chip', 'El Cantor’s Settings');
+    // The past winners in the checker's bottom row, which scrolls sideways: their taps fit in it, so it doesn't scroll
+    // up and down too.
+    const wins = ['Abuela', 'Beto'].map((who, i) => ({ round: i + 1, who, how: 'Clásico', tabla: '', at: 5, t: Date.now() - 60000 + i }));
+    await seed(page, { 'loteria.cantor': { order: run(1, 54), pos: 6, round: 3, patterns: ['linea', 'esquinas', 'cuadro'], juego: '', wins, settings: { speak: false, sound: false, check: true } } });
+    await page.goto(base + 'cantor.html');
+    await page.click('#lotBtn');
+    await tall(page, '.vfwin .chips .chip', 'the checker’s past winners');
+    assert.ok(await page.$eval('.vfwin .chips', c => c.scrollHeight <= c.clientHeight), 'the checker’s row of past winners scrolls up and down');
     const SIX = people([1, 2, 3, 4, 5, 6].map(i => ({ id: 'm' + i, name: 'Mine ' + i, cards: run(i) })));
     await seed(page, { 'loteria.v1': SIX, 'loteria.game': { called: [1, 2], announced: {} } });
     await page.goto(base + 'board.html');
