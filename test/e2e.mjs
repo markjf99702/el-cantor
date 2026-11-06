@@ -66,6 +66,12 @@ const sheetTitle = page => page.evaluate(() => { const h = document.querySelecto
 async function noSideways(page, what) {
   assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), what + ' scrolls sideways');
 }
+// A phone's keyboard px tall coming up: the visible part of the screen (visualViewport) loses that much at the bottom,
+// and the page itself stays as tall, as on an iPhone and in Chrome on Android.
+async function keyboardUp(page, px) {
+  await page.evaluate(px => { const vv = visualViewport, h = innerHeight - px; Object.defineProperty(vv, 'height', { configurable: true, get: () => h }); vv.dispatchEvent(new Event('resize')); }, px);
+}
+const rect = (page, sel) => page.$eval(sel, el => { const r = el.getBoundingClientRect(); return { top: Math.round(r.top), bottom: Math.round(r.bottom), left: Math.round(r.left), right: Math.round(r.right), width: Math.round(r.width), height: Math.round(r.height) }; });
 // Waits for fn to be true in the page; on a timeout, says what it was waiting for.
 const until = (page, fn, arg, ms = 20000) => page.waitForFunction(fn, arg, { timeout: ms }).catch(e => { throw new Error('waited ' + ms / 1000 + 's for ' + String(fn).replace(/\s+/g, ' ').slice(0, 160) + (e.message.indexOf('Timeout') >= 0 ? '' : '\n' + e.message)); });
 
@@ -3283,6 +3289,49 @@ check('keyboard: Enter (a phone’s Go) does the main thing in the name and numb
     await page.fill('#apName', 'Abuela');
     await page.press('#apName', 'Enter');
     await page.waitForURL(/board\.html#t=Abuela~/);
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
+check('keyboard: a phone’s keyboard leaves the box and what it finds in view, in Cantaron…, the checker and Make tablas', async () => {
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page), KB = 336, seen = 844 - KB; // an iPhone 14's keyboard
+    // Cantaron…: the box stays where it was as the cards narrow down, and the matches sit above the keyboard.
+    await seed(page, { 'loteria.v1': ANA });
+    await page.goto(base + 'board.html');
+    await page.click('#callBtn');
+    const top = (await rect(page, '#pkq')).top;
+    await page.focus('#pkq'); await keyboardUp(page, KB);
+    await page.fill('#pkq', 'lu');
+    assert.equal((await rect(page, '#pkq')).top, top, 'Cantaron…’s box jumped down the screen as the cards narrowed down');
+    assert.ok((await rect(page, '#sheet .sheet')).bottom <= seen, 'Cantaron… sits under the keyboard');
+    assert.ok((await rect(page, '#pk .pk')).bottom <= seen, 'Cantaron…’s first match is under the keyboard');
+    // The checker: the verdict right under the number typed, and the winner row above the keyboard.
+    await seed(page, { 'loteria.cantor': { order: run(1, 54), pos: 6, round: 3, patterns: ['linea', 'esquinas', 'cuadro'], juego: 'CANELA', wins: [], settings: { speak: false, sound: false, check: true } } });
+    await page.goto(base + 'cantor.html');
+    await page.click('#lotBtn');
+    await page.focus('#vfN'); await keyboardUp(page, KB);
+    await page.fill('#vfN', '7');
+    const n = await rect(page, '#vfN'), v = await rect(page, '#vfV'), row = await rect(page, '.vfwin');
+    assert.ok(n.top >= 0 && v.top > n.bottom && v.bottom <= row.top + 12, `the verdict isn’t in view under the number: number ${n.top}–${n.bottom}, verdict ${v.top}–${v.bottom}, winner row from ${row.top}`);
+    assert.ok(row.bottom <= seen, 'the winner row is under the keyboard');
+    // Card by card: the box stays put, with the first match above the keyboard.
+    await page.click('#vfSeg button[data-v="cards"]');
+    const q = (await rect(page, '#vfQ')).top;
+    await page.fill('#vfQ', 'ra');
+    assert.equal((await rect(page, '#vfQ')).top, q, 'the checker’s card box moved as the cards narrowed down');
+    assert.ok((await rect(page, '#vfPick .pk')).bottom <= seen, 'the checker’s first match is under the keyboard');
+    // Make tablas: the deck’s matches above the keyboard, and Play these in My tablas…’s buttons too.
+    await seed(page, { 'loteria.print': { tablas: [{ id: 't1', name: 'Tabla 1', cards: run(1) }] } });
+    await page.goto(base + 'print.html');
+    await page.focus('#q'); await keyboardUp(page, KB);
+    await page.fill('#q', 'lu');
+    assert.ok((await rect(page, '#dg .dk:not([hidden])')).bottom <= seen + 1, 'Make tablas’ first match is under the keyboard');
+    await page.goto(base + 'print.html');
+    await page.click('#appBtn');
+    await page.focus('#apName'); await keyboardUp(page, KB);
+    assert.ok((await rect(page, '#dlg .sheet')).bottom <= seen, 'Play these in My tablas… sits under the keyboard');
     assert.deepEqual(problems, []);
   } finally { await ctx.close(); }
 });

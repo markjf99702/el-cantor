@@ -128,8 +128,10 @@ input[type=search]::-webkit-search-cancel-button{display:none} /* the box clears
 .hist .h.miss{border-color:var(--line2);color:var(--ink3);opacity:.7}
 .hist .cnt{flex:none;font:600 11px var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);padding-right:4px}
 /* sheets */
-.sheetbg{position:fixed;inset:0;background:rgba(30,20,14,.5);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+/* --vvh and --vvt: the part of the screen a phone's keyboard leaves, so a sheet and its box sit above the keyboard */
+.sheetbg{position:fixed;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100%);background:rgba(30,20,14,.5);z-index:40;display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:var(--bg);width:min(760px,100%);max-height:calc(100% - 20px - var(--sat));display:flex;flex-direction:column;border-radius:18px 18px 0 0;border-top:3px solid var(--red);padding-bottom:var(--sab)}
+.sheet[data-tall]{height:calc(100% - 20px - var(--sat))} /* a sheet of cards to search keeps its height, so the box stays put as matches go */
 .sheet:focus{outline:none} /* it takes the focus when it opens, for the keyboard and screen readers */
 .sheet .hd{display:flex;gap:8px;align-items:center;padding:12px 14px 8px;flex:none}
 .sheet .hd h2{margin:0;font:400 20px/1 var(--disp);flex:1}
@@ -192,7 +194,7 @@ a{color:var(--teal);font-weight:700}
 .seg button{background:none;border:0;padding:6px 12px;font:600 13px var(--body);color:var(--ink2)}
 .seg button.on{background:var(--ink);color:var(--bg)}
 /* win overlay */
-.winbg{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(30,20,14,.55);padding:20px}
+.winbg{position:fixed;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100%);z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(30,20,14,.55);padding:20px}
 .winc{background:var(--paper);border:3px solid var(--gold);border-radius:22px;padding:26px 28px 22px;text-align:center;max-width:420px;width:100%;box-shadow:0 30px 60px -20px rgba(0,0,0,.6);animation:pop .35s cubic-bezier(.2,.9,.3,1.2)}
 @keyframes pop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
 .winc h2{margin:0;font:400 46px/1 var(--disp);color:var(--red);letter-spacing:.01em}
@@ -459,6 +461,7 @@ a{color:var(--teal);font-weight:700}
     var calling = mode === 'call'; // Cantaron…, or a card for a square
     var sh = openSheet('<div class="hd"><input id="pkq" type="search" enterkeyhint="search" placeholder="' + esc(T(calling ? 'board.searchCall' : 'board.searchSquare')) + '" autocomplete="off"><button class="btn sec sm" type="button" id="pkx">' + T('done') + '</button></div><div class="bd"><div class="pick" id="pk"></div></div>');
     UI.sheet = mode; // 'call' is Cantaron…, which a ¡Lotería! on a phone closes
+    sh.setAttribute('data-tall', ''); // the search box stays put as the cards narrow down
     var q = $('pkq'), grid = $('pk');
     function draw() {
       var f = fold(q.value.trim()), num = parseInt(f, 10);
@@ -845,6 +848,18 @@ a{color:var(--teal);font-weight:700}
   });
   window.addEventListener('resize', layout);
   if (window.visualViewport) window.visualViewport.addEventListener('resize', layout);
+  // A phone's keyboard covers the bottom of the screen without making the page any shorter (an iPhone's, and Chrome's
+  // on Android): --vvh and --vvt are the part it leaves, for the sheets. Not while zoomed in.
+  function keyboardFit(e) {
+    var vv = window.visualViewport, st = document.documentElement.style; if (!vv) return;
+    if (Math.abs(vv.scale - 1) > 0.01) { st.removeProperty('--vvh'); st.removeProperty('--vvt'); return; }
+    st.setProperty('--vvh', vv.height + 'px'); st.setProperty('--vvt', vv.offsetTop + 'px');
+    // The box being typed in stays in view in its sheet as the keyboard comes up.
+    var a = document.activeElement, bd = e && e.type === 'resize' && a && a.tagName === 'INPUT' && a.closest('.bd');
+    if (bd) { var r = a.getBoundingClientRect(), b = bd.getBoundingClientRect(); if (r.bottom > b.bottom - 8) bd.scrollTop += r.bottom - b.bottom + 8; else if (r.top < b.top + 8) bd.scrollTop -= b.top - r.top + 8; }
+  }
+  if (window.visualViewport) { visualViewport.addEventListener('resize', keyboardFit); visualViewport.addEventListener('scroll', keyboardFit); }
+  keyboardFit();
   render();
   if (!firstRun) save();
   if (firstRun && !decodeShare(location.hash)) welcomeSheet(); else maybeImport();

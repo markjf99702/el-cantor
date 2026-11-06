@@ -168,8 +168,10 @@ a.chip{text-decoration:none}
 .stepper button{background:none;border:0;width:40px;height:40px;font-size:20px;line-height:1;color:var(--ink2)}
 .stepper input{border:0;border-radius:0;width:3.4em;text-align:center;padding:6px 0;background:none;font-weight:800;font-variant-numeric:tabular-nums}
 /* sheets */
-.sheetbg{position:fixed;inset:0;background:rgba(30,20,14,.5);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+/* --vvh and --vvt: the part of the screen a phone's keyboard leaves, so a sheet and its box sit above the keyboard */
+.sheetbg{position:fixed;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100%);background:rgba(30,20,14,.5);z-index:40;display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:var(--bg);width:min(780px,100%);max-height:calc(100% - 20px - var(--sat));display:flex;flex-direction:column;border-radius:18px 18px 0 0;border-top:3px solid var(--red);padding-bottom:var(--sab)}
+.sheet[data-tall]{height:calc(100% - 20px - var(--sat))} /* a sheet of cards to search keeps its height, so the box stays put as matches go */
 .sheet:focus{outline:none} /* it takes the focus when it opens, for the keyboard and screen readers */
 .sheet .hd{display:flex;gap:8px;align-items:center;padding:14px 16px 8px;flex:none}
 .sheet .hd h2{margin:0;font:400 21px/1.1 var(--disp);flex:1}
@@ -258,7 +260,7 @@ a.chip{text-decoration:none}
 .wins.nights div{flex-wrap:wrap;column-gap:10px;row-gap:0}
 .wins.nights div span{min-width:7.5em}
 /* overlays */
-.winbg{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(30,20,14,.55);padding:20px}
+.winbg{position:fixed;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100%);z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(30,20,14,.55);padding:20px}
 .winc{background:var(--paper);border:3px solid var(--gold);border-radius:22px;padding:26px 28px 22px;text-align:center;max-width:420px;width:100%;box-shadow:0 30px 60px -20px rgba(0,0,0,.6);animation:pop .35s cubic-bezier(.2,.9,.3,1.2)}
 @keyframes pop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
 .winc h2{margin:0;font:400 44px/1 var(--disp);color:var(--red)}
@@ -290,6 +292,7 @@ a.chip{text-decoration:none}
   .nextb span{display:none}.nextb{padding:0 13px}
   .bar{gap:8px}.lotb{font-size:20px;padding:0 15px;height:50px}
   .vf{grid-template-columns:1fr}.vf .grid{max-width:200px;margin:0 auto}
+  .vf>.stack{order:-1} /* the boxes and the verdict above the tabla, so the verdict sits right under the number typed */
   .vfwin .card{grid-template-columns:minmax(0,1fr)}.vfwin .chips{grid-row:auto}
   .cap{min-height:70px}
 }
@@ -1089,6 +1092,7 @@ a.chip{text-decoration:none}
     $('vfWho').addEventListener('keydown', function (e) { if (e.key !== 'Enter') return; e.preventDefault(); if ($('vfBack').hidden) $('vfWin').click(); else this.blur(); });
     function body() {
       document.querySelectorAll('#vfSeg button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === V.mode); });
+      UI.sheet.toggleAttribute('data-tall', V.mode === 'cards'); // the search box stays put as the cards narrow down
       if (V.mode === 'printed') {
         $('vfBody').innerHTML = '<div class="vf"><div id="vfTabla"></div><div class="stack"><div class="vfin"><label class="fld"><span>Juego</span><input id="vfJ" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="14"></label><div class="fld"><span>Tabla No.</span><span class="stepper"><button type="button" id="vfM" aria-label="' + T('cantor.prevTabla') + '">−</button><input id="vfN" inputmode="numeric" autocomplete="off" maxlength="3" aria-label="' + T('tablaNumber') + '"><button type="button" id="vfP" aria-label="' + T('cantor.nextTabla') + '">+</button></span></div></div><div class="verdict" id="vfV"></div></div></div>';
         $('vfJ').value = V.j != null ? V.j : C.juego; $('vfN').value = V.n || '';
@@ -1626,6 +1630,18 @@ a.chip{text-decoration:none}
   var rT; function relayout() { clearTimeout(rT); rT = setTimeout(function () { picado(); layout(); }, 60); }
   window.addEventListener('resize', relayout);
   if (window.visualViewport) window.visualViewport.addEventListener('resize', relayout);
+  // A phone's keyboard covers the bottom of the screen without making the page any shorter (an iPhone's, and Chrome's
+  // on Android): --vvh and --vvt are the part it leaves, for the sheets and the ¡Lotería! box. Not while zoomed in.
+  function keyboardFit(e) {
+    var vv = window.visualViewport, st = document.documentElement.style; if (!vv) return;
+    if (Math.abs(vv.scale - 1) > 0.01) { st.removeProperty('--vvh'); st.removeProperty('--vvt'); return; }
+    st.setProperty('--vvh', vv.height + 'px'); st.setProperty('--vvt', vv.offsetTop + 'px');
+    // The box being typed in stays in view in its sheet as the keyboard comes up.
+    var a = document.activeElement, bd = e && e.type === 'resize' && a && a.tagName === 'INPUT' && a.closest('.bd');
+    if (bd) { var r = a.getBoundingClientRect(), b = bd.getBoundingClientRect(); if (r.bottom > b.bottom - 8) bd.scrollTop += r.bottom - b.bottom + 8; else if (r.top < b.top + 8) bd.scrollTop -= b.top - r.top + 8; }
+  }
+  if (window.visualViewport) { visualViewport.addEventListener('resize', keyboardFit); visualViewport.addEventListener('scroll', keyboardFit); }
+  keyboardFit();
   if (window.ResizeObserver) new ResizeObserver(fitCard).observe($('cardarea'));
   loadVoices();
   showCard(false, true); renderAll(); renderTie(); picado(); layout();

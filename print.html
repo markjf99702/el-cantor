@@ -52,7 +52,7 @@ button:disabled{cursor:default;opacity:.4}
 input{background:var(--paper);border:1px solid var(--line2);border-radius:10px;padding:8px 11px;min-width:0;font-size:16px;user-select:text;-webkit-user-select:text}
 input:focus-visible,button:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--teal);outline-offset:1px}
 a{color:var(--teal);font-weight:700}
-.app{height:100vh;height:100dvh;display:flex;flex-direction:column;padding-top:var(--sat)}
+.app{position:fixed;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100%);display:flex;flex-direction:column;padding-top:var(--sat)} /* above a phone's keyboard, with the deck's matches */
 /* header */
 .top{display:flex;align-items:center;gap:6px;padding:8px 12px 8px;flex:none;border-bottom:1px solid var(--line)}
 .top h1{margin:0;font:400 20px/1 var(--disp);letter-spacing:.01em;color:var(--red);flex:1;display:flex;align-items:baseline;gap:8px;min-width:0;white-space:nowrap;overflow:hidden}
@@ -138,7 +138,7 @@ a{color:var(--teal);font-weight:700}
 .ghost.bad .gt{background:var(--red);color:var(--red-ink)}
 body.dragging,body.dragging *{cursor:grabbing!important}
 /* sheets */
-.sheetbg{position:fixed;inset:0;background:rgba(30,20,14,.5);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+.sheetbg{position:fixed;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100%);background:rgba(30,20,14,.5);z-index:40;display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:var(--bg);width:min(640px,100%);max-height:calc(100% - 20px - var(--sat));display:flex;flex-direction:column;border-radius:18px 18px 0 0;border-top:3px solid var(--red);padding-bottom:var(--sab)}
 .sheet .hd{display:flex;gap:8px;align-items:center;padding:12px 14px 8px;flex:none}
 .sheet .hd h2{margin:0;font:400 20px/1 var(--disp);flex:1}
@@ -704,6 +704,18 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   $('printBtn').addEventListener('click', printDlg);
   $('appBtn').addEventListener('click', appDlg);
   T.switch($('langSw'), 'lang'); // a new language reloads the page; the switch comes back into view
+  // A phone's keyboard covers the bottom of the screen without making the page any shorter (an iPhone's, and Chrome's
+  // on Android): --vvh and --vvt are the part it leaves, for the page and its sheets. Not while zoomed in.
+  function keyboardFit(e) {
+    var vv = window.visualViewport, st = document.documentElement.style; if (!vv) return;
+    if (Math.abs(vv.scale - 1) > 0.01) { st.removeProperty('--vvh'); st.removeProperty('--vvt'); return; }
+    st.setProperty('--vvh', vv.height + 'px'); st.setProperty('--vvt', vv.offsetTop + 'px');
+    // The box being typed in stays in view in its sheet as the keyboard comes up.
+    var a = document.activeElement, bd = e && e.type === 'resize' && a && a.tagName === 'INPUT' && a.closest('.bd');
+    if (bd) { var r = a.getBoundingClientRect(), b = bd.getBoundingClientRect(); if (r.bottom > b.bottom - 8) bd.scrollTop += r.bottom - b.bottom + 8; else if (r.top < b.top + 8) bd.scrollTop -= b.top - r.top + 8; }
+  }
+  if (window.visualViewport) { visualViewport.addEventListener('resize', keyboardFit); visualViewport.addEventListener('scroll', keyboardFit); }
+  keyboardFit();
   buildDeck(); filterDeck(); render();
   try { if (sessionStorage.getItem('loteria.reopen') === 'lang') { sessionStorage.removeItem('loteria.reopen'); $('langSw').scrollIntoView({ block: 'center' }); } } catch (e) { }
 })();
