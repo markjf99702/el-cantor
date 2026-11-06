@@ -987,6 +987,94 @@ check('cantor: a tap on the card’s name, or R, says it again and then waits it
   } finally { await ctx.close(); }
 });
 
+// A stand-in for Screen Wake Lock: window.__held is how many screen locks the page holds. refuse: every request fails,
+// as a browser that won't keep the screen on does.
+const FAKE_WAKE = refuse => {
+  window.__held = 0;
+  Object.defineProperty(navigator, 'wakeLock', { configurable: true, value: { request() {
+    if (refuse) return Promise.reject(new DOMException('no', 'NotAllowedError'));
+    const l = new EventTarget(); window.__held++;
+    l.release = () => { if (!l.released) { l.released = true; window.__held--; l.dispatchEvent(new Event('release')); } return Promise.resolve(); };
+    return Promise.resolve(l);
+  } } });
+};
+const IPHONE_APP = v => ({ userAgent: `Mozilla/5.0 (iPhone; CPU iPhone OS ${v} like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148` });
+
+check('awake: El Cantor keeps the screen on from the first card, between rounds too, and says so when a phone can’t', async () => {
+  const CANTOR = { order: run(1, 54), pos: 0, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], wins: [], settings: { speak: false, sound: false, awake: true, check: false, pace: 'slow' } };
+  const held = page => page.evaluate(() => window.__held);
+  let ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await page.addInitScript(FAKE_WAKE, false);
+    await seed(page, { 'loteria.cantor': CANTOR });
+    await page.goto(base + 'cantor.html');
+    assert.equal(await held(page), 0, 'on before a card was called');
+    await page.click('#nextBtn');
+    await until(page, () => window.__held === 1);
+    // A new round: the screen stays on while the beans come off and the next game is picked.
+    await page.click('#newBtn'); await page.click('#nrOk');
+    await page.waitForTimeout(300);
+    assert.equal(await held(page), 1, 'the screen was let go between rounds');
+    await page.click('#ptx');
+    await page.click('#setBtn');
+    assert.equal(await page.textContent('#awBtn'), 'On');
+    assert.equal(await page.locator('#awCant').count(), 0, 'a phone that keeps its screen on was told it can’t');
+    await page.click('#awBtn');
+    await until(page, () => window.__held === 0);
+    await page.click('#awBtn');
+    await until(page, () => window.__held === 1);
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+  // An iPhone app on the Home Screen before iOS 18.4 can't, though its request succeeds: El Cantor says so once, and so
+  // does Settings. From iOS 18.4 it can. A browser that refuses says it in its own words.
+  for (const [v, says] of [['17_5', 'This phone won’t stay awake on its own — set Auto-Lock longer for game night, in Settings › Display and Brightness'], ['18_4', ''], [null, 'This device won’t stay awake on its own — set its screen to stay on longer for game night']]) {
+    ctx = await context(PHONE, v ? IPHONE_APP(v) : {});
+    try {
+      const page = await ctx.newPage(), problems = watch(page);
+      await page.addInitScript(FAKE_WAKE, !v);
+      await page.addInitScript(() => { Object.defineProperty(navigator, 'standalone', { value: true, configurable: true }); window.__toasts = []; addEventListener('DOMContentLoaded', () => { const t = document.getElementById('toast'); if (t) new MutationObserver(() => window.__toasts.push(t.textContent)).observe(t, { childList: true, characterData: true, subtree: true }); }); });
+      await seed(page, { 'loteria.cantor': CANTOR });
+      await page.goto(base + 'cantor.html');
+      await page.click('#nextBtn'); await page.click('#nextBtn');
+      await page.waitForTimeout(400);
+      assert.deepEqual(await page.evaluate(() => window.__toasts.filter(t => /awake/.test(t))), says ? [says] : [], 'iOS ' + v);
+      if (v) assert.equal(await held(page), says ? 0 : 1, 'iOS ' + v);
+      await page.click('#setBtn');
+      assert.equal(await page.locator('#awCant').count() ? await page.textContent('#awCant') : '', says, 'Settings, iOS ' + v);
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
+});
+
+check('awake: My tablas keeps the screen on while a round is being played, with its own Keep the screen on', async () => {
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await page.addInitScript(FAKE_WAKE, false);
+    await seed(page, { 'loteria.v1': ANA });
+    await page.goto(base + 'board.html');
+    await page.waitForTimeout(300);
+    assert.equal(await page.evaluate(() => window.__held), 0, 'on with no card called');
+    await page.click('#callBtn');
+    await page.fill('#pkq', '40'); await page.press('#pkq', 'Enter');
+    await page.click('#pkx');
+    await until(page, () => window.__held === 1);
+    await page.click('#setBtn');
+    assert.match(await page.textContent('#sheet'), /Keep the screen on\s*While a round is being played/);
+    assert.equal(await page.textContent('#awBtn'), 'On');
+    await page.click('#awBtn');
+    await until(page, () => window.__held === 0);
+    assert.equal((await saved(page, 'loteria.v1')).settings.awake, false);
+    await page.click('#awBtn');
+    await until(page, () => window.__held === 1);
+    await page.click('#stx');
+    await page.click('#clearBtn'); // a new round, with one card called: no question
+    await until(page, () => window.__held === 0);
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('cantor: the card called is the card itself, edge to edge on its own cream paper, with no white mat round it', async () => {
   // The cards are drawn on cream (#FBF4E4) with their own rounded frame; a white mat round them made a second frame,
   // and the brightest thing on a dark screen.

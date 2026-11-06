@@ -588,14 +588,12 @@ a.chip{text-decoration:none}
   }
 
   // ---------- screen wake ----------
-  var WL = null;
-  function wake(on) {
-    if (!C.settings.awake) on = false;
-    if (on && !WL && navigator.wakeLock && document.visibilityState === 'visible') {
-      WL = 'asking';
-      navigator.wakeLock.request('screen').then(function (l) { WL = l; l.addEventListener('release', function () { if (WL === l) WL = null; }); }).catch(function () { WL = null; });
-    } else if (!on && WL && WL !== 'asking') { WL.release().catch(function () { }); WL = null; }
-  }
+  // The screen stays on from the first card until half an hour after the last, between rounds too, while the beans
+  // come off and the next game is picked, if Settings has it on. A device that won't keep it on says so once, with
+  // what to do instead.
+  var AWAKE = 30 * 60e3, awakeTill = 0, awakeT = 0;
+  var WAKE = window.LoteriaSync ? LoteriaSync.screenOn(function () { return C.settings.awake && Date.now() < awakeTill; }, function (why) { toast(why, 7000); }) : { hold: function () { }, why: function () { return ''; } };
+  function wake() { awakeTill = Date.now() + AWAKE; clearTimeout(awakeT); awakeT = setTimeout(WAKE.hold, AWAKE + 500); WAKE.hold(); } // calling started, or a card was called
   // The screen off or another app mid-round: calling pauses, rather than go on unseen, unheard, or both. Back on, it
   // says so, and the tap on the card that keeps calling brings an iPhone's sound back too.
   document.addEventListener('visibilitychange', function () {
@@ -604,7 +602,6 @@ a.chip{text-decoration:none}
       return;
     }
     if (!R.playing && C.last && Date.now() - C.last >= NIGHT) { newNight(); renderTie(); renderCaption(); renderAll(); } // left open since the last night
-    if (C.pos > 0 && C.pos < 54) wake(true);
     if (R.hid) { R.hid = false; toast(T('cantor.hidPaused'), 6000); }
   });
 
@@ -613,7 +610,7 @@ a.chip{text-decoration:none}
     clearTimeout(R.timer); R.timer = 0; R.opening = false;
     if (C.tie && tieCheck()) return; // a card turned before the last one was looked at for the tie-break
     if (C.pos >= 54) { finish(); return; }
-    C.pos++; R.stale = false; save();
+    C.pos++; R.stale = false; save(); wake();
     var c = card(cur());
     snap(); $('live').textContent = c.name;
     R.phase = 'speaking';
@@ -647,7 +644,7 @@ a.chip{text-decoration:none}
   }
   function play() {
     if (C.pos >= 54) { newRoundAsk(); return; }
-    R.playing = true; unlock(); wake(true); if (!VOICES.length) loadVoices();
+    R.playing = true; unlock(); wake(); if (!VOICES.length) loadVoices();
     if (!C.pos) { begin(); fillVoice(); return; }
     fillVoice();
     if (R.phase === 'idle') wait(); else renderBar();
@@ -661,7 +658,7 @@ a.chip{text-decoration:none}
       R.opening = false; R.phase = 'idle'; renderCaption(); renderBar();
     });
   }
-  function next() { if (C.pos >= 54) { newRoundAsk(); return; } hush(); unlock(); wake(true); deal(); fillVoice(); }
+  function next() { if (C.pos >= 54) { newRoundAsk(); return; } hush(); unlock(); deal(); fillVoice(); }
   function back() {
     if (!C.pos) return;
     pause(); hush(); R.phase = 'idle'; R.opening = false;
@@ -672,11 +669,11 @@ a.chip{text-decoration:none}
     showCard(false, true); renderAll();
     toast(C.pos ? T('cantor.putBack', { card: card(cur()).name }) : T('cantor.fullDeck'));
   }
-  function finish() { R.playing = false; R.phase = 'idle'; clearTimeout(R.timer); wake(false); renderAll(); }
+  function finish() { R.playing = false; R.phase = 'idle'; clearTimeout(R.timer); renderAll(); }
   function newRound() {
     hush(); pause(); R.phase = 'idle'; R.opening = false;
     C.order = shuffled(); C.pos = 0; C.round = R.stale ? 1 : C.round + 1; R.stale = false; C.tie = null; R.co = null; R.slow = null; save(); renderTie();
-    wake(false); showCard(false, true); renderAll();
+    showCard(false, true); renderAll();
   }
   function newRoundAsk() {
     if (!C.pos) { patternSheet(T('whatPlaying')); return; }
@@ -885,7 +882,7 @@ a.chip{text-decoration:none}
       '<div class="card"><div class="eyebrow">' + T('cantor.shoutH') + '</div><div class="row" style="margin-top:8px"><div class="seg" id="chkSeg"><button type="button" data-v="trust">' + T('cantor.trust') + '</button><button type="button" data-v="check">' + T('cantor.check') + '</button></div></div><p class="note" style="margin-top:8px" id="chkNote"></p></div>' +
       '<div class="card" id="rulesCard"><div class="eyebrow">' + T('cantor.rulesH') + '</div><div class="rule"><b>' + T('cantor.twoH') + '</b><div class="styles" id="twoOpts"></div></div><div class="rule"><b>' + T('cantor.lateH') + '</b><div class="styles" id="lateOpts"></div></div></div>' +
       '<div class="card"><div class="row sp"><div><b>' + T('sounds') + '</b><p class="note">' + T('cantor.soundsNote') + '</p></div><button class="chip" type="button" id="sndBtn"></button></div></div>' +
-      '<div class="card"><div class="row sp"><div><b>' + T('cantor.awake') + '</b><p class="note">' + T('cantor.awakeNote') + '</p></div><button class="chip" type="button" id="awBtn"></button></div></div>' +
+      '<div class="card"><div class="row sp"><div><b>' + T('awake') + '</b><p class="note">' + T('cantor.awakeNote') + '</p>' + (WAKE.why() ? '<p class="note conote" id="awCant" style="margin-top:4px">' + esc(WAKE.why()) + '</p>' : '') + '</div><button class="chip" type="button" id="awBtn"></button></div></div>' +
       '<div class="card" id="winsCard"></div>' +
       '<div class="card" id="syncCard" hidden></div>' +
       '<div class="card"><div class="eyebrow">' + T('cantor.alongH') + '</div><p class="note" style="margin-top:6px">' + T.html('cantor.along_html') + '</p></div>' +
@@ -956,7 +953,7 @@ a.chip{text-decoration:none}
     document.querySelectorAll('#paceSeg button').forEach(function (b) { b.addEventListener('click', function () { setPace(b.dataset.v); draw(); }); });
     document.querySelectorAll('#chkSeg button').forEach(function (b) { b.addEventListener('click', function () { st.check = b.dataset.v === 'check'; save(); draw(); }); });
     $('sndBtn').addEventListener('click', function () { st.sound = !st.sound; save(); draw(); if (st.sound) snap(); });
-    $('awBtn').addEventListener('click', function () { st.awake = !st.awake; save(); wake(st.awake && C.pos > 0 && C.pos < 54); draw(); });
+    $('awBtn').addEventListener('click', function () { st.awake = !st.awake; save(); WAKE.hold(); draw(); });
     $('stx').addEventListener('click', closeSheet);
     UI.onVoices = draw; loadVoices(); draw();
     if (window.LoteriaSync) LoteriaSync.card($('syncCard'), true);
@@ -1261,7 +1258,7 @@ a.chip{text-decoration:none}
   }
   // The deck ran out with no card on a tied tabla: they share the round.
   function tieEnd() {
-    stopCalling(); wake(false);
+    stopCalling();
     var list = C.tie.who, r = C.round, box = $('winbox'), g = stamp(); C.tie = null;
     list.forEach(function (w) { record(w, { share: g }); }); save(); renderTie(); renderAll();
     box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p>' + T.html('cantor.shared_html', { who: names(list), r: r, n: C.pos }) + ' ' + esc(T('cantor.tieNoCard')) + '</p><p class="tonight">' + tonightHtml() + '</p><div class="row"><button class="btn red" type="button" id="celOk">' + T('cantor.shuffleFor', { r: r + 1 }) + '</button></div></div></div>';

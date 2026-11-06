@@ -488,10 +488,11 @@
   // which Safari 17 grants on signs like being opened from the Home Screen (WebKit blog, "Updates to Storage Policy",
   // 10 August 2023). Firefox would ask the person with a prompt, so it isn't asked there.
   var KK = 'loteria.keepNote', persisting = false;
+  function ios() { var ua = navigator.userAgent || ''; return /iPhone|iPad|iPod/.test(ua) || /Macintosh/.test(ua) && navigator.maxTouchPoints > 1; } // an iPad asks for the computer site
+  function homeScreen() { return navigator.standalone === true || !!(window.matchMedia && matchMedia('(display-mode: standalone)').matches); }
   function safariTab() {
-    var ua = navigator.userAgent || '', ios = /iPhone|iPad|iPod/.test(ua) || /Macintosh/.test(ua) && navigator.maxTouchPoints > 1; // an iPad asks for the computer site
-    var app = navigator.standalone === true || !!(window.matchMedia && matchMedia('(display-mode: standalone)').matches);
-    return ios && !app && /Safari\//.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|GSA\//.test(ua); // Safari itself, not another browser
+    var ua = navigator.userAgent || '';
+    return ios() && !homeScreen() && /Safari\//.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|GSA\//.test(ua); // Safari itself, not another browser
   }
   function persist() {
     var s = navigator.storage;
@@ -515,6 +516,41 @@
     s.textContent = '.lkeep{display:flex;gap:6px;align-items:flex-start;background:var(--gold-soft,#F6E3B4);border:1px solid var(--line2,#C4AE84);border-radius:12px;padding:7px 4px 7px 12px;font-size:12.5px;line-height:1.35;color:var(--ink,#2B221C)}' +
       '.lkeep span{flex:1;min-width:0}.lkeep button{flex:none;background:none;border:0;width:30px;height:30px;margin:-5px 0;border-radius:999px;font-size:18px;line-height:1;color:var(--ink2,#6A5A4C)}';
     document.head.appendChild(s);
+  }
+
+  // ---------- keeping the screen on ----------
+  // Screen Wake Lock, which El Cantor and My tablas ask for while there's a game to see. An iPhone or iPad app on the
+  // Home Screen couldn't keep its screen on before iOS 18.4: the request succeeds there and the screen sleeps anyway
+  // (MDN browser-compat-data, api.WakeLock, Safari on iOS 16.4–18.3: "Does not work in standalone Home Screen Web
+  // Apps", WebKit bug 254545). An iPhone says its iOS version; an iPad doesn't, so there window.cookieStore, which came
+  // in the same iOS 18.4 (MDN browser-compat-data, api.CookieStore), says it.
+  function canWake() {
+    if (!navigator.wakeLock) return false;
+    if (!ios() || !homeScreen()) return true;
+    var v = /OS (\d+)_(\d+)/.exec(navigator.userAgent || '');
+    return v ? +v[1] > 18 || (+v[1] === 18 && +v[2] >= 4) : 'cookieStore' in window;
+  }
+  // want(): whether the page wants its screen on now. The page calls hold() whenever that may have changed; coming back
+  // into sight asks again by itself, as the browser lets go of the screen while the page is out of sight. When the
+  // device won't keep it on, why() says what to do instead (empty when it will), and cant() hears it the first time.
+  function screenOn(want, cant) {
+    var lock = null, refused = false, told = false;
+    function why() { return canWake() && !refused ? '' : T(ios() ? 'awake.cantIos' : 'awake.cant'); }
+    function no() { if (!told) { told = true; if (cant) cant(why()); } }
+    function hold() {
+      var on = !!want() && document.visibilityState === 'visible';
+      if (on && !canWake()) { no(); return; }
+      if (on && !lock) {
+        lock = 'asking';
+        navigator.wakeLock.request('screen').then(function (l) {
+          lock = l; refused = false;
+          l.addEventListener('release', function () { if (lock === l) lock = null; });
+          hold(); // let go again if it isn't wanted any more
+        }, function () { lock = null; if (document.visibilityState === 'visible') { refused = true; no(); } }); // not when it went out of sight meanwhile
+      } else if (!on && lock && lock !== 'asking') { var l = lock; lock = null; l.release().catch(function () { }); }
+    }
+    document.addEventListener('visibilitychange', hold);
+    return { hold: hold, why: why, held: function () { return !!lock && lock !== 'asking'; } };
   }
 
   function watch(f) { watchers.push(f); f(); }
@@ -543,6 +579,7 @@
     isOn: function () { return !!CLIENT_ID && st.on; },
     connect: start, now: now, changed: changed, chip: chip, card: card, keep: keep,
     safariTab: safariTab, // a Safari tab on an iPhone or iPad, not the Home Screen app
+    screenOn: screenOn, // keeping the screen on: screenOn(want, cant) gives { hold, why, held }
     onUpdate: function (f) { ups.push(f); }, // f(keys): synced data landed in these localStorage keys
     onNote: function (f) { says.push(f); }, // f(text): what went wrong after a tap, to show for a few seconds
     onWait: function (f) { waits.push(f); }, // f(): something was saved here after the hour, and waits for a tap to go to Drive

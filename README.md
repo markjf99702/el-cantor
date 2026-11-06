@@ -31,6 +31,7 @@ Every page has a ⌂ button back to the home screen. They all load the same `dec
 ### El Cantor — calling the game
 
 - **Calls the cards.** Shuffles the 54 cards and turns them over one at a time, calling each one aloud in Spanish. It says just the name by default, or the verse and then the name. Tap ▶, or the card itself, to call on its own and to pause; **Next card** turns them by hand. On a phone, the timer button beside it switches between slow, normal and fast (7, 4 or 2 seconds between cards). If the screen turns off or another app comes up mid-round, calling pauses rather than go on unseen, and when El Cantor is back it says *Paused while the screen was off — tap the card to keep calling*; that tap brings an iPhone's sound back too.
+- **Keep the screen on** (Settings, on to start with): from the first card until half an hour after the last, between rounds too, while the beans come off and the next game is picked. A device that won't keep its screen on says so once, with what to do instead: an iPhone app on the Home Screen before iOS 18.4 couldn't, though it seemed to (MDN's browser compatibility data for Screen Wake Lock: "Does not work in standalone Home Screen Web Apps", WebKit bug 254545), so there it says *This phone won't stay awake on its own — set Auto-Lock longer for game night, in Settings › Display and Brightness*, and Settings says the same.
 - **¿Cuál?** Tap the card's name under the picture, or press R, and El Cantor says the card again in the chosen voice, then waits its usual time before the next card, so nothing lands on top of it. In Adivinanza it says the verse and the name.
 - **Recorded voices.** Dora, Alex or Santa read the cards, so every phone and tablet sounds the same. The device's own Spanish voice is the fallback: a card whose clip hasn't arrived in 3 seconds is read by it, the cards after it that round don't wait for theirs, and one note says *The recorded voice isn't loading — using this device's voice*. On an iPhone it plays even with the silent switch on.
 - **Adivinanza** mode reads the verse with the card face down, so the table can guess before it turns over.
@@ -57,6 +58,7 @@ Someone calls the cards; you tap **Cantaron…**, pick the card, and it marks it
 
 - Pick the game each round: Clásico, or a single shape, the same list El Cantor uses.
 - A win cheers, outlines the tabla and says what to tell the caller: *juego CANELA, tabla 7* for a tabla added with **+ A printed tabla**, so El Cantor can check it by number, or else the winning cards to read out (just "the cards with a bean" for a big shape like Tabla Llena). Its **New round** asks before it takes the beans off, as ↺ does.
+- **Keep the screen on** in Settings, as in El Cantor: on while a round is being played, until half an hour after the last card marked, so a phone with nothing to mark for a while doesn't lock.
 - Edit tablas square by square. Doubles are fine (family rule) — when that card is called, both squares get a bean — but not three of a card. Up to six tablas per person.
 - **Random tabla** deals 16 different cards, with no double, as a start to edit from. Make tablas' **Random** makes one like Mark's four instead.
 - **+ A printed tabla** adds a tabla from El Cantor's printed juegos by its name and number. It starts with the juego El Cantor last printed or checked on this device.
@@ -122,7 +124,7 @@ To put it online with GitHub Pages: **Settings → Pages → Build and deploymen
 - `strings.js` — every word the app shows, in English and in Spanish, and the English / Español setting. Change a wording in both languages: `npm test` fails when a word is missing in either one, or is there but used nowhere.
 - `manifest.webmanifest`, `icon.svg` and the `icon-*.png` sizes — installing it as an app. `node tools/make-icons.mjs` redraws the PNGs from `icon.svg` and `tools/icon-full-bleed.svg`.
 - `sw.js` — the offline copy: the pages, the fonts, the card pictures, and the recorded voice in use, which El Cantor brings down once a round starts. On a connection that isn't answering, a page opens from that copy after four seconds. `FILES` in it is a fingerprint of the files it keeps: change one and `npm test` says what to set it to, so a release never leaves the copy half old.
-- `sync.js` — saving to Google Drive: signing in, the Drive file, and merging changes from every device.
+- `sync.js` — saving to Google Drive: signing in, the Drive file, and merging changes from every device. Also the Safari line, and keeping the screen on, which El Cantor and My tablas share.
 - `deck.js` — the cards, their verses, the winning shapes, Mark's four tablas, and the juego generator. Every page loads it.
   - The generator is frozen: changing it would change every tabla already printed.
 - `cards/` — the 54 card images, drawn for El Cantor.
