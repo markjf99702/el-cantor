@@ -130,7 +130,7 @@ To put it online with GitHub Pages: **Settings → Pages → Build and deploymen
 - `manifest.webmanifest`, `icon.svg` and the `icon-*.png` sizes — installing it as an app. `node tools/make-icons.mjs` redraws the PNGs from `icon.svg` and `tools/icon-full-bleed.svg`.
 - `sw.js` — the offline copy: the pages, the fonts, the card pictures, and the recorded voice in use, which El Cantor brings down once a round starts. On a connection that isn't answering, a page opens from that copy after four seconds. `FILES` in it is a fingerprint of the files it keeps: change one and `npm test` says what to set it to, so a release never leaves the copy half old.
 - `sync.js` — saving to Google Drive: signing in, the Drive file, and merging changes from every device. Also the Safari line, and keeping the screen on, which El Cantor and My tablas share.
-- `deck.js` — the cards, their verses, the winning shapes, Mark's four tablas, and the juego generator. Every page loads it.
+- `deck.js` — the cards, their verses, the winning shapes, Mark's four tablas, the paper a device's printing starts on, the cut paper both ¡Lotería! boxes throw, and the juego generator. Every page loads it.
   - The generator is frozen: changing it would change every tabla already printed.
 - `cards/` — the 54 card images, drawn for El Cantor.
 - `fonts/` — Bree Serif and Nunito Sans (SIL Open Font License), served from here so nothing loads from elsewhere.
