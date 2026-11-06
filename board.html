@@ -449,7 +449,7 @@ a{color:var(--teal);font-weight:700}
     if (UI.focus != null && UI.focus !== w.board.id) UI.focus = w.board.id; // another tabla was enlarged
     var more = wins.length > 1 ? T('board.andMore', { n: wins.length - 1 }) : '', who = S.players.length > 1 ? esc(player().name) + ' · ' : '';
     box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p><b>' + who + esc(w.board.name) + '</b> · ' + esc(w.hit.pat.name) + more + '</p><p class="note">' + T('board.shout') + '</p><p class="tell">' + tellCaller(w) + '</p><div class="row"><button class="btn red" type="button" id="winOk">' + T('board.keepPlaying') + '</button><button class="btn sec" type="button" id="winClear">' + T('newRound') + '</button></div></div></div>';
-    box.hidden = false;
+    box.hidden = false; L.confetti(box.querySelector('.winbg'));
     // Keep playing takes the focus once the key that made the win is done (or that Enter would press it too). Closing
     // the win gives it back to where it was by then: the square the win came from, Cantaron…'s search box on a
     // computer, whether the card was typed or picked, or the Cantaron… button on a phone.

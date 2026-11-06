@@ -175,6 +175,26 @@
     return best;
   }
 
+  // ---------- confetti ----------
+  // The cut paper both ¡Lotería! boxes throw: little banderitas with the papel picado's zigzag edge, in its five
+  // colours, falling and turning for two to three and a half seconds into `host` (the box's backdrop), then gone.
+  // None where the device asks for less motion. Says how many it threw.
+  var BITS = ['var(--fa,#B7332F)', 'var(--fb,#1F6F6D)', 'var(--fc,#D99A2B)', 'var(--fd,#3E7D4A)', 'var(--fe,#C2477A)'];
+  function confetti(host, count) {
+    if (!host || !host.animate || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches)) return 0;
+    var h = host.clientHeight || window.innerHeight, n = count || 36;
+    host.style.overflow = 'hidden';
+    for (var i = 0; i < n; i++) {
+      var b = document.createElement('i'), turn = (Math.random() < 0.5 ? -1 : 1) * (200 + Math.random() * 420);
+      b.className = 'bit'; b.setAttribute('aria-hidden', 'true');
+      b.style.cssText = 'position:absolute;top:-18px;left:' + (Math.random() * 98).toFixed(1) + '%;width:12px;height:14px;background:' + BITS[i % 5] + ';clip-path:polygon(0 0,100% 0,100% 100%,83% 86%,67% 100%,50% 86%,33% 100%,17% 86%,0 100%);pointer-events:none;z-index:2';
+      host.appendChild(b);
+      b.animate([{ transform: 'translate(0,0) rotate(0deg) rotateY(0deg)' }, { transform: 'translate(' + Math.round((Math.random() - 0.5) * 140) + 'px,' + (h + 40) + 'px) rotate(' + Math.round(turn) + 'deg) rotateY(' + Math.round(turn * 1.5) + 'deg)' }],
+        { duration: 2200 + Math.random() * 1200, delay: Math.random() * 600, easing: 'cubic-bezier(.35,.05,.65,1)', fill: 'backwards' }).onfinish = (function (el) { return function () { el.remove(); }; })(b);
+    }
+    return n;
+  }
+
   // ---------- printed juegos ----------
   // A juego is a numbered set of tablas made from a name, so anyone with the
   // name can rebuild tabla 7 without the paper. Tabla k depends only on the
@@ -242,7 +262,7 @@
 
   window.Loteria = {
     CARDS: CARDS, BYFILE: BYFILE, card: card, src: src, fold: fold, findCards: findCards, originals: originals,
-    PATS: PATS, CLASICO: CLASICO, ALL: ALL, pat: pat, isClasico: isClasico, hasClasico: hasClasico, gameName: gameName, holdShape: holdShape, squaresNeeded: squaresNeeded, check: check, closest: closest,
+    PATS: PATS, CLASICO: CLASICO, ALL: ALL, pat: pat, isClasico: isClasico, hasClasico: hasClasico, gameName: gameName, holdShape: holdShape, squaresNeeded: squaresNeeded, check: check, closest: closest, confetti: confetti,
     juegoName: juegoName, juego: juego, juegoTabla: juegoTabla, randomJuego: randomJuego
   };
 })();

@@ -291,6 +291,18 @@ a.chip{text-decoration:none}
 .winc.ask h2{font-size:32px;line-height:1.1}
 .winc .chips.tied{justify-content:center;margin-top:16px}
 .winc .chips.tied .chip{padding:9px 16px;font-size:15px}
+.winc p.won b{display:block;margin:0 0 3px;font:400 clamp(26px,4vw,40px)/1.1 var(--disp);color:var(--ink);text-wrap:balance} /* the winner's name, on a line of its own */
+.winc .wt{width:120px;margin:14px auto 0} /* the printed tabla checked, its winning line in gold */
+.winc .wt+p.tonight{margin-top:10px}
+/* At the head of the table, a laptop or a TV: the box and its words to read from across the room */
+@media (min-width:700px){
+  .winc{max-width:min(640px,90vw);padding:34px 40px 28px}
+  .winc h2{font-size:clamp(44px,7vw,88px)}
+  .winc p{font-size:17px}
+  .winc .wt{width:150px}
+  .winc .who input{font:400 24px var(--disp);padding:10px 14px}
+}
+@media (max-height:600px){.winc .wt{display:none}}
 .sheet .conote{margin:0;font-weight:800;color:var(--ink)}
 .linkb{background:none;border:0;padding:6px;margin-top:10px;color:var(--teal);font:700 13px var(--body);text-decoration:underline;text-underline-offset:3px}
 .toast{position:fixed;left:50%;width:max-content;bottom:calc(96px + var(--sab));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:10px;font:700 13px var(--body);opacity:0;transition:.2s;pointer-events:none;z-index:80;max-width:90vw;text-align:center}
@@ -1079,7 +1091,8 @@ a.chip{text-decoration:none}
   function shuffleNext() { newRound(); patternSheet(T('cantor.roundWhat', { r: C.round })); }
 
   // Take their word: straight to the celebration, with the winner's name and the next round.
-  function claim() { var was = R.playing; stopCalling(); cheer(); claimBox(was, ''); }
+  function claim() { var was = R.playing; stopCalling(); cheer(); claimBox(was, ''); throwConfetti(); }
+  function throwConfetti() { var bg = document.querySelector('#winbox .winbg'); if (bg) L.confetti(bg); }
   function claimBox(was, typed) {
     var box = $('winbox'), r = C.round, list = co(), more = rule2() !== 'first';
     box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p>' + esc(T('cantor.roundGame', { r: r, game: L.gameName(C.patterns) })) + ' · ' + T('cantor.cardsCalled', { n: C.pos }) + '</p>' + coHtml(list) +
@@ -1148,7 +1161,7 @@ a.chip{text-decoration:none}
     }
     function printed() {
       var name = L.juegoName($('vfJ').value), k = parseInt($('vfN').value, 10), v = $('vfV'), host = $('vfTabla');
-      V.how = ''; V.tabla = ''; V.cards = null; winRow(false);
+      V.how = ''; V.tabla = ''; V.cards = null; V.hit = null; winRow(false);
       if (!name) { host.innerHTML = ''; v.className = 'verdict'; v.innerHTML = '<p class="note" style="margin:0">' + (C.juego ? T('cantor.typeJuegoHave') : T.html('cantor.typeJuego_html')) + '</p>'; return; }
       if (!(k >= 1 && k <= 999)) { host.innerHTML = ''; v.className = 'verdict'; v.innerHTML = '<p class="note" style="margin:0">' + T('cantor.typeNumber') + '</p>'; return; }
       var t = L.juegoTabla(name, k), hit = {}, need = {}, best = null;
@@ -1156,7 +1169,7 @@ a.chip{text-decoration:none}
       if (C.juego !== name) { C.juego = name; save(); }
       C.patterns.forEach(function (pid) { var p = L.pat(pid); if (!p) return; var w = wonAt(t, p); if (w && (!best || w.when < best.when)) best = { when: w.when, cells: w.cells, pat: p }; });
       if (best) {
-        best.cells.forEach(function (c) { hit[c] = 1; }); V.how = best.pat.name; V.tabla = name + ' ' + k; V.cards = t; // a win counted anyway has no tabla, unless it was good and only late
+        best.cells.forEach(function (c) { hit[c] = 1; }); V.how = best.pat.name; V.tabla = name + ' ' + k; V.cards = t; V.hit = best.cells; // a win counted anyway has no tabla, unless it was good and only late
         if (tooLate(best.when)) { winRow(true); v.className = 'verdict no'; v.innerHTML = '<h3>' + T('cantor.tooLate') + '</h3><p>' + esc(T('cantor.lateGood', { card: card(C.order[best.when - 1]).name, n: C.pos - best.when })) + '</p>'; }
         else { v.className = 'verdict ok'; v.innerHTML = '<h3>¡Buena! ' + esc(best.pat.name) + '</h3><p>' + esc(T('cantor.goodLine', { juego: name, k: k, when: whenText(best.when) })) + '</p>'; }
       } else {
@@ -1189,7 +1202,7 @@ a.chip{text-decoration:none}
     }
     function cardsVerdict() {
       var v = $('vfV'), out = V.picked.filter(isOut), not = V.picked.filter(function (n) { return !isOut(n); });
-      V.how = ''; V.tabla = ''; V.cards = null; winRow(not.length > 0);
+      V.how = ''; V.tabla = ''; V.cards = null; V.hit = null; winRow(not.length > 0);
       $('vfChips').innerHTML = V.picked.map(function (n) { return '<button type="button" class="chip ' + (isOut(n) ? 'ok' : 'bad') + '" data-n="' + n + '" aria-label="' + esc(T('cantor.takeOff', { card: card(n).name })) + '">' + esc(card(n).name) + (isOut(n) ? ' · ' + nth(orderOf(n)) : T('cantor.notYetChip')) + ' <span aria-hidden="true">✕</span></button>'; }).join('');
       $('vfChips').querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () { var i = V.picked.indexOf(+b.dataset.n); if (i >= 0) V.picked.splice(i, 1); pickGrid(); cardsVerdict(); }); });
       if (!V.picked.length) { v.className = 'verdict'; v.innerHTML = '<p class="note" style="margin:0">' + T('cantor.readOut') + '</p>'; return; }
@@ -1207,7 +1220,7 @@ a.chip{text-decoration:none}
     $('vfx').addEventListener('click', closeSheet);
     $('vfBack').addEventListener('click', closeSheet);
     $('vfWin').addEventListener('click', function () {
-      var e = { who: winnerName($('vfWho').value), how: V.how || L.gameName(C.patterns), tabla: V.tabla, cards: V.cards };
+      var e = { who: winnerName($('vfWho').value), how: V.how || L.gameName(C.patterns), tabla: V.tabla, cards: V.cards, hit: V.hit }; // hit: the winning line, for the box
       if (!co().length) { e.t = record(e).t; save(); } // a lone winner is saved at once; two or more wait for the house rule
       UI.won = true; closeSheet(); celebrate(e, was);
     });
@@ -1222,10 +1235,13 @@ a.chip{text-decoration:none}
     var p = m === 'one' ? (who ? T.html('cantor.won_html', { who: who, r: r, n: n }) : esc(T('cantor.wonNobody', { r: r, n: n })))
       : m === 'tie' ? T.html('cantor.tied_html', { who: names(all), r: r })
       : T.html('cantor.shared_html', { who: names(all), r: r, n: n }) + (m === 'nocard' ? ' ' + esc(T('cantor.tieNoCard')) : '');
-    box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p>' + p + '</p><p class="tonight">' + tonightHtml(m === 'tie' ? [] : all.filter(function (w) { return !w.t; })) + '</p>' +
+    // The printed tabla checked by number, with its winning line in gold, when one person won with it.
+    var wt = m === 'one' && all[0].cards && all[0].hit ? '<div class="wt">' + tablaHtml(all[0].cards, all[0].hit.reduce(function (o, c) { o[c] = 1; return o; }, {}), {}) + '</div>' : '';
+    box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p class="won">' + p + '</p>' + wt + '<p class="tonight">' + tonightHtml(m === 'tie' ? [] : all.filter(function (w) { return !w.t; })) + '</p>' +
       '<div class="row"><button class="btn red" type="button" id="celOk">' + (m === 'tie' ? T('cantor.tieGo') : m === 'one' ? T('cantor.shuffleFor', { r: r + 1 }) : T('cantor.shareGo', { r: r + 1 })) + '</button></div>' +
       (more ? '<button type="button" class="linkb" id="celMore">' + T('cantor.another') + '</button>' : '') + '</div></div>';
     box.dataset.esc = m === 'one' && all[0].t ? 'hide' : 'stay'; box.hidden = false; // Escape doesn't lose a winner not saved yet
+    if (entry || first) throwConfetti(); // for a ¡Buena!, not for the box coming back after a check found nobody
     var lines = (first ? [{ clip: 'loteria', text: '¡Lotería!', gap: 200 }] : []).concat(m === 'one' && who && !choice().pack ? [{ text: 'Felicidades, ' + who + '.' }] : []);
     if (voiceOn() && lines.length) say(lines, null);
     $('celOk').addEventListener('click', function () { box.hidden = true; settle(all, was); });
@@ -1306,8 +1322,8 @@ a.chip{text-decoration:none}
     stopCalling();
     var r = C.round, box = $('winbox'); C.tie = null; record(w); save(); renderTie();
     UI.cheered = 0; cheer();
-    box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p>' + T.html('cantor.tieWon_html', { who: w.who || T('cantor.unnamed'), card: card(n).name, r: r }) + '</p><p class="tonight">' + tonightHtml() + '</p><div class="row"><button class="btn red" type="button" id="celOk">' + T('cantor.shuffleFor', { r: r + 1 }) + '</button></div></div></div>';
-    box.dataset.esc = 'hide'; box.hidden = false;
+    box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p class="won">' + T.html('cantor.tieWon_html', { who: w.who || T('cantor.unnamed'), card: card(n).name, r: r }) + '</p><p class="tonight">' + tonightHtml() + '</p><div class="row"><button class="btn red" type="button" id="celOk">' + T('cantor.shuffleFor', { r: r + 1 }) + '</button></div></div></div>';
+    box.dataset.esc = 'hide'; box.hidden = false; throwConfetti();
     $('celOk').addEventListener('click', function () { box.hidden = true; shuffleNext(); });
     $('celOk').focus();
   }
@@ -1316,8 +1332,8 @@ a.chip{text-decoration:none}
     stopCalling();
     var list = C.tie.who, r = C.round, box = $('winbox'), g = stamp(); C.tie = null;
     list.forEach(function (w) { record(w, { share: g }); }); save(); renderTie(); renderAll();
-    box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p>' + T.html('cantor.shared_html', { who: names(list), r: r, n: C.pos }) + ' ' + esc(T('cantor.tieNoCard')) + '</p><p class="tonight">' + tonightHtml() + '</p><div class="row"><button class="btn red" type="button" id="celOk">' + T('cantor.shuffleFor', { r: r + 1 }) + '</button></div></div></div>';
-    box.dataset.esc = 'hide'; box.hidden = false;
+    box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p class="won">' + T.html('cantor.shared_html', { who: names(list), r: r, n: C.pos }) + ' ' + esc(T('cantor.tieNoCard')) + '</p><p class="tonight">' + tonightHtml() + '</p><div class="row"><button class="btn red" type="button" id="celOk">' + T('cantor.shuffleFor', { r: r + 1 }) + '</button></div></div></div>';
+    box.dataset.esc = 'hide'; box.hidden = false; throwConfetti();
     $('celOk').addEventListener('click', function () { box.hidden = true; shuffleNext(); });
     $('celOk').focus();
   }

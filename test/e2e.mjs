@@ -1367,6 +1367,90 @@ check('cantor: checks a printed tabla by juego and number (CANELA 7 never change
   } finally { await ctx.close(); }
 });
 
+check('cantor: a ¡Buena! is the moment of the night: the winner’s name large, the tabla with its gold line, and cut paper falling, but none with less motion', async () => {
+  const CANELA7 = [21, 51, 23, 6, 16, 33, 8, 4, 14, 20, 9, 40, 29, 41, 13, 25];
+  const box = page => page.evaluate(() => {
+    const c = document.querySelector('#winbox .winc'), h = c.querySelector('h2'), b = c.querySelector('p.won b'), cs = b && getComputedStyle(b);
+    return {
+      width: c.offsetWidth, h2: parseFloat(getComputedStyle(h).fontSize), // offsetWidth: the box as it lands, not as it pops in
+      name: b && b.textContent, nameSize: cs && parseFloat(cs.fontSize), nameBlock: cs && cs.display === 'block', nameFont: cs && cs.fontFamily,
+      gold: [...c.querySelectorAll('.wt .cell')].flatMap((x, i) => x.classList.contains('hit') ? [i] : []),
+      bits: document.querySelectorAll('#winbox .winbg .bit').length
+    };
+  });
+  async function buena(kind, extra = {}) {
+    const ctx = await context(kind, extra), page = await ctx.newPage(), problems = watch(page);
+    await page.goto(base + 'cantor.html');
+    await page.evaluate(top => { // the top row of CANELA 7 just called
+      const rest = Loteria.CARDS.map(c => c.n).filter(n => top.indexOf(n) < 0);
+      localStorage.setItem('loteria.cantor', JSON.stringify({ order: top.concat(rest), pos: 4, round: 3, patterns: ['linea', 'esquinas', 'cuadro'], juego: 'CANELA', wins: [], settings: { speak: false, sound: false, awake: false, check: true } }));
+    }, CANELA7.slice(0, 4));
+    await page.reload();
+    await page.click('#lotBtn');
+    await page.fill('#vfN', '7'); await page.fill('#vfWho', 'Tía Lupe');
+    await page.click('#vfWin');
+    await page.waitForSelector('#winbox .winc p.won');
+    return { ctx, page, problems, got: await box(page) };
+  }
+  // A laptop at the head of the table: a box to read across the room, the name on its own line in Bree Serif.
+  let r = await buena(DESKTOP);
+  try {
+    assert.ok(r.got.width >= 600, 'the box is ' + r.got.width + 'px wide on a laptop');
+    assert.ok(r.got.h2 >= 80, '¡Lotería! is ' + r.got.h2 + 'px');
+    assert.equal(r.got.name, 'Tía Lupe');
+    assert.ok(r.got.nameBlock && r.got.nameSize >= 36 && /Bree Serif/.test(r.got.nameFont), 'the winner’s name: ' + JSON.stringify(r.got));
+    assert.match(await r.page.textContent('#winbox p.won'), /Tía Lupe\s*wins round 3 after 4 cards\./);
+    assert.deepEqual(r.got.gold, [0, 1, 2, 3], 'CANELA 7 in the box with its top row in gold');
+    assert.ok(r.got.bits >= 20, r.got.bits + ' bits of cut paper');
+    await until(r.page, () => !document.querySelector('#winbox .bit'), null, 6000); // and they're gone in a few seconds
+    assert.ok(!(await r.page.evaluate(() => document.getElementById('winbox').hidden)), 'the box stays up');
+    assert.deepEqual(r.problems, []);
+  } finally { await r.ctx.close(); }
+  // A phone keeps the smaller box, with the name and the tabla in it too.
+  r = await buena(PHONE);
+  try {
+    assert.ok(r.got.width <= 420 && r.got.h2 < 50, 'the phone’s box: ' + JSON.stringify(r.got));
+    assert.ok(r.got.nameBlock && r.got.nameSize >= 26 && r.got.gold.length === 4 && r.got.bits >= 20, 'on a phone: ' + JSON.stringify(r.got));
+    await noSideways(r.page, 'the ¡Lotería! box on a phone');
+    assert.deepEqual(r.problems, []);
+  } finally { await r.ctx.close(); }
+  // A device set to less motion gets the box and no falling paper.
+  r = await buena(DESKTOP, { reducedMotion: 'reduce' });
+  try {
+    assert.equal(r.got.bits, 0, 'cut paper fell with Reduce motion on');
+    assert.equal(r.got.name, 'Tía Lupe');
+  } finally { await r.ctx.close(); }
+  // Taking their word throws it too, and the name typed in the box is large on a laptop.
+  const ctx = await context(DESKTOP);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.cantor': { order: run(1, 54), pos: 6, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], juego: '', wins: [], settings: { speak: false, sound: false, awake: false, check: false } } });
+    await page.goto(base + 'cantor.html');
+    await page.click('#lotBtn');
+    await page.waitForSelector('#winbox #clWho');
+    assert.ok(await page.evaluate(() => document.querySelectorAll('#winbox .bit').length) >= 20, 'no cut paper for a ¡Lotería! taken on their word');
+    assert.ok(await page.$eval('#clWho', i => parseFloat(getComputedStyle(i).fontSize)) >= 22, 'the winner’s name box is small on a laptop');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
+check('board: a win in My tablas throws the cut paper too, and none with less motion', async () => {
+  for (const motion of ['no-preference', 'reduce']) {
+    const ctx = await context(PHONE, { reducedMotion: motion });
+    try {
+      const page = await ctx.newPage(), problems = watch(page);
+      await seed(page, { 'loteria.v1': ANA });
+      await page.goto(base + 'board.html');
+      await page.click('#callBtn');
+      for (const q of ['1', '2', '3', '4']) { await page.fill('#pkq', q); await page.press('#pkq', 'Enter'); }
+      await page.waitForSelector('#winbox .winc');
+      const bits = await page.evaluate(() => document.querySelectorAll('#winbox .winbg .bit').length);
+      if (motion === 'reduce') assert.equal(bits, 0, 'cut paper fell with Reduce motion on'); else assert.ok(bits >= 20, bits + ' bits of cut paper');
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
+});
+
 check('cantor: house rules: a late ¡Lotería! counts until Too late is chosen, then two cards after its tabla was good it’s too late', async () => {
   const CANELA7 = [21, 51, 23, 6, 16, 33, 8, 4, 14, 20, 9, 40, 29, 41, 13, 25], top = CANELA7.slice(0, 4);
   const order = top.concat(run(1, 54).filter(n => top.indexOf(n) < 0)); // CANELA 7's top row, done on the 4th card, La Sirena
