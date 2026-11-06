@@ -9,6 +9,7 @@
 // Sign-in: the fake google.accounts.oauth2 answers every requestAccessToken() with the token 'tok-' + the
 // localStorage '__who' value (default 'mark'), so different accounts are different Drives. A token of
 // 'tok-expired' gets 401s. window.__prompts records each request's options and window.__cfg the client config.
+// A file uploaded as JSON keeps its contents as a string; any other kind, as bytes (a Buffer).
 const GIS = `window.google={accounts:{oauth2:{
   initTokenClient:function(cfg){window.__cfg=cfg;return{requestAccessToken:function(o){window.__prompts=(window.__prompts||[]).concat([o||{}]);setTimeout(function(){cfg.callback({access_token:'tok-'+(localStorage.getItem('__who')||'mark'),expires_in:3599,scope:cfg.scope,token_type:'Bearer'});},20);}};},
   hasGrantedAllScopes:function(r,s){return (r.scope||'').indexOf(s)>=0;},
@@ -29,27 +30,33 @@ export function fakeGoogle() {
     if (m === 'GET' && p === '/drive/v3/files') {
       const q = url.searchParams.get('q') || '', ap = /appProperties has \{ key='([^']+)' and value='([^']+)' \}/.exec(q), name = /name\s*=\s*'([^']+)'/.exec(q);
       const hit = Object.entries(drive.files).filter(([, f]) => f.owner === owner && !f.trashed && (!ap || (f.appProperties || {})[ap[1]] === ap[2]) && (!name || f.name === name[1]));
-      return json({ files: hit.map(([id, f]) => ({ id, name: f.name, version: String(f.version), modifiedTime: new Date(f.modified).toISOString(), appProperties: f.appProperties })) });
+      return json({ files: hit.map(([id, f]) => ({ id, name: f.name, version: String(f.version), modifiedTime: new Date(f.modified).toISOString(), appProperties: f.appProperties, parents: f.parents })) });
     }
     if (m === 'GET' && p === '/drive/v3/about') return json({ user: { displayName: owner, emailAddress: owner + '@gmail.com' } });
     if (m === 'POST' && p === '/drive/v3/files') { // metadata only, e.g. a folder
       const id = 'f' + drive.next++; drive.files[id] = { owner, ...JSON.parse(req.postData() || '{}'), version: 1, modified: Date.now(), body: null };
       return json({ id, version: '1' });
     }
-    if (m === 'POST' && p === '/upload/drive/v3/files') { // uploadType=multipart
-      const raw = req.postData() || '', boundary = /boundary=([^;]+)/.exec(req.headers()['content-type'] || '')[1];
-      const parts = raw.split('--' + boundary).map(x => x.replace(/^\r\n/, '')).filter(x => x && !x.startsWith('--'));
-      const bodyOf = x => x.slice(x.indexOf('\r\n\r\n') + 4).replace(/\r\n$/, '');
-      const meta = JSON.parse(bodyOf(parts[0])), parent = meta.parents && meta.parents[0];
+    if (m === 'POST' && p === '/upload/drive/v3/files') { // uploadType=multipart: JSON metadata, then the contents, which may be bytes
+      const raw = req.postDataBuffer() || Buffer.alloc(0), sep = Buffer.from('--' + /boundary=([^;]+)/.exec(req.headers()['content-type'] || '')[1]);
+      const parts = [];
+      for (let i = raw.indexOf(sep), j; i >= 0 && (j = raw.indexOf(sep, i + sep.length)) >= 0; i = j) parts.push(raw.subarray(i + sep.length + 2, j - 2)); // less the \r\n after each boundary and before the next
+      const head = x => x.subarray(0, x.indexOf('\r\n\r\n')).toString(), bodyOf = x => x.subarray(x.indexOf('\r\n\r\n') + 4);
+      const meta = JSON.parse(bodyOf(parts[0]).toString()), parent = meta.parents && meta.parents[0], text = /content-type:\s*application\/json/i.test(head(parts[1]));
       if (parent && !mine(parent)) return json({ error: 'parent not found' }, 404);
-      const id = 'f' + drive.next++; drive.files[id] = { owner, ...meta, version: 1, modified: Date.now(), body: bodyOf(parts[1]) };
+      const id = 'f' + drive.next++; drive.files[id] = { owner, ...meta, version: 1, modified: Date.now(), body: text ? bodyOf(parts[1]).toString() : Buffer.from(bodyOf(parts[1])) };
       return json({ id, version: '1' });
     }
     if ((mm = /^\/drive\/v3\/files\/([\w-]+)$/.exec(p))) {
       const f = mine(mm[1]); if (!f) return json({ error: 'not found' }, 404);
-      if (m === 'GET') return url.searchParams.get('alt') === 'media' ? route.fulfill({ status: 200, headers: { ...CORS, 'Content-Type': 'application/json' }, body: f.body || '' }) : json({ id: mm[1], name: f.name, version: String(f.version), appProperties: f.appProperties });
+      if (m === 'GET') return url.searchParams.get('alt') === 'media' ? route.fulfill({ status: 200, headers: { ...CORS, 'Content-Type': Buffer.isBuffer(f.body) ? f.mimeType || 'application/octet-stream' : 'application/json' }, body: f.body || '' }) : json({ id: mm[1], name: f.name, version: String(f.version), appProperties: f.appProperties });
       if (m === 'PATCH') { Object.assign(f, JSON.parse(req.postData() || '{}')); f.version++; return json({ id: mm[1], version: String(f.version) }); }
-      if (m === 'DELETE') { delete drive.files[mm[1]]; return route.fulfill({ status: 204, headers: CORS }); }
+      if (m === 'DELETE') { // as Drive does, a folder goes with everything in it
+        const gone = [mm[1]];
+        for (let k = 0; k < gone.length; k++) for (const [id, x] of Object.entries(drive.files)) if ((x.parents || []).includes(gone[k]) && !gone.includes(id)) gone.push(id);
+        for (const id of gone) delete drive.files[id];
+        return route.fulfill({ status: 204, headers: CORS });
+      }
     }
     if (m === 'PATCH' && (mm = /^\/upload\/drive\/v3\/files\/([\w-]+)$/.exec(p))) { // uploadType=media
       const f = mine(mm[1]); if (!f) return json({ error: 'not found' }, 404);

@@ -1220,7 +1220,7 @@ check('cantor: Record a voice, one card at a time: kept on this device, El Canto
     assert.equal(await sheetTitle(page), 'Settings');
     assert.equal(await page.inputValue('#vSel'), 'rec:' + id);
     assert.equal(await page.$eval('#vSel option:checked', o => o.textContent), 'Abuela · recorded here');
-    assert.equal(await page.textContent('#vNote'), 'Recorded by the family. It stays on this device, and isn’t saved to Google Drive: Send this voice… takes it to another. 3 of 56 recorded so far: this device’s voice says the rest.');
+    assert.equal(await page.textContent('#vNote'), 'Recorded by the family. It stays on this device: Send this voice… takes it to another. 3 of 56 recorded so far: this device’s voice says the rest.');
     assert.equal(await page.textContent('#recEdit'), 'Abuela’s recordings…');
     // After a reload Abuela calls the round: her opening line, El Gallo and El Diablito. La Dama, not recorded, is read
     // by this device's voice at once, with no note about a voice not loading, and nothing of Dora's is asked for.
@@ -1296,7 +1296,7 @@ check('cantor: Record a voice, one card at a time: kept on this device, El Canto
     await page.click('#setBtn');
     await until(page, v => document.getElementById('vSel').value === v, 'rec:' + id);
     assert.deepEqual([await page.$eval('#vSel option:checked', o => o.textContent), await page.textContent('#recNew'), await page.textContent('#recEdit')], ['Abuela · grabada aquí', 'Grabar una voz…', 'Grabaciones de Abuela…']);
-    assert.match(await page.textContent('#vNote'), /^Grabada por la familia\. Se queda en este dispositivo y no se guarda en Google Drive: Enviar esta voz… la lleva a otro\. Llevas 3 de 56: /);
+    assert.match(await page.textContent('#vNote'), /^Grabada por la familia\. Se queda en este dispositivo: Enviar esta voz… la lleva a otro\. Llevas 3 de 56: /);
     assert.deepEqual(await english(page), [], 'English in Settings');
     await page.click('#recEdit');
     assert.equal(await sheetTitle(page), 'Grabar una voz');
@@ -1371,7 +1371,7 @@ check('cantor: Send this voice… makes one file, Add a voice… opens it on ano
     await recordLines(A, 'Abuela', 3);
     assert.equal(await sheetTitle(A), 'Settings');
     assert.deepEqual([await A.textContent('#recEdit'), await A.textContent('#vSend'), await A.textContent('#recNew'), await A.textContent('#vAdd')], ['Abuela’s recordings…', 'Send this voice…', 'Record a voice…', 'Add a voice…']);
-    assert.equal(await A.textContent('#vNote'), 'Recorded by the family. It stays on this device, and isn’t saved to Google Drive: Send this voice… takes it to another. 3 of 56 recorded so far: this device’s voice says the rest.');
+    assert.equal(await A.textContent('#vNote'), 'Recorded by the family. It stays on this device: Send this voice… takes it to another. 3 of 56 recorded so far: this device’s voice says the rest.');
     const [dl] = await Promise.all([A.waitForEvent('download'), A.click('#vSend')]);
     assert.equal(dl.suggestedFilename(), 'Abuela’s voice for El Cantor.html');
     await until(A, () => /downloaded/.test(document.getElementById('toast').textContent));
@@ -1464,7 +1464,7 @@ check('cantor: Send this voice… makes one file, Add a voice… opens it on ano
       await B.click('#setBtn');
       await until(B, v => document.getElementById('vSel').value === v, 'rec:' + data.id);
       assert.deepEqual([await B.$eval('#vSel option:checked', o => o.textContent), await B.textContent('#vSend'), await B.textContent('#vAdd')], ['Abuela · de otro dispositivo', 'Enviar esta voz…', 'Agregar una voz…']);
-      assert.match(await B.textContent('#vNote'), /^Grabada por la familia\. Se queda en este dispositivo y no se guarda en Google Drive: Enviar esta voz… la lleva a otro\. .* 1 de sus grabaciones está en un tipo de archivo de sonido que este dispositivo no puede reproducir, así que esa línea la dice la voz de este dispositivo\.$/);
+      assert.match(await B.textContent('#vNote'), /^Grabada por la familia\. Se queda en este dispositivo: Enviar esta voz… la lleva a otro\. .* 1 de sus grabaciones está en un tipo de archivo de sonido que este dispositivo no puede reproducir, así que esa línea la dice la voz de este dispositivo\.$/);
       assert.deepEqual(await english(B), [], 'English in Ajustes');
       await noSideways(B, 'Ajustes');
       assert.deepEqual(bProblems, []);
@@ -5479,11 +5479,139 @@ check('espanol: the day Drive last synced is written in the language shown, not 
   }
 });
 
+check('drive: a voice recorded on one device comes whole to another on the same Google Drive, and a rename, a take recorded again and a deletion follow it', async () => {
+  const g = fakeGoogle(), mic = await micBrowser();
+  const drive = () => g.files(), takesOf = id => drive().filter(f => f.appProperties && f.appProperties.loteria === 'take' && f.appProperties.voice === id);
+  const listFile = () => JSON.parse(drive().filter(f => (f.appProperties || {}).loteria === 'sync')[0].body);
+  const poll = async (page, fn, what, ms = 30000) => { for (const end = Date.now() + ms; !fn();) { if (Date.now() > end) throw new Error('waited ' + ms / 1000 + 's for ' + what); await page.waitForTimeout(200); } };
+  const options = page => page.$$eval('#vSel option', os => os.map(o => o.textContent));
+  const rewrite = { '**/sync.js': x => x.replace(/var ORIGINS = \[[^\]]*\];/, `var ORIGINS = ['${origin}'];`) };
+  // Abuela's phone, with the stand-in microphone. Both devices save to Mark's Google Drive.
+  const actx = await mic.newContext({ ...PHONE, locale: 'en-US', serviceWorkers: 'block' });
+  await actx.route(url => !url.href.startsWith(base), route => route.abort());
+  await g.install(actx, { rewrite });
+  const A = await actx.newPage(), aProblems = watch(A, ['https://accounts.google.com/', 'https://www.googleapis.com/']);
+  await seed(A, { ...DRIVE_ON(), 'loteria.cantor': NAMES_ONLY });
+  let holdUp = true; const ups = []; // her takes wait to go up while holdUp is set
+  await actx.route('https://www.googleapis.com/upload/drive/v3/files*', async route => {
+    const b = route.request().postDataBuffer();
+    if (holdUp && b && b.includes('"loteria":"take"')) await new Promise(ok => ups.push(ok));
+    return route.fallback();
+  });
+  // The laptop at the head of the table. Its downloads of a take wait while held is set, to see a voice half here.
+  let held = null; const waiting = [];
+  const B = await driveDevice(g, { 'loteria.cantor': NAMES_ONLY });
+  await B.ctx.route('https://www.googleapis.com/drive/v3/files/*', async route => {
+    const id = new URL(route.request().url()).pathname.split('/').pop(), f = g.drive.files[id];
+    if (held && f && f.appProperties && f.appProperties.loteria === 'take' && held(f)) await new Promise(ok => waiting.push(ok));
+    return route.fallback();
+  });
+  await B.page.addInitScript(FAKE_TTS); await B.page.addInitScript(DEALS); await B.page.addInitScript(PLAYED);
+  try {
+    await A.goto(base + 'cantor.html');
+    await recordLines(A, 'Abuela', 3);
+    const id = (await voicesKept(A)).voices[0].id;
+    // Until they've gone, Settings says how many are still to go.
+    await until(A, () => / 3 recordings are still to go to Google Drive\.$/.test(document.getElementById('vNote').textContent));
+    holdUp = false; ups.splice(0).forEach(ok => ok());
+    // Her three takes go to Drive, in Lotería/Voces/Abuela, as sound files named for their lines, and the voice is on
+    // the list in the tablas' file.
+    await poll(A, () => takesOf(id).length === 3, 'Abuela’s takes in Drive');
+    await poll(A, () => { try { return listFile().cols.voices.items[id].v.name === 'Abuela'; } catch { return false; } }, 'Abuela on the Drive list');
+    const byId = Object.fromEntries(drive().map(f => [f.id, f])), folder = byId[takesOf(id)[0].parents[0]], voces = byId[folder.parents[0]], loteria = byId[voces.parents[0]];
+    assert.deepEqual([loteria.name, voces.name, folder.name, folder.appProperties], ['Lotería', 'Voces', 'Abuela', { loteria: 'voice', voice: id }]);
+    assert.deepEqual(takesOf(id).map(f => [f.name, f.mimeType, f.appProperties.line, f.appProperties.type]).sort(), [['00 ¡Se va y se corre!.webm', 'audio/webm', 'open', 'audio/webm;codecs=opus'], ['01 El Gallo.webm', 'audio/webm', 'n01', 'audio/webm;codecs=opus'], ['02 El Diablito.webm', 'audio/webm', 'n02', 'audio/webm;codecs=opus']]);
+    assert.ok(takesOf(id).every(f => Buffer.isBuffer(f.body) && f.body.length > 1000), 'a take reached Drive empty');
+    await until(A, () => !/still to go/.test(document.getElementById('vNote').textContent));
+    assert.equal(await A.textContent('#vNote'), 'Recorded by the family, and saved to Google Drive too: every device signed in to it calls with it. 3 of 56 recorded so far: this device’s voice says the rest.');
+
+    // On the laptop she comes down a take at a time, and isn't in the list until every take is here: with two of
+    // three, El Cantor still calls with Dora.
+    held = f => f.appProperties.line === 'n02';
+    await B.page.goto(base + 'cantor.html');
+    await B.page.click('#setBtn');
+    await until(B.page, () => /2 of 3/.test(document.getElementById('vComing').textContent));
+    assert.equal(await B.page.textContent('#vComing'), 'Bringing Abuela’s voice from Google Drive: 2 of 3. It’s in the list once it’s all here.');
+    assert.ok(!(await options(B.page)).some(t => /Abuela/.test(t)), 'Abuela is in the list with a take still to come');
+    assert.deepEqual((await voicesKept(B.page)).voices.map(v => [v.name, v.coming]), [['Abuela', true]]);
+    await B.page.click('#stx');
+    await B.page.evaluate(() => { window.__played = []; window.__said = []; });
+    await B.page.click('#nextBtn'); // El Gallo, in Dora's voice
+    await until(B.page, () => window.__played.length === 1);
+    assert.equal((await saved(B.page, 'loteria.cantor')).settings.voice, 'pack:dora');
+    // The last take lands: she's in the list, whole, and calls El Diablito.
+    held = null; waiting.splice(0).forEach(ok => ok());
+    await B.page.click('#setBtn');
+    await until(B.page, () => [...document.querySelectorAll('#vSel option')].some(o => o.textContent === 'Abuela · from another device'));
+    assert.ok(await B.page.isHidden('#vComing'));
+    assert.deepEqual((await voicesKept(B.page)).clips, [id + '/n01', id + '/n02', id + '/open']);
+    await B.page.selectOption('#vSel', 'rec:' + id);
+    assert.equal(await B.page.textContent('#vNote'), 'Recorded by the family, and saved to Google Drive too: every device signed in to it calls with it. 3 of 56 recorded so far: this device’s voice says the rest.');
+    await B.page.click('#stx');
+    await B.page.evaluate(() => { window.__played = []; window.__said = []; });
+    await B.page.click('#nextBtn');
+    await until(B.page, () => window.__played.length === 1);
+    assert.deepEqual(await B.page.evaluate(() => window.__said), [], 'the laptop’s own voice read El Diablito');
+
+    // Renamed on her phone, and El Gallo recorded again: the laptop gets the new name and the new El Gallo, and Drive
+    // keeps only the new take, in a folder with the new name.
+    const oldGallo = takesOf(id).filter(f => f.appProperties.line === 'n01')[0];
+    await A.click('#recEdit');
+    await A.fill('#rcName', 'Abuelita');
+    await A.click('#rcBack'); // from where she left off (La Dama) back to El Diablito, then El Gallo
+    await A.click('#rcBack');
+    assert.equal(await A.textContent('#rcStage h3'), 'El Gallo');
+    await A.click('#rcGo'); await until(A, () => document.getElementById('rcGo').classList.contains('on'));
+    await A.waitForTimeout(1200);
+    await A.click('#rcGo');
+    await until(A, () => document.querySelector('#rcState .t').textContent === 'Recorded');
+    await poll(A, () => { const n = takesOf(id).filter(f => f.appProperties.line === 'n01'); return n.length === 1 && n[0].id !== oldGallo.id; }, 'the new El Gallo alone in Drive');
+    await poll(A, () => folder.name === 'Abuelita' || (g.drive.files[folder.id] || {}).name === 'Abuelita', 'the folder renamed');
+    const newGallo = +takesOf(id).filter(f => f.appProperties.line === 'n01')[0].appProperties.t;
+    await poll(A, () => listFile().cols.voices.items[id].v.name === 'Abuelita', 'the new name on the Drive list');
+    await B.page.evaluate(() => LoteriaSync.now());
+    await B.page.click('#setBtn');
+    await until(B.page, () => [...document.querySelectorAll('#vSel option')].some(o => o.textContent === 'Abuelita · from another device'));
+    await until(B.page, (t) => new Promise(ok => { const q = indexedDB.open('loteria.voices'); q.onsuccess = () => { const r = q.result.transaction(['voices']).objectStore('voices').getAll(); r.onsuccess = () => { q.result.close(); ok(r.result[0] && r.result[0].takes.n01.t === t); }; }; }), newGallo);
+
+    // A take of hers Drive has in a kind of sound the laptop can't play (from a browser that records one): it's kept,
+    // this device's voice reads that line, and Settings says so.
+    g.drive.files['fv01'] = { owner: 'mark', name: '01 El Gallo (verso).webm', mimeType: 'audio/x-unknown', parents: [folder.id], appProperties: { loteria: 'take', voice: id, line: 'v01', t: String(Date.now()), type: 'audio/x-unknown' }, version: 1, modified: Date.now(), body: Buffer.from('not a sound this browser plays') };
+    await B.page.evaluate(() => LoteriaSync.now());
+    await until(B.page, () => /can’t play/.test(document.getElementById('vNote').textContent));
+    assert.match(await B.page.textContent('#vNote'), / 1 of its recordings is in a kind of sound file this device can’t play, so this device’s voice says that line\.$/);
+
+    // In Spanish too, with no English left in Settings.
+    await B.page.evaluate(() => localStorage.setItem('loteria.lang', 'es'));
+    await B.page.reload();
+    await B.page.click('#setBtn');
+    await until(B.page, v => document.getElementById('vSel').value === v, 'rec:' + id);
+    assert.equal(await B.page.$eval('#vSel option:checked', o => o.textContent), 'Abuelita · de otro dispositivo');
+    assert.match(await B.page.textContent('#vNote'), /^Grabada por la familia y guardada también en Google Drive: todos los dispositivos con esa cuenta cantan con ella\. /);
+    assert.deepEqual(await english(B.page), [], 'English in Ajustes');
+    // Deleted on the laptop, with two taps that say it goes from every device and Drive: it's gone from Drive, folder
+    // and all, and from her phone at its next sync.
+    await B.page.click('#recEdit');
+    await B.page.click('#rcDel');
+    assert.equal(await B.page.textContent('#rcDel'), 'Toca otra vez para borrar todas las grabaciones de Abuelita, en todos los dispositivos y en Google Drive');
+    await B.page.click('#rcDel');
+    await poll(B.page, () => !takesOf(id).length && !g.drive.files[folder.id], 'Abuelita gone from Drive');
+    assert.ok(listFile().cols.voices.gone[id], 'no tombstone for her in the Drive list');
+    assert.ok(!(await options(B.page)).some(t => /Abuel/.test(t)));
+    await A.click('#rcx');
+    await A.evaluate(() => LoteriaSync.now());
+    await until(A, () => ![...document.querySelectorAll('#vSel option')].some(o => /Abuel/.test(o.textContent)));
+    assert.deepEqual(await voicesKept(A), { voices: [], clips: [] });
+    assert.equal((await saved(A, 'loteria.cantor')).settings.voice, '');
+    assert.deepEqual(aProblems, []); assert.deepEqual(B.problems, []);
+  } finally { await B.ctx.close(); await mic.close(); }
+});
+
 check('drive: El Cantor, with no ☁ button, says a winner saved after Google’s hour waits for Sync now, and its card speaks of winners', async () => {
   for (const lang of ['en', 'es']) {
     const SAYS = {
-      en: { saved: 'El Cantor’s winners and the last juego it printed or checked are saved to mark@gmail.com, with your tablas, and show up on every device where you turn this on.', tap: 'Tap Sync now to get the winners from your other devices.', wait: 'Saved here — tap Sync now to send it to Google Drive.', toast: 'Saved here — tap Sync now in Settings (⋯) to send it to Google Drive.', off: /^Keep El Cantor’s winners and the last juego/ },
-      es: { saved: 'Los ganadores de El Cantor y el último juego que imprimió o revisó se guardan en mark@gmail.com, junto con tus tablas, y aparecen en cada dispositivo donde actives esto.', tap: 'Toca Sincronizar ahora para traer los ganadores de tus otros dispositivos.', wait: 'Guardado aquí — toca Sincronizar ahora para mandarlo a Google Drive.', toast: 'Guardado aquí — toca Sincronizar ahora en Ajustes (⋯) para mandarlo a Google Drive.', off: /^Guarda los ganadores de El Cantor y el último juego/ }
+      en: { saved: 'El Cantor’s winners, the last juego it printed or checked and the voices recorded in it are saved to mark@gmail.com, with your tablas, and show up on every device where you turn this on.', tap: 'Tap Sync now to get the winners from your other devices.', wait: 'Saved here — tap Sync now to send it to Google Drive.', toast: 'Saved here — tap Sync now in Settings (⋯) to send it to Google Drive.', off: /^Keep El Cantor’s winners, the last juego it printed or checked and the voices recorded in it/ },
+      es: { saved: 'Los ganadores de El Cantor, el último juego que imprimió o revisó y las voces grabadas en él se guardan en mark@gmail.com, junto con tus tablas, y aparecen en cada dispositivo donde actives esto.', tap: 'Toca Sincronizar ahora para traer los ganadores de tus otros dispositivos.', wait: 'Guardado aquí — toca Sincronizar ahora para mandarlo a Google Drive.', toast: 'Guardado aquí — toca Sincronizar ahora en Ajustes (⋯) para mandarlo a Google Drive.', off: /^Guarda los ganadores de El Cantor, el último juego que imprimió o revisó y las voces grabadas en él/ }
     }[lang];
     // The sign-in has a little over a minute left as the page opens; sync.js stops trusting it a minute early.
     const g = fakeGoogle();

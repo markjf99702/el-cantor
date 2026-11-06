@@ -1,8 +1,9 @@
 /* Saving to Google Drive, so tablas follow a person from device to device.
    Every page keeps working from localStorage exactly as before. When someone turns this on,
-   the parts worth keeping — My tablas, Make tablas, El Cantor's winners and juegos — are copied
-   into one small file in a "Lotería" folder in their own Google Drive, and what their other
-   devices saved there is merged back in.
+   the parts worth keeping — My tablas, Make tablas, El Cantor's winners and juegos, and the list of
+   voices recorded in El Cantor — are copied into one small file in a "Lotería" folder in their own
+   Google Drive, and what their other devices saved there is merged back in. The recorded voices'
+   sound goes in files of its own, which El Cantor keeps with LoteriaSync.files (below).
    Merging is three-way and item by item (a person, a tabla, a win): what this device changed
    since the last sync, what the Drive copy changed, and for an item changed on both, the
    newer change wins. Nothing about this shows away from junkdrawer.works.
@@ -121,6 +122,24 @@
       write: function (o, c) { o = o || {}; o.printed = {}; c.order.forEach(function (id) { o.printed[c.items[id].name] = c.items[id].count; }); return o; },
       ok: function (v) { return !!v && typeof v.name === 'string' && v.count === (v.count | 0) && v.count > 0; },
       later: true // came after the Drive file's first shape: a copy saved without it isn't damaged, and changed nothing in it
+    },
+    voices: { // the voices recorded in El Cantor, by id: { name, made }. El Cantor keeps this list as it keeps the voices
+      key: 'loteria.voices', // in IndexedDB, and their takes in Drive files of their own (LoteriaSync.files).
+      read: function (o) {
+        var items = {}, order = [];
+        (o && Array.isArray(o.voices) ? o.voices : []).forEach(function (v) { if (v && typeof v.id === 'string' && v.id && !items[v.id]) { items[v.id] = { name: String(v.name || ''), made: typeof v.made === 'number' ? v.made : 0 }; order.push(v.id); } });
+        return { items: items, order: order };
+      },
+      // A voice deleted on another device goes into dropped too, for El Cantor to delete it here.
+      write: function (o, c) {
+        o = o || {}; var was = COLS.voices.read(o).items;
+        o.dropped = Array.isArray(o.dropped) ? o.dropped : [];
+        Object.keys(was).forEach(function (id) { if (!c.items[id] && o.dropped.indexOf(id) < 0) o.dropped.push(id); });
+        o.voices = c.order.map(function (id) { return { id: id, name: c.items[id].name, made: c.items[id].made }; });
+        return o;
+      },
+      ok: function (v) { return !!v && typeof v.name === 'string' && typeof v.made === 'number'; },
+      later: true
     }
   };
   var NAMES = Object.keys(COLS), KEYS = NAMES.map(function (n) { return COLS[n].key; }).filter(function (k, i, a) { return a.indexOf(k) === i; });
@@ -238,13 +257,13 @@
     if (note && s !== 'ok') says.forEach(function (f) { try { f(T(note)); } catch (e) { } });
     if (note !== 'sync.stillLoading') asked = false;
   }
-  function api(method, path, body, type, text) { // text: the answer as it came, for a file's contents
+  function api(method, path, body, type, text) { // text: the answer as it came, for a file's contents ('bytes': as bytes)
     if (!tok) return Promise.reject({ auth: true });
     var h = { Authorization: 'Bearer ' + tok.token }; if (type) h['Content-Type'] = type;
     return fetch(API + path, { method: method, headers: h, body: body }).then(function (r) {
       if (r.status === 401) { tok = null; put(KT, null); throw { auth: true }; }
       if (!r.ok) return r.json().then(null, function () { return null; }).then(function (b) { throw { http: r.status, reason: reason(b) }; });
-      return r.status === 204 ? null : text ? r.text() : r.json();
+      return r.status === 204 ? null : text === 'bytes' ? r.arrayBuffer() : text ? r.text() : r.json();
     }, function () { throw { net: true }; }); // no answer at all: no connection
   }
   // Why Drive said no, as Google's guide "Resolve errors" lists it: {error: {errors: [{reason: 'storageQuotaExceeded'}]}}.
@@ -411,6 +430,49 @@
     st = { on: false, email: '', name: '', last: 0, pick: true };
     put(KB, null); put(KN, null); saveSt(); setStatus('off');
   }
+
+  // ---------- files of El Cantor's own: the recorded voices ----------
+  // El Cantor keeps each recorded voice's takes as sound files: Lotería/Voces/<the voice's name>/01 El Gallo.webm and so
+  // on, each folder and file found by its appProperties like the tablas' file. These do what it needs, with the sign-in
+  // Drive saving has, and only while it's on and that sign-in is good (ok()); otherwise each fails with { auth: true }.
+  var files = {
+    ok: function () { return !!CLIENT_ID && st.on && live(); },
+    // Every file or folder whose appProperties have key=value: [{ id, name, appProperties }].
+    list: function (key, value) {
+      if (!files.ok()) return Promise.reject({ auth: true });
+      var q = "appProperties has { key='" + key + "' and value='" + value + "' } and trashed=false", out = [];
+      function page(next) {
+        return api('GET', 'drive/v3/files?spaces=drive&orderBy=createdTime&pageSize=1000&fields=' + encodeURIComponent('nextPageToken,files(id,name,appProperties)') + '&q=' + encodeURIComponent(q) + (next ? '&pageToken=' + encodeURIComponent(next) : ''))
+          .then(function (x) { out = out.concat(x && x.files || []); return x && x.nextPageToken ? page(x.nextPageToken) : out; });
+      }
+      return page('');
+    },
+    // A new folder inside parent, or inside the Lotería folder when none is given: its id.
+    mkdir: function (meta, parent) {
+      if (!files.ok()) return Promise.reject({ auth: true });
+      return (parent ? Promise.resolve(parent) : folder()).then(function (dir) {
+        return api('POST', 'drive/v3/files?fields=id', JSON.stringify(Object.assign({ mimeType: 'application/vnd.google-apps.folder', parents: [dir] }, meta)), 'application/json').then(function (x) { return x.id; });
+      });
+    },
+    // The folder whose first appProperty is meta's, made the first time: its id.
+    folder: function (meta, parent) {
+      var k = Object.keys(meta.appProperties)[0];
+      return files.list(k, meta.appProperties[k]).then(function (fs) { return fs.length ? fs[0].id : files.mkdir(meta, parent); });
+    },
+    // A new file: meta { name, mimeType, parents, appProperties }, and its contents as a Blob. Its id.
+    add: function (meta, blob) {
+      if (!files.ok()) return Promise.reject({ auth: true });
+      var b = 'loteria-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      var body = new Blob(['--' + b + '\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' + JSON.stringify(meta) + '\r\n--' + b + '\r\nContent-Type: ' + (blob.type || 'application/octet-stream') + '\r\n\r\n', blob, '\r\n--' + b + '--']);
+      return api('POST', 'upload/drive/v3/files?uploadType=multipart&fields=id', body, 'multipart/related; boundary=' + b).then(function (x) { return x.id; });
+    },
+    bytes: function (id) { return files.ok() ? api('GET', 'drive/v3/files/' + id + '?alt=media', null, null, 'bytes') : Promise.reject({ auth: true }); },
+    rename: function (id, name) { return files.ok() ? api('PATCH', 'drive/v3/files/' + id + '?fields=id', JSON.stringify({ name: name }), 'application/json') : Promise.reject({ auth: true }); },
+    // Gone already is as good as deleted. A folder goes with everything in it.
+    remove: function (id) { return files.ok() ? api('DELETE', 'drive/v3/files/' + id).then(null, function (e) { if (!(e && e.http === 404)) throw e; }) : Promise.reject({ auth: true }); },
+    // The ids of a part's items removed on purpose, as of this device's last sync: a voice deleted on any device.
+    gone: function (n) { var b = get(KB), c = b && b.cols && b.cols[n]; return c && c.gone ? Object.keys(c.gone) : []; }
+  };
 
   // ---------- the bits of page each tool shows ----------
   function ago(t) { // the date in the language shown, not the device's
@@ -597,6 +659,7 @@
     onNote: function (f) { says.push(f); }, // f(text): what went wrong after a tap, to show for a few seconds
     onWait: function (f) { waits.push(f); }, // f(): something was saved here after the hour, and waits for a tap to go to Drive
     onSynced: function (f) { dones.push(f); }, // f(keys): a sync went through; keys: where synced data landed, none if nothing came
+    files: files, // El Cantor's recorded voices in Drive (above)
     _merge: mergeCol, _cols: COLS, _read: readDrive // for tests
   };
 

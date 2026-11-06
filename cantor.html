@@ -620,7 +620,7 @@ a.chip{text-decoration:none}
   // clip — verse, a breath, name — and the manifest says where the verse ends and the name
   // starts, so Adivinanza can stop between them. The device's own speech engine is the fallback.
   // A voice recorded on this device (RECS, see Record a voice below) plays the same way, a clip a line.
-  var PACKS = [], RECS = [], TTS = window.speechSynthesis || null, VOICES = [];
+  var PACKS = [], RECS = [], COMING = [], TTS = window.speechSynthesis || null, VOICES = [], VQ = Promise.resolve(); // VQ: see vq(), below
   var OPENING = '¡Se va y se corre, con la vieja en el coche!';
   var UI = { onVoices: null, sheet: null };
   function rank(v) { var l = String(v.lang || '').replace('_', '-').toLowerCase(); return l === 'es-mx' ? 0 : l === 'es-us' ? 1 : l === 'es-419' ? 2 : (l === 'es' || l.indexOf('es-') === 0) ? 3 : 9; }
@@ -1152,7 +1152,7 @@ a.chip{text-decoration:none}
   // Space there would press that button again instead of starting or pausing.
   function keyed(el) { try { return el.matches(':focus-visible'); } catch (x) { return false; } }
   function openSheet(html) { var s = $('sheet'); if (s.hidden) UI.opener = keyed(document.activeElement) ? document.activeElement : null; s.innerHTML = '<div class="sheetbg"><div class="sheet" role="dialog" aria-modal="true" tabindex="-1">' + html + '</div></div>'; s.hidden = false; s.querySelector('.sheetbg').addEventListener('click', function (e) { if (e.target === e.currentTarget) closeSheet(); }); UI.sheet = s.querySelector('.sheet'); UI.sheet.focus({ preventScroll: true }); return UI.sheet; }
-  function closeSheet() { var s = $('sheet'); if (s.hidden) return; s.hidden = true; s.innerHTML = ''; UI.sheet = null; UI.onVoices = null; UI.onFull = null; UI.onOurs = null; UI.mine = null; var o = UI.opener; UI.opener = null; if (o && o !== document.body && o.isConnected) o.focus({ preventScroll: true }); if (UI.onClose) { var f = UI.onClose; UI.onClose = null; f(); } }
+  function closeSheet() { var s = $('sheet'); if (s.hidden) return; s.hidden = true; s.innerHTML = ''; UI.sheet = null; UI.onVoices = null; UI.onFull = null; UI.onComing = null; UI.onOurs = null; UI.mine = null; var o = UI.opener; UI.opener = null; if (o && o !== document.body && o.isConnected) o.focus({ preventScroll: true }); if (UI.onClose) { var f = UI.onClose; UI.onClose = null; f(); } }
 
   function patternSheet(title) {
     openSheet('<div class="hd"><h2>' + esc(title || T('whatPlaying')) + '</h2><button class="btn sec sm" type="button" id="ptx">' + T('done') + '</button></div><div class="bd stack"><p class="note">' + T.html('cantor.patsNote_html') + '</p><div class="pats" id="pats"></div></div>');
@@ -1205,6 +1205,7 @@ a.chip{text-decoration:none}
       '<div class="card"><div class="eyebrow">' + T('lang.label') + '</div><div id="langSw" style="margin-top:8px"></div></div>' +
       '<div class="card stack"><div class="row sp"><div><b>' + T('cantor.readAloud') + '</b><p class="note" id="vNote"></p></div><button class="chip" type="button" id="spBtn"></button></div>' +
       '<div class="row" id="vRow" style="align-items:flex-end;flex-wrap:nowrap"><label class="fld" style="flex:1"><span>' + T('cantor.voice') + '</span><select id="vSel"></select></label><button class="btn sec" type="button" id="vTest">' + T('cantor.tryIt') + '</button></div>' +
+      '<p class="note" id="vComing" aria-live="polite" hidden></p>' +
       '<div class="stack" id="recRow" style="gap:8px"><div class="row" id="recMine"><button class="btn sec sm" type="button" id="recEdit"></button><button class="btn sec sm" type="button" id="vSend">' + T('vfile.send') + '</button></div>' +
       '<div class="row"><button class="btn sec sm" type="button" id="recNew">' + T('rec.new') + '</button><button class="btn sec sm" type="button" id="vAdd">' + T('vfile.add') + '</button><input type="file" id="vAddF" accept=".html,.htm,text/html" hidden></div></div>' +
       '<label class="fld" id="rRow"><span>' + T('cantor.rate') + ' · <b id="rateV"></b></span><input type="range" id="rate" min="0.7" max="1.3" step="0.05"></label></div>' +
@@ -1237,17 +1238,30 @@ a.chip{text-decoration:none}
     // A recorded voice is described in the chosen language (voices.json's own words are English); one the family
     // recorded is "recorded here", or "recorded on another device" when it came from one.
     function about(p) { var here = p.from === 'here'; if (p.rec) return T(here ? 'rec.here' : 'rec.there'); var k = 'voice.' + p.id, t = T('voice.' + p.id); return t !== k ? t : p.about || ''; }
-    function draw() {
+    // What the voice is and what's still coming or going, alone while a voice comes down or goes up to Google Drive,
+    // so the list isn't drawn again under a finger choosing from it.
+    function notes() {
+      if (!$('vNote')) return; // another sheet now
       var has = !!TTS || PACKS.length > 0 || RECS.length > 0, ch = choice(), mine = ch.pack && ch.pack.rec ? ch.pack : null;
-      onOff($('spBtn'), st.speak && has); $('spBtn').disabled = !has;
-      $('vNote').textContent = T(!has ? 'cantor.v.cant' : !st.speak ? 'cantor.v.off' : mine ? 'cantor.v.rec' : ch.pack ? 'cantor.v.pack' : VOICES.length ? 'cantor.v.device' : 'cantor.v.none');
+      var drive = driveOn(), offered = !!(window.LoteriaSync && LoteriaSync.ready);
+      $('vNote').textContent = T(!has ? 'cantor.v.cant' : !st.speak ? 'cantor.v.off' : mine ? (drive ? 'cantor.v.recDrive' : offered ? 'cantor.v.recOff' : 'cantor.v.rec') : ch.pack ? 'cantor.v.pack' : VOICES.length ? 'cantor.v.device' : 'cantor.v.none');
       // A voice recorded here says what this device's voice still reads: the lines not recorded, and the verses.
       if (st.speak && mine) {
         var got = recCount(mine, 'names');
         if (got < 56) $('vNote').textContent += ' ' + T('cantor.v.recSome', { n: got, of: 56 });
         else if (st.style !== 'name' && recCount(mine, 'verses') < 54) $('vNote').textContent += ' ' + T('cantor.v.recVerses');
         if (mine.cant) $('vNote').textContent += ' ' + T('vfile.cantSome', { n: mine.cant }); // recorded in a browser whose sound this one can't play
+        if (drive && VS.toGo[mine.id] > 0) $('vNote').textContent += ' ' + T('vsync.toGo', { n: VS.toGo[mine.id] });
       }
+      // A voice on its way from Google Drive, not listed until it's all here.
+      var coming = COMING.filter(function (r) { return VS.got[r.id]; }).map(function (r) { return T('vsync.coming', { name: r.name, n: VS.got[r.id].n, of: VS.got[r.id].of }); });
+      $('vComing').hidden = !(has && st.speak && coming.length); $('vComing').textContent = coming.join(' ');
+    }
+    function draw() {
+      if (!$('vNote')) return;
+      var has = !!TTS || PACKS.length > 0 || RECS.length > 0, ch = choice(), mine = ch.pack && ch.pack.rec ? ch.pack : null;
+      onOff($('spBtn'), st.speak && has); $('spBtn').disabled = !has;
+      notes();
       $('vRow').hidden = !(has && st.speak); $('rRow').hidden = !(has && st.speak && !ch.pack);
       $('recRow').hidden = !(has && st.speak && canKeep());
       $('recMine').hidden = !mine; if (mine) $('recEdit').textContent = T('rec.edit', { name: mine.name });
@@ -1308,7 +1322,7 @@ a.chip{text-decoration:none}
     if ($('fsBtn')) $('fsBtn').addEventListener('click', function () { fullScreen(!fsOn()); });
     wireAlong($('setAlong'));
     $('stx').addEventListener('click', closeSheet);
-    UI.onVoices = draw; UI.onFull = draw; loadVoices(); loadRecs(); draw();
+    UI.onVoices = draw; UI.onFull = draw; UI.onComing = notes; loadVoices(); loadRecs(); draw();
     if (window.LoteriaSync) LoteriaSync.card($('syncCard'), true);
   }
   function setPace(v) { C.settings.pace = v; save(); if (R.phase === 'waiting' && R.playing) wait(); else renderBar(); }
@@ -1316,11 +1330,13 @@ a.chip{text-decoration:none}
   // ---------- Record a voice ----------
   // Settings › Record a voice…: someone in the family reads the cards for El Cantor, one line at a time. Names first:
   // the opening line, the 54 names in the deck's order and ¡Lotería!; then, if wanted, the 54 verses, for Verse, then
-  // name and Adivinanza. A line not recorded is read by this device's voice. The voice stays on this device, in
-  // IndexedDB 'loteria.voices' (Google Drive doesn't carry it): voices holds { id, name, made, from, takes } and clips
+  // name and Adivinanza. A line not recorded is read by this device's voice. The voice is kept on this device, in
+  // IndexedDB 'loteria.voices': voices holds { id, name, made, from, takes, coming } and clips
   // { k: id + '/' + key, buf, type, t }, the key as recKey() makes it. Settings' voice is then 'rec:' + id. from is
-  // 'here' for a voice recorded on this device, 'file' for one added from a file (Send this voice…, below); takes
-  // { key: { t, type, cant } } says when each line was recorded, and cant marks one this device can't play.
+  // 'here' for a voice recorded on this device, 'file' for one added from a file (Send this voice…, below) and 'drive'
+  // for one Google Drive brought (Recorded voices in Google Drive, below); takes { key: { t, type, cant } } says when
+  // each line was recorded, and cant marks one this device can't play. coming: still on its way from Drive, so not
+  // listed yet. Every change to them goes through vq(), one at a time, so none writes over another.
   var VDB = null;
   function vdb() {
     if (!VDB) {
@@ -1350,27 +1366,33 @@ a.chip{text-decoration:none}
   }
   function got(r, set) { r.onsuccess = function () { set(r.result); }; }
   function recClip(k) { return vtx(['clips'], 'readonly', function (t, set) { got(t.objectStore('clips').get(k), set); }); }
-  function recRow(v) { return { id: v.id, name: v.name, made: v.made, from: v.from || 'here', takes: v.takes || {} }; }
-  // RECS from storage. A voice already in RECS is the same object afterwards, filled in again, so a sheet holding it
-  // keeps working with it. have: the lines this device plays; cant: how many it can't.
+  function recRow(v) { var r = { id: v.id, name: v.name, made: v.made, from: v.from || 'here', takes: v.takes || {} }; if (v.coming) r.coming = true; return r; }
+  function vq(fn) { var p = VQ.then(fn); VQ = p.catch(function () { }); return p; }
+  // RECS (and COMING) from storage. A voice already there is the same object afterwards, filled in again, so a sheet
+  // holding it keeps working with it. have: the lines this device plays; cant: how many it can't. A voice kept here
+  // that the list Google Drive saving keeps doesn't have yet goes on it.
   function loadRecs() {
     if (!window.indexedDB) return Promise.resolve();
-    return vtx(['voices', 'clips'], 'readonly', function (t, set) {
-      var vs = null, ks = null;
-      function both() { if (vs && ks) set({ vs: vs, ks: ks }); }
-      got(t.objectStore('voices').getAll(), function (r) { vs = r; both(); });
-      got(t.objectStore('clips').getAllKeys(), function (r) { ks = r; both(); });
-    }).then(function (o) {
-      var was = {}; RECS.forEach(function (r) { was[r.id] = r; });
-      RECS = o.vs.filter(function (v) { return v && v.id; }).sort(function (a, b) { return a.made - b.made; }).map(function (v) {
-        var r = was[v.id] || { id: v.id, rec: true };
-        r.name = v.name || '?'; r.made = v.made || 0; r.from = v.from || 'here'; r.takes = v.takes && typeof v.takes === 'object' ? v.takes : {}; r.have = {}; r.cant = 0;
-        o.ks.forEach(function (k) { k = String(k); if (k.indexOf(v.id + '/') !== 0) return; var line = k.slice(v.id.length + 1); if (r.takes[line] && r.takes[line].cant) r.cant++; else r.have[line] = true; });
-        return r;
+    return vq(function () {
+      return vtx(['voices', 'clips'], 'readonly', function (t, set) {
+        var vs = null, ks = null;
+        function both() { if (vs && ks) set({ vs: vs, ks: ks }); }
+        got(t.objectStore('voices').getAll(), function (r) { vs = r; both(); });
+        got(t.objectStore('clips').getAllKeys(), function (r) { ks = r; both(); });
+      }).then(function (o) {
+        var was = {}; RECS.concat(COMING).forEach(function (r) { was[r.id] = r; });
+        var all = o.vs.filter(function (v) { return v && v.id; }).sort(function (a, b) { return a.made - b.made; }).map(function (v) {
+          var r = was[v.id] || { id: v.id, rec: true };
+          r.name = v.name || '?'; r.made = v.made || 0; r.from = v.from || 'here'; r.takes = v.takes && typeof v.takes === 'object' ? v.takes : {}; r.have = {}; r.cant = 0; r.coming = !!v.coming;
+          o.ks.forEach(function (k) { k = String(k); if (k.indexOf(v.id + '/') !== 0) return; var line = k.slice(v.id.length + 1); if (r.takes[line] && r.takes[line].cant) r.cant++; else r.have[line] = true; });
+          return r;
+        });
+        RECS = all.filter(function (r) { return !r.coming; }); COMING = all.filter(function (r) { return r.coming; });
+        RECS.forEach(mirrorPut);
+        if (UI.onVoices) UI.onVoices();
+        renderBar();
       });
-      if (UI.onVoices) UI.onVoices();
-      renderBar();
-    }, function () { });
+    }).catch(function () { });
   }
   function canKeep() { return !!(window.indexedDB && !MIC.noDb); } // a browser that keeps nothing has nowhere to put a voice
   function canRecord() { return !!(window.MediaRecorder && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) && canKeep(); }
@@ -1408,7 +1430,7 @@ a.chip{text-decoration:none}
       '<button class="btn sec" type="button" id="rcNext">' + T('rec.next') + '</button></div>' +
       '<p class="note">' + T('rec.intro') + '</p>' + (safari ? '<p class="note conote">' + T('rec.safari') + '</p>' : '') +
       '<div class="row" id="rcDelRow"><button class="btn sec sm" type="button" id="rcDel">' + T('rec.delete') + '</button></div></div>');
-    UI.rec = S; UI.onVoices = null; UI.onFull = null; // Settings' own, from before
+    UI.rec = S; UI.onVoices = null; UI.onFull = null; UI.onComing = null; // Settings' own, from before
     $('rcName').value = v ? v.name : '';
     function steps() { return recSteps(S.part); }
     function step() { return steps()[S.i] || null; }
@@ -1512,14 +1534,18 @@ a.chip{text-decoration:none}
       }).then(function (dec) {
         if (dec && (dec.duration < 0.25 || heard(dec)[2] < 0.01)) throw { quiet: true };
         var box = UI.rec === S && $('rcName'), nv = S.v || { id: 'r' + Date.now().toString(36), name: (box && box.value.trim()) || S.who, made: Date.now(), from: 'here', rec: true, have: {}, takes: {}, cant: 0 }; // the name as it is now, typed on during the take too
-        var at = Date.now(), row = recRow(nv); row.takes = Object.assign({}, row.takes); row.takes[s.key] = { t: at, type: blob.type };
-        return vtx(['voices', 'clips'], 'readwrite', function (t) {
-          t.objectStore('voices').put(row);
-          t.objectStore('clips').put({ k: nv.id + '/' + s.key, buf: buf, type: blob.type, t: at });
-        }).then(function () {
-          if (!S.v) { S.v = nv; RECS.push(nv); C.settings.voice = 'rec:' + nv.id; save(); } // the voice El Cantor calls with, from its first line
-          if (nv.takes[s.key] && nv.takes[s.key].cant) nv.cant--; // recorded again here, in a sound this device plays
-          nv.takes = row.takes; nv.have[s.key] = true; forget(clipUrl(nv, s));
+        return vq(function () {
+          var at = Date.now(), was = nv.takes[s.key];
+          nv.takes[s.key] = { t: at, type: blob.type };
+          return vtx(['voices', 'clips'], 'readwrite', function (t) {
+            t.objectStore('voices').put(recRow(nv));
+            t.objectStore('clips').put({ k: nv.id + '/' + s.key, buf: buf, type: blob.type, t: at });
+          }).then(function () {
+            if (!S.v) { S.v = nv; RECS.push(nv); C.settings.voice = 'rec:' + nv.id; save(); } // the voice El Cantor calls with, from its first line
+            if (was && was.cant) nv.cant--; // recorded again here, in a sound this device plays
+            nv.have[s.key] = true; forget(clipUrl(nv, s));
+            mirrorPut(nv); toDrive(nv, s.key);
+          }, function (e) { if (was) nv.takes[s.key] = was; else delete nv.takes[s.key]; throw e; });
         });
       }).then(function () { S.state = 'idle'; draw(); }, function (e) {
         S.state = 'idle'; draw();
@@ -1538,14 +1564,16 @@ a.chip{text-decoration:none}
     $('rcBack').addEventListener('click', function () { go(-1); });
     $('rcNext').addEventListener('click', function () { go(1); });
     $('rcPart').querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () { if (S.state !== 'idle' || S.part === b.dataset.v) return; hush(); S.part = b.dataset.v; S.i = Math.max(0, first(S.part)); draw(); }); });
-    $('rcName').addEventListener('input', function () { var nv = S.v; if (nv && this.value.trim()) { nv.name = this.value.trim(); vtx(['voices'], 'readwrite', function (t) { t.objectStore('voices').put(recRow(nv)); }).catch(function () { }); } });
+    $('rcName').addEventListener('input', function () { var nv = S.v, name = this.value.trim(); if (nv && name) vq(function () { nv.name = name; mirrorPut(nv); return vtx(['voices'], 'readwrite', function (t) { t.objectStore('voices').put(recRow(nv)); }); }).catch(function () { }); });
     $('rcName').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); this.blur(); } });
-    // Delete asks for a second tap, then takes every recording of the voice away.
+    // Delete asks for a second tap, then takes every recording of the voice away: from every device and Google Drive
+    // too, when it saves there.
     $('rcDel').addEventListener('click', function () {
       var nv = S.v; if (!nv) return;
-      if (!S.armed) { S.armed = true; this.textContent = T('rec.deleteAgain', { name: nv.name }); return; }
+      if (!S.armed) { S.armed = true; this.textContent = T(window.LoteriaSync && LoteriaSync.isOn() ? 'rec.deleteAgainDrive' : 'rec.deleteAgain', { name: nv.name }); return; }
       leave();
-      vtx(['voices', 'clips'], 'readwrite', function (t) { t.objectStore('voices').delete(nv.id); t.objectStore('clips').delete(IDBKeyRange.bound(nv.id + '/', nv.id + '/￿')); }).catch(function () { });
+      vq(function () { return vtx(['voices', 'clips'], 'readwrite', function (t) { t.objectStore('voices').delete(nv.id); t.objectStore('clips').delete(IDBKeyRange.bound(nv.id + '/', nv.id + '/\uffff')); }); }).catch(function () { });
+      mirrorDrop(nv.id); delete VS.toGo[nv.id];
       RECS = RECS.filter(function (x) { return x !== nv; });
       if (C.settings.voice === 'rec:' + nv.id) { C.settings.voice = ''; save(); }
       settingsSheet();
@@ -1614,17 +1642,20 @@ a.chip{text-decoration:none}
     var v = RECS.filter(function (r) { return r.id === meta.id; })[0];
     return Promise.all(takes.map(function (k) { return plays(k.buf).then(function (ok) { k.cant = !ok; }); })).then(function () {
       if (!v && takes.every(function (k) { return k.cant; })) throw { noSound: meta.name };
-      var row = recRow(v || { id: meta.id, name: meta.name, made: meta.made, from: from });
-      row.takes = Object.assign({}, row.takes);
-      var fresh = takes.filter(function (k) { var was = row.takes[k.line]; return !was || !(was.t >= k.t) || (was.cant && !k.cant); });
-      fresh.forEach(function (k) { row.takes[k.line] = k.cant ? { t: k.t, type: k.type, cant: true } : { t: k.t, type: k.type }; });
-      return vtx(['voices', 'clips'], 'readwrite', function (t) {
-        t.objectStore('voices').put(row);
-        fresh.forEach(function (k) { t.objectStore('clips').put({ k: row.id + '/' + k.line, buf: k.buf, type: k.type, t: k.t }); });
+      var fresh;
+      return vq(function () {
+        var row = recRow(v || RECS.concat(COMING).filter(function (r) { return r.id === meta.id; })[0] || { id: meta.id, name: meta.name, made: meta.made, from: from });
+        row.takes = Object.assign({}, row.takes); delete row.coming; // a voice on its way from Drive is here whole now
+        fresh = takes.filter(function (k) { var was = row.takes[k.line]; return !was || !(was.t >= k.t) || (was.cant && !k.cant); });
+        fresh.forEach(function (k) { row.takes[k.line] = k.cant ? { t: k.t, type: k.type, cant: true } : { t: k.t, type: k.type }; });
+        return vtx(['voices', 'clips'], 'readwrite', function (t) {
+          t.objectStore('voices').put(row);
+          fresh.forEach(function (k) { t.objectStore('clips').put({ k: row.id + '/' + k.line, buf: k.buf, type: k.type, t: k.t }); });
+        });
       }).then(function () {
-        fresh.forEach(function (k) { forget('rec:' + row.id + '/' + k.line); });
+        fresh.forEach(function (k) { forget('rec:' + meta.id + '/' + k.line); });
         return loadRecs();
-      }).then(function () { return RECS.filter(function (r) { return r.id === row.id; })[0]; });
+      }).then(function () { var r = RECS.filter(function (x) { return x.id === meta.id; })[0]; fresh.forEach(function (k) { toDrive(r, k.line); }); return r; });
     });
   }
   function readText(f) {
@@ -1657,6 +1688,161 @@ a.chip{text-decoration:none}
     }, function (e) { // and anything else: storage that wouldn't keep it
       toast(T(e === NOT_OURS ? 'vfile.foreign' : e === DAMAGED ? 'vfile.damaged' : e === NEWER_V ? 'vfile.newer' : e && e.noSound ? 'vfile.cantPlay' : 'rec.cantKeep', { name: e && e.noSound }), 8000);
     });
+  }
+
+  // ---------- recorded voices in Google Drive ----------
+  // With Drive saving on, each recorded voice goes to Drive and on to every device signed in with that account, under
+  // the same drive.file permission as the tablas. Two parts: the list of voices (id, name, made) is a part of the
+  // tablas' file, kept in localStorage 'loteria.voices' { voices, dropped } and merged like the tablas, so a rename or
+  // a deletion on one device reaches the others (sync.js puts a voice deleted elsewhere in dropped, and it's deleted
+  // here); and each take is a sound file of its own, Lotería/Voces/<name>/01 El Gallo.webm and so on, tagged with its
+  // voice, line and when it was recorded (appProperties). vsync(), after each sync and soon after a take, sends the
+  // takes Drive doesn't have and brings the ones this device doesn't, the later take of a line winning; deletes the
+  // folder of a voice deleted on purpose; and names each folder after its voice. A voice coming from Drive for the
+  // first time isn't listed until every take of it is here, so it's never half played: until then it isn't in the
+  // list, and El Cantor calls as before. A take that comes later (a line recorded again on another device) replaces
+  // its line whole once it's here.
+  var KV = 'loteria.voices', VS = { busy: false, again: false, timer: 0, toGo: {}, got: {} }; // toGo[id]: takes still to send; got[id]: { n, of } of a voice coming
+  function mirror() {
+    var o = null; try { o = JSON.parse(localStorage.getItem(KV) || 'null'); } catch (e) { }
+    o = o && typeof o === 'object' ? o : {};
+    if (!Array.isArray(o.voices)) o.voices = []; if (!Array.isArray(o.dropped)) o.dropped = [];
+    return o;
+  }
+  function setMirror(o) { try { localStorage.setItem(KV, JSON.stringify(o)); } catch (e) { return; } if (window.LoteriaSync) LoteriaSync.changed(); }
+  function mirrorPut(v) { // on the list, by its name now; not one deleted on another device that's on its way out here
+    var o = mirror(), m = o.voices.filter(function (x) { return x.id === v.id; })[0];
+    if (o.dropped.indexOf(v.id) >= 0 || m && m.name === v.name) return;
+    if (m) m.name = v.name; else o.voices.push({ id: v.id, name: v.name, made: v.made });
+    setMirror(o);
+  }
+  function mirrorDrop(id) { var o = mirror(); o.voices = o.voices.filter(function (x) { return x.id !== id; }); setMirror(o); }
+  function alive(id) { var o = mirror(); return o.dropped.indexOf(id) < 0 && o.voices.some(function (x) { return x.id === id; }); } // not deleted, here or elsewhere, while a pass was busy with it
+  function driveOn() { return !!(window.LoteriaSync && LoteriaSync.isOn() && LoteriaSync.files); }
+  function toDrive(v, line) { if (!v || !driveOn()) return; VS.toGo[v.id] = (VS.toGo[v.id] || 0) + 1; vsyncSoon(); }
+  function vsyncSoon() { clearTimeout(VS.timer); VS.timer = setTimeout(vsync, 1500); }
+  function voicesDrawn(light) { if (light && UI.onComing) UI.onComing(); else if (!light && UI.onVoices) UI.onVoices(); }
+  // What the list says now: a voice deleted on another device is deleted here, and a name changed there is changed here.
+  function fromMirror() {
+    var o = mirror(), drop = o.dropped.slice(), names = {};
+    o.voices.forEach(function (x) { names[x.id] = x.name; });
+    var renamed = RECS.concat(COMING).filter(function (r) { return names[r.id] && names[r.id] !== r.name; });
+    if (!drop.length && !renamed.length) return Promise.resolve();
+    return vq(function () {
+      renamed.forEach(function (r) { r.name = names[r.id]; });
+      return vtx(['voices', 'clips'], 'readwrite', function (t) {
+        drop.forEach(function (id) { t.objectStore('voices').delete(id); t.objectStore('clips').delete(IDBKeyRange.bound(id + '/', id + '/￿')); });
+        renamed.forEach(function (r) { t.objectStore('voices').put(recRow(r)); });
+      });
+    }).then(function () {
+      var o2 = mirror(); o2.dropped = o2.dropped.filter(function (id) { return drop.indexOf(id) < 0; });
+      try { localStorage.setItem(KV, JSON.stringify(o2)); } catch (e) { }
+      RECS = RECS.filter(function (r) { return drop.indexOf(r.id) < 0; }); COMING = COMING.filter(function (r) { return drop.indexOf(r.id) < 0; });
+      drop.forEach(function (id) { delete VS.toGo[id]; delete VS.got[id]; if (C.settings.voice === 'rec:' + id) { C.settings.voice = ''; save(); } });
+      voicesDrawn(); renderBar();
+    }).catch(function () { });
+  }
+  // A take's file in Drive: 01 El Gallo.webm, 01 El Gallo (verso).webm, 00 for the opening line and 55 for ¡Lotería!.
+  function takeName(line, type) {
+    var n = line === 'open' ? 0 : line === 'loteria' ? 55 : +line.slice(1), c = n >= 1 && n <= 54 && card(n);
+    var ext = /mp4|aac|m4a/.test(type) ? 'm4a' : /webm/.test(type) ? 'webm' : /ogg/.test(type) ? 'ogg' : 'audio';
+    return pad2(n) + ' ' + (line === 'open' ? '¡Se va y se corre!' : line === 'loteria' ? '¡Lotería!' : c.name + (line.charAt(0) === 'v' ? ' (verso)' : '')) + '.' + ext;
+  }
+  function each(list, fn) { return list.reduce(function (p, x) { return p.then(function () { return fn(x); }); }, Promise.resolve()); }
+  function vsync() {
+    var F = driveOn() && LoteriaSync.files;
+    if (!F || !F.ok()) return;
+    if (VS.busy) { VS.again = true; return; }
+    if (!mirror().voices.length && !RECS.length && !COMING.length && !F.gone('voices').length) return; // nothing to do, and nothing asked of Drive
+    VS.busy = true;
+    var folders, takes, voces = null;
+    function still() { if (!F.ok()) throw { auth: true }; } // Drive saving stopped, or the hour ran out: the rest waits
+    fromMirror().then(loadRecs).then(function () {
+      return Promise.all([F.list('loteria', 'take'), F.list('loteria', 'voice')]);
+    }).then(function (x) {
+      takes = x[0]; folders = x[1];
+      var list = mirror().voices, on = {}, gone = F.gone('voices');
+      list.forEach(function (v) { on[v.id] = 1; });
+      // The folder of a voice deleted on purpose goes, with its takes.
+      return each(folders.filter(function (f) { var id = f.appProperties && f.appProperties.voice; return gone.indexOf(id) >= 0 && !on[id]; }), function (f) { still(); return F.remove(f.id); }).then(function () {
+        return each(list, function (m) { still(); return oneVoice(m); });
+      });
+    }).catch(function () { }).then(function () {
+      VS.busy = false; voicesDrawn();
+      if (VS.again) { VS.again = false; vsync(); }
+    });
+    function oneVoice(m) {
+      var v = RECS.concat(COMING).filter(function (r) { return r.id === m.id; })[0], remote = {}, extra = [];
+      // The takes Drive has of it: the latest of each line; an earlier one of a line is in the way, and goes. Two of
+      // the same moment (two devices sent it at once) keep the one with the lower id, as every device decides.
+      takes.forEach(function (f) {
+        var a = f.appProperties || {}; if (a.voice !== m.id || !a.line) return;
+        var k = { id: f.id, t: +a.t || 0, type: a.type || 'audio/mp4' }, was = remote[a.line];
+        if (!was || k.t > was.t || k.t === was.t && k.id < was.id) { if (was) extra.push(was.id); remote[a.line] = k; } else extra.push(k.id);
+      });
+      var mine = v && !v.coming ? Object.keys(v.takes).filter(function (line) { return (v.have[line] || v.takes[line].cant) && (!remote[line] || remote[line].t < v.takes[line].t); }) : [];
+      var theirs = Object.keys(remote).filter(function (line) { return !v || !v.takes[line] || v.takes[line].t < remote[line].t; });
+      var folder = folders.filter(function (f) { return f.appProperties && f.appProperties.voice === m.id; })[0], missed = false;
+      VS.toGo[m.id] = mine.length;
+      if (!v && theirs.length) { // the first take of it to come: on its way, not listed
+        v = { id: m.id, name: m.name, made: m.made, from: 'drive', rec: true, takes: {}, have: {}, cant: 0, coming: true };
+        COMING.push(v);
+      }
+      if (v && v.coming) VS.got[m.id] = { n: Object.keys(v.takes).length, of: Object.keys(v.takes).length + theirs.length };
+      voicesDrawn();
+      return each(extra, function (id) { still(); return F.remove(id); }).then(function () {
+        if (folder && folder.name !== m.name) return F.rename(folder.id, m.name);
+      }).then(function () {
+        if (!mine.length || folder) return;
+        return (voces ? Promise.resolve(voces) : F.folder({ name: 'Voces', appProperties: { loteria: 'voices' } })).then(function (id) {
+          voces = id; return F.mkdir({ name: m.name, appProperties: { loteria: 'voice', voice: m.id } }, id);
+        }).then(function (id) { folder = { id: id, name: m.name }; });
+      }).then(function () {
+        return each(mine, function (line) { still(); return send(v, line, folder.id, remote[line]); });
+      }).then(function () {
+        // A take replaced on Drive since the list was made is gone: the next pass brings the one that replaced it.
+        return each(theirs, function (line) { still(); return bring(v, line, remote[line]).catch(function (e) { if (e && e.http === 404) missed = true; else throw e; }); });
+      }).then(function () {
+        if (!v || !v.coming || missed) return;
+        return vq(function () { if (!alive(v.id)) return; v.coming = false; return vtx(['voices'], 'readwrite', function (t) { t.objectStore('voices').put(recRow(v)); }); }).then(function () { delete VS.got[m.id]; return loadRecs(); });
+      });
+    }
+    // A take of this device's to Drive, and the one it replaces there taken away.
+    function send(v, line, dir, old) {
+      return recClip(v.id + '/' + line).then(function (c) {
+        if (!c || !c.buf || !alive(v.id)) return;
+        var t = v.takes[line].t, type = c.type || v.takes[line].type || 'audio/mp4';
+        return F.add({ name: takeName(line, type), mimeType: type.split(';')[0], parents: [dir], appProperties: { loteria: 'take', voice: v.id, line: line, t: String(t), type: type } }, new Blob([c.buf], { type: type.split(';')[0] })).then(function () {
+          VS.toGo[v.id] = Math.max(0, (VS.toGo[v.id] || 1) - 1); voicesDrawn(true);
+          if (old) return F.remove(old.id);
+        });
+      });
+    }
+    // A take from Drive, kept whole once it's all here and checked that this device plays it.
+    function bring(v, line, k) {
+      return F.bytes(k.id).then(function (buf) {
+        return plays(buf).then(function (ok) {
+          return vq(function () {
+            var was = v.takes[line]; if (was && was.t >= k.t || !alive(v.id)) return; // recorded here meanwhile, or deleted
+            v.takes[line] = ok ? { t: k.t, type: k.type } : { t: k.t, type: k.type, cant: true };
+            return vtx(['voices', 'clips'], 'readwrite', function (t) {
+              t.objectStore('voices').put(recRow(v));
+              t.objectStore('clips').put({ k: v.id + '/' + line, buf: buf, type: k.type, t: k.t });
+            }).then(function () {
+              forget('rec:' + v.id + '/' + line);
+              if (was && was.cant) v.cant--;
+              if (ok) v.have[line] = true; else { delete v.have[line]; v.cant++; }
+              if (VS.got[v.id]) VS.got[v.id].n++;
+              voicesDrawn(!!v.coming); // a line of a listed voice can change what Settings says of it
+            }, function (e) { if (was) v.takes[line] = was; else delete v.takes[line]; throw e; });
+          });
+        });
+      });
+    }
+  }
+  if (window.LoteriaSync) {
+    LoteriaSync.onSynced(function () { vsync(); });
+    LoteriaSync.onUpdate(function (keys) { if (keys.indexOf(KV) >= 0) fromMirror().then(function () { if (driveOn()) vsyncSoon(); }); });
   }
 
   // ---------- checking a ¡Lotería! ----------
