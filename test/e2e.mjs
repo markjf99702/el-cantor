@@ -2409,6 +2409,54 @@ check('board: Not now on Who’s playing goes to the home screen and saves nobod
   } finally { await ctx.close(); }
 });
 
+check('board: a first visit can start from a tabla printed from El Cantor, and holds only the printed tablas added', async () => {
+  const CANELA7 = [21, 51, 23, 6, 16, 33, 8, 4, 14, 20, 9, 40, 29, 41, 13, 25];
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await page.goto(base + 'board.html');
+    assert.equal(await sheetTitle(page), 'Who’s playing on this device?');
+    // It waits for a name, as the other two do.
+    await page.click('#wPrinted');
+    assert.ok(await page.isVisible('#wNeed'), 'no “Your name first”');
+    assert.equal(await sheetTitle(page), 'Who’s playing on this device?');
+    // Cancel goes back to Who's playing, with the name, and saves nobody; nor does a tap outside or Escape.
+    await page.fill('#wName', 'Lupe');
+    await page.click('#wPrinted');
+    assert.equal(await sheetTitle(page), 'Add a printed tabla');
+    await page.mouse.click(195, 30); await page.keyboard.press('Escape');
+    assert.equal(await sheetTitle(page), 'Add a printed tabla', 'a tap outside or Escape left it with nobody saved');
+    await page.click('#ptx');
+    assert.equal(await sheetTitle(page), 'Who’s playing on this device?');
+    assert.equal(await page.inputValue('#wName'), 'Lupe');
+    assert.equal(await saved(page, 'loteria.v1'), null, 'Cancel saved someone');
+    // CANELA 7: Lupe is saved with that tabla and no other, so no random tabla cheers a win she isn't holding.
+    await page.click('#wPrinted');
+    await page.fill('#ptJ', 'canela'); await page.fill('#ptN', '7'); await page.click('#ptAdd');
+    assert.equal(await sheetTitle(page), 'CANELA 7 is on your tablas');
+    let v1 = await saved(page, 'loteria.v1');
+    assert.deepEqual(v1.players.map(p => [p.name, p.boards.map(b => b.name)]), [['Lupe', ['CANELA 7']]]);
+    assert.deepEqual(v1.players[0].boards[0].cards, CANELA7, 'CANELA 7 square for square, as El Cantor checks it');
+    // Another printed tabla: the juego is kept, the number is new.
+    await page.click('#ptMore');
+    assert.equal(await sheetTitle(page), 'Add a printed tabla');
+    assert.deepEqual([await page.inputValue('#ptJ'), await page.inputValue('#ptN')], ['canela', '']);
+    await page.fill('#ptN', '8'); await page.press('#ptN', 'Enter');
+    assert.equal(await sheetTitle(page), 'CANELA 8 is on your tablas');
+    assert.match(await page.textContent('#sheet .note'), /Lupe has 2 tablas/);
+    await page.click('#ptDone');
+    assert.ok(await page.evaluate(() => document.getElementById('sheet').hidden));
+    assert.equal(await page.textContent('#toast'), 'Playing as Lupe');
+    v1 = await saved(page, 'loteria.v1');
+    assert.deepEqual(v1.players.map(p => [p.name, p.boards.map(b => b.name)]), [['Lupe', ['CANELA 7', 'CANELA 8']]]);
+    assert.deepEqual(await page.$$eval('#boards .tabla', ts => ts.length), 2, 'two tablas on the board, the printed ones');
+    // The Tablas sheet's button for Mark's four says what it does.
+    await page.click('#tablasBtn');
+    assert.equal(await page.textContent('#tbOrig'), 'Use Mark’s four');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('board: a shared link on a new device makes that person its player, and saves no stand-in Mark', async () => {
   const CARDS1 = '1.2.3.4.5.6.7.8.9.a.b.c.d.e.f.g', who = async page => (await saved(page, 'loteria.v1') || { players: [] }).players.map(p => p.name + ':' + p.boards.length);
   for (const step of ['add', 'no thanks', 'mark', 'set up']) {
@@ -3358,7 +3406,7 @@ check('board: Settings keeps each On/Off beside its words on a phone', async () 
   } finally { await ctx.close(); }
 });
 
-check('board: Restore the original four, Remove and Random tabla ask for a second tap', async () => {
+check('board: Use Mark’s four, Remove and Random tabla ask for a second tap', async () => {
   const ctx = await context(PHONE);
   try {
     const page = await ctx.newPage(), problems = watch(page);
@@ -3371,9 +3419,9 @@ check('board: Restore the original four, Remove and Random tabla ask for a secon
     assert.equal(await page.textContent('#tbOrig'), 'Tap again to replace all 5 tablas');
     await page.click('#tbOrig');
     assert.deepEqual(await names(), ['Tabla 1', 'Tabla 2', 'Tabla 3', 'Tabla 4']);
-    assert.equal(await page.textContent('#tbOrig'), 'Restore the original four');
+    assert.equal(await page.textContent('#tbOrig'), 'Use Mark’s four');
     await page.click('#tbOrig'); // already Mark's four: nothing to lose, so no second tap
-    assert.equal(await page.textContent('#tbOrig'), 'Restore the original four');
+    assert.equal(await page.textContent('#tbOrig'), 'Use Mark’s four');
     const del = page.locator('#edb [data-a="del"]').first();
     await del.click();
     assert.deepEqual(await names(), ['Tabla 1', 'Tabla 2', 'Tabla 3', 'Tabla 4'], 'one tap removed a tabla');

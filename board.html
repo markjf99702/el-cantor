@@ -641,11 +641,16 @@ a{color:var(--teal);font-weight:700}
   function preview(b) {
     return '<div class="tabla" style="--bw:100%"><div class="lbl"><span class="k"><span>' + esc(b.name) + '</span></span></div><div class="eg">' + b.cards.map(function (n) { return '<div class="cell"><img src="' + src(n) + '" alt="' + esc(card(n).name) + '" loading="lazy" draggable="false"></div>'; }).join('') + '</div></div>';
   }
-  function printedSheet(typed) {
-    openSheet('<div class="hd"><h2>' + T('board.addPrintedH') + '</h2><button class="btn sec sm" type="button" id="ptx">' + T('cancel') + '</button></div><div class="bd stack"><p class="note">' + T('board.printedNote') + '</p><div class="row"><input id="ptJ" placeholder="' + esc(T('board.juegoLike')) + '" autocomplete="off" autocapitalize="characters" spellcheck="false" style="flex:1 1 10em;text-transform:uppercase;font-weight:700"><input id="ptN" placeholder="No." inputmode="numeric" enterkeyhint="done" autocomplete="off" maxlength="3" aria-label="' + esc(T('tablaNumber')) + '" style="width:5.5em"><button class="btn red" type="button" id="ptAdd" disabled>' + T('board.addIt') + '</button></div><div class="edb"><div id="ptPrev"></div></div></div>');
+  // first: on a first visit, { name } from Who's playing. The tablas typed in become that person's only tablas, with
+  // no random ones to cheer wins on tablas they aren't holding. Until one is added it waits, as Who's playing does,
+  // and Cancel goes back there; after each one it offers another, as people often play two to four printed tablas.
+  function printedSheet(typed, first) {
+    if (first && first.added) { printedMore(typed, first); return; }
+    openSheet('<div class="hd"><h2>' + T('board.addPrintedH') + '</h2><button class="btn sec sm" type="button" id="ptx">' + T(first && first.p ? 'done' : 'cancel') + '</button></div><div class="bd stack"><p class="note">' + T('board.printedNote') + '</p><div class="row"><input id="ptJ" placeholder="' + esc(T('board.juegoLike')) + '" autocomplete="off" autocapitalize="characters" spellcheck="false" style="flex:1 1 10em;text-transform:uppercase;font-weight:700"><input id="ptN" placeholder="No." inputmode="numeric" enterkeyhint="done" autocomplete="off" maxlength="3" aria-label="' + esc(T('tablaNumber')) + '" style="width:5.5em"><button class="btn red" type="button" id="ptAdd" disabled>' + T('board.addIt') + '</button></div><div class="edb"><div id="ptPrev"></div></div></div>');
     var pick = null;
     typed = typed || { j: null, n: '' };
-    reopen = function () { printedSheet(typed); }; // tablas from Google Drive landed: come back with what was typed
+    reopen = function () { printedSheet(typed, first); }; // tablas from Google Drive landed: come back with what was typed
+    if (first && !first.p) { UI.welcome = true; reopen = null; } // nobody saved yet: tablas landing from Drive close it, as they close Who's playing
     function draw() {
       typed.j = $('ptJ').value; typed.n = $('ptN').value;
       var name = L.juegoName($('ptJ').value), k = parseInt($('ptN').value, 10), host = $('ptPrev');
@@ -660,12 +665,39 @@ a{color:var(--teal);font-weight:700}
     $('ptN').addEventListener('input', function () { this.value = this.value.replace(/\D/g, ''); draw(); });
     $('ptN').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); if (!$('ptAdd').disabled) $('ptAdd').click(); } });
     $('ptAdd').addEventListener('click', function () {
-      var p = player(); if (!pick) return; if (p.boards.length >= 6) { toast(T('board.sixPlenty')); return; }
+      if (!pick) return;
+      if (first) { if (firstAdd(first, pick)) { typed.n = ''; first.added = pick.name; printedSheet(typed, first); evaluate(true); render(); } return; }
+      var p = player(); if (p.boards.length >= 6) { toast(T('board.sixPlenty')); return; }
       p.boards.push({ id: uid(), name: pick.name, cards: pick.cards }); save(); closeSheet(); evaluate(true); render(); tablasSheet(); toast(T('board.added', { name: pick.name }));
     });
-    $('ptx').addEventListener('click', function () { closeSheet(); tablasSheet(); });
+    $('ptx').addEventListener('click', function () {
+      if (!first) { closeSheet(); tablasSheet(); }
+      else if (first.p) { closeSheet(); render(); toast(T('board.playingAs', { name: player().name })); }
+      else welcomeSheet(first.name);
+    });
     draw();
     if (!('ontouchstart' in window)) ($('ptJ').value ? $('ptN') : $('ptJ')).focus();
+  }
+
+  // A printed tabla typed in on a first visit: the person from Who's playing is saved with it, or gets it after the
+  // ones already added. If tablas from Google Drive landed meanwhile with someone of that name, it goes to them.
+  function firstAdd(first, pick) {
+    var p = first.p && S.players.filter(function (x) { return x.id === first.p; })[0], low = first.name.toLowerCase();
+    if (!p && !firstRun) p = S.players.filter(function (x) { return x.name.toLowerCase() === low; })[0];
+    if (!p) { p = { id: uid(), name: first.name, boards: [] }; if (firstRun) S.players = [p]; else S.players.push(p); }
+    if (p.boards.length >= 6) { toast(T('board.sixPlenty')); return false; }
+    if (!p.boards.some(function (b) { return b.cards.join('.') === pick.cards.join('.'); })) p.boards.push({ id: uid(), name: pick.name, cards: pick.cards });
+    first.p = p.id; S.current = p.id; firstRun = false; save();
+    return true;
+  }
+  // After one is added on a first visit: the tablas so far, and another, or Done.
+  function printedMore(typed, first) {
+    var p = player();
+    openSheet('<div class="hd"><h2>' + esc(T('board.addedH', { name: first.added })) + '</h2></div><div class="bd stack"><p class="note">' + esc(T('board.moreNote', { n: p.boards.length, name: p.name })) + '</p><div class="row"><button class="btn red" type="button" id="ptMore"' + (p.boards.length >= 6 ? ' disabled' : '') + '>' + T('board.anotherPrinted') + '</button><button class="btn sec" type="button" id="ptDone">' + T('done') + '</button></div><div class="edb ims">' + p.boards.map(preview).join('') + '</div></div>');
+    reopen = function () { printedMore(typed, first); };
+    $('ptMore').addEventListener('click', function () { first.added = ''; printedSheet(typed, first); });
+    $('ptDone').addEventListener('click', function () { closeSheet(); render(); toast(T('board.playingAs', { name: p.name })); });
+    $('ptMore').focus({ preventScroll: true });
   }
 
   // ---------- share / import ----------
@@ -798,7 +830,7 @@ a{color:var(--teal);font-weight:700}
 
   // ---------- first visit ----------
   function welcomeSheet(name) { // name: one typed in a shared link's offer, turned down
-    openSheet('<div class="hd"><h2>' + T('board.welcomeH') + '</h2></div><div class="bd stack"><p class="note">' + T(window.LoteriaSync && LoteriaSync.ready ? 'board.welcomeDrive' : 'board.welcomeLocal') + '</p><input id="wName" placeholder="' + esc(T('board.yourName')) + '" autocomplete="off" autocapitalize="words" aria-describedby="wNeed"><p class="need" id="wNeed" hidden>' + T('board.nameFirst') + '</p><div class="card"><div class="eyebrow">' + T('board.startWith') + '</div><div class="row" style="margin-top:8px"><button class="btn red" type="button" id="wRandom">' + T('board.wRandom') + '</button><button class="btn sec" type="button" id="wMark">' + T('board.wMark') + '</button></div><p class="note" style="margin-top:8px">' + T.html('board.eitherWay_html') + '</p></div>' +
+    openSheet('<div class="hd"><h2>' + T('board.welcomeH') + '</h2></div><div class="bd stack"><p class="note">' + T(window.LoteriaSync && LoteriaSync.ready ? 'board.welcomeDrive' : 'board.welcomeLocal') + '</p><input id="wName" placeholder="' + esc(T('board.yourName')) + '" autocomplete="off" autocapitalize="words" aria-describedby="wNeed"><p class="need" id="wNeed" hidden>' + T('board.nameFirst') + '</p><div class="card"><div class="eyebrow">' + T('board.startWith') + '</div><div class="row" style="margin-top:8px"><button class="btn red" type="button" id="wRandom">' + T('board.wRandom') + '</button><button class="btn sec" type="button" id="wMark">' + T('board.wMark') + '</button><button class="btn sec" type="button" id="wPrinted">' + T('board.wPrinted') + '</button></div><p class="note" style="margin-top:8px">' + T.html('board.eitherWay_html') + '</p></div>' +
       (window.LoteriaSync && LoteriaSync.ready ? '<p class="note">' + T('board.alreadyDrive') + '</p><div class="card" id="wSync"></div>' : '') +
       '<div class="later" id="wPasteRow"><a href="#" id="wPaste">' + T('board.pasteAsk') + '</a></div>' +
       '<p class="later"><a href="./" id="wLater">' + T('board.notNow') + '</a></p>' + langRow() + '</div>');
@@ -822,6 +854,11 @@ a{color:var(--teal);font-weight:700}
       var row = $('wPasteRow'); row.className = ''; row.innerHTML = pasteRow(); wirePaste(); $('lnk').focus();
     });
     $('wRandom').addEventListener('click', function () { go(false); });
+    $('wPrinted').addEventListener('click', function () { // a tabla in hand, printed from El Cantor: only that one
+      var name = $('wName').value.trim();
+      if (!name) { $('wNeed').hidden = false; $('wName').focus(); return; }
+      printedSheet(null, { name: name });
+    });
     $('wMark').addEventListener('click', function () { go(true); });
     $('wName').addEventListener('keydown', function (e) { if (e.key === 'Enter') go(false); });
     $('wName').addEventListener('input', function () { if (this.value.trim()) $('wNeed').hidden = true; });
