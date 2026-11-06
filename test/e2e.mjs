@@ -407,6 +407,8 @@ check('espanol: El Cantor in Spanish, every sheet and the ¡Lotería! box, and t
     await page.goto(base + 'cantor.html');
     assert.equal(await page.getAttribute('html', 'lang'), 'es-MX');
     assert.equal(await page.textContent('#cap h2'), 'Cuando quieras');
+    assert.equal(await page.textContent('#capAlong'), 'Para jugar en sus teléfonosCopiar liga');
+    assert.deepEqual(await english(page), [], 'English on Ready when you are');
     await page.reload();
     assert.equal(await page.textContent('#cap h2'), 'Cuando quieras', 'Español didn’t stay chosen');
     await page.click('#setBtn');
@@ -2466,6 +2468,83 @@ check('names: El Cantor and Make tablas call My tablas by its name, and its Shar
 });
 
 // ---------------------------------------------------------------- My tablas
+check('play along: El Cantor’s link opens My tablas on its game and juego, on a phone set up and on a new one', async () => {
+  // El Cantor: Share… and Copy link under Start calling and in Settings, the link carrying the game and the juego.
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await page.addInitScript(() => {
+      window.__shared = []; window.__copied = [];
+      navigator.share = d => { window.__shared.push(d); return Promise.resolve(); };
+      Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: t => { window.__copied.push(t); return Promise.resolve(); } } });
+    });
+    await seed(page, { 'loteria.cantor': { order: run(1, 54), pos: 0, round: 1, patterns: ['equis'], juego: 'CANELA', wins: [], settings: { speak: false, sound: false } } });
+    await page.goto(base + 'cantor.html');
+    assert.deepEqual(await page.$$eval('#capAlong > span, #capAlong button', es => es.map(e => e.firstChild.nodeType === 3 ? e.firstChild.textContent : '').filter(Boolean)), ['Play along on your phones', 'Share…', 'Copy link']);
+    await page.click('#capAlong [data-a="copy"]');
+    await until(page, () => document.getElementById('toast').textContent === 'Link copied');
+    await page.click('#capAlong [data-a="share"]');
+    const link = base + 'board.html#g=equis&j=CANELA';
+    assert.deepEqual(await page.evaluate(() => [window.__copied, window.__shared]), [[link], [{ text: 'Play along on your phone: La Equis, juego CANELA', url: link }]]);
+    // Clásico with Siete Loco on top, and no juego yet; then in Settings' Playing along card.
+    await page.evaluate(() => { const c = JSON.parse(localStorage.getItem('loteria.cantor')); c.patterns = ['linea', 'esquinas', 'cuadro', 'siete']; c.juego = ''; localStorage.setItem('loteria.cantor', JSON.stringify(c)); });
+    await page.reload();
+    await page.click('#setBtn');
+    assert.equal(await page.textContent('#alongWhat'), 'The link opens My tablas on each phone playing Clásico + Siete Loco.');
+    await page.click('#setAlong [data-a="copy"]');
+    assert.equal(await page.evaluate(() => window.__copied[window.__copied.length - 1]), base + 'board.html#g=clasico.siete');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+  // My tablas on a phone set up already: the game button matches, it says so, and + A printed tabla starts on the
+  // juego, over the one El Cantor printed earlier on this phone. A full stop after the link, from a sentence, is fine.
+  const ctx2 = await context(PHONE);
+  try {
+    const page = await ctx2.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.v1': ANA, 'loteria.cantor': { juego: 'TAMAL', last: 1 } });
+    await page.goto(base + 'board.html#g=equis&j=canela.');
+    await until(page, () => document.getElementById('toast').textContent === 'Playing La Equis, like El Cantor');
+    assert.equal(await page.textContent('#patBtn'), 'La Equis ▾');
+    assert.equal(await page.evaluate(() => location.hash), '', 'the link stayed in the address');
+    const s = await saved(page, 'loteria.v1');
+    assert.deepEqual([s.patterns, s.play.juego, s.players.map(p => p.name)], [['equis'], 'CANELA', ['Ana']]);
+    await page.click('#tablasBtn');
+    await page.click('#tbPrinted');
+    assert.equal(await page.inputValue('#ptJ'), 'CANELA');
+    // Opened again on the same page, a link with Clásico and Siete Loco sets that.
+    await page.keyboard.press('Escape');
+    await page.evaluate(() => { location.hash = '#g=clasico.siete'; });
+    await until(page, () => document.getElementById('toast').textContent === 'Playing Clásico + Siete Loco, like El Cantor');
+    assert.deepEqual((await saved(page, 'loteria.v1')).patterns, ['linea', 'esquinas', 'cuadro', 'siete']);
+    // A link cut short says so, and changes nothing.
+    await page.evaluate(() => { location.hash = '#g=nada'; });
+    await until(page, () => document.getElementById('toast').textContent === 'This link didn’t come through whole — ask for it to be sent again.');
+    assert.deepEqual((await saved(page, 'loteria.v1')).patterns, ['linea', 'esquinas', 'cuadro', 'siete']);
+    assert.deepEqual(problems, []);
+  } finally { await ctx2.close(); }
+  // A new phone: Who's playing, over the caller's game, saving nothing until someone is set up; English | Español keeps
+  // the game; and a tabla printed from El Cantor starts on the juego.
+  const ctx3 = await context(PHONE);
+  try {
+    const page = await ctx3.newPage(), problems = watch(page);
+    await page.goto(base + 'board.html#g=esquinas&j=CANELA');
+    assert.equal(await sheetTitle(page), 'Who’s playing on this device?');
+    await until(page, () => document.getElementById('toast').textContent === 'Playing Esquinas, like El Cantor');
+    assert.equal(await page.textContent('#patBtn'), 'Esquinas ▾');
+    assert.equal(await saved(page, 'loteria.v1'), null, 'the link saved someone');
+    await Promise.all([page.waitForEvent('load'), page.click('#shLang [lang="es"]')]);
+    await until(page, () => document.getElementById('toast').textContent === 'Jugamos a Esquinas, igual que El Cantor');
+    assert.equal(await sheetTitle(page), '¿Quién juega en este dispositivo?');
+    await page.fill('#wName', 'Beto');
+    await page.click('#wPrinted');
+    assert.equal(await page.inputValue('#ptJ'), 'CANELA');
+    await page.fill('#ptN', '7');
+    await page.click('#ptAdd');
+    const s = await saved(page, 'loteria.v1');
+    assert.deepEqual([s.patterns, s.play.juego, s.players.map(p => p.name + ':' + p.boards.map(b => b.name).join())], [['esquinas'], 'CANELA', ['Beto:CANELA 7']]);
+    assert.deepEqual(problems, []);
+  } finally { await ctx3.close(); }
+});
+
 check('board: a first visit picks a player, then plays a round to a ¡Lotería!', async () => {
   const ctx = await context(PHONE);
   try {

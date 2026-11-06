@@ -114,6 +114,18 @@ a.chip{text-decoration:none}
 .cap .icons span{white-space:nowrap}
 .cap .icons svg{width:14px;height:14px;vertical-align:-2px;margin-right:2px}
 .cap .icons b{font-size:15px;line-height:1}
+/* Play along on your phones: a link to My tablas on this game and juego, to share or copy */
+.along{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font:700 13px/1.3 var(--body);color:var(--ink2)}
+.along .row{gap:6px;flex-wrap:nowrap}
+.cap .along{justify-content:center;margin-top:12px}
+.cap .along .btn{margin-top:0}
+/* a phone on its side has no room for the link's row under Start calling: they share a line */
+.app.side .cap{flex-flow:row wrap;justify-content:center;align-items:center;column-gap:18px}
+.app.side .cap>*{flex-basis:100%}
+.app.side .cap>#startBtn,.app.side .cap>.along{flex-basis:auto}
+.app.side .cap>.gm{justify-content:center}
+.app.side.tight .cap>p.ready{display:none} /* short of room for them still, they take the place of the line under Ready */
+.card .along{margin-top:10px}
 /* the game being played, with its little diagram: over Ready when you are, and beside Sábana */
 .gm{display:flex;align-items:center;gap:10px;text-align:left;max-width:100%}
 .gm .minis{display:flex;gap:4px;flex:none}
@@ -783,8 +795,10 @@ a.chip{text-decoration:none}
       // A phone shows the icons at the top without their words: the first round says what they do, with the same icons.
       var icon = function (id) { return $(id).querySelector('svg').outerHTML; };
       var icons = C.round === 1 ? '<p class="icons"><span>' + icon('sabBtn') + ' ' + esc(T('cantor.icons.sabana')) + '</span><span>' + icon('printBtn') + ' ' + esc(T('printTablas')) + '</span><span><b aria-hidden="true">⋯</b> ' + esc(T('cantor.icons.more')) + '</span></p>' : '';
-      el.innerHTML = head + '<h2>' + T('cantor.readyH') + '</h2><p>' + T('cantor.readyP') + '</p><button class="btn red big" type="button" id="startBtn">' + T('cantor.start') + '</button>' + icons;
+      el.innerHTML = head + '<h2>' + T('cantor.readyH') + '</h2><p class="ready">' + T('cantor.readyP') + '</p><button class="btn red big" type="button" id="startBtn">' + T('cantor.start') + '</button>' + alongHtml('capAlong') + icons;
       $('startBtn').addEventListener('click', play);
+      wireAlong($('capAlong'));
+      fitCap();
       return;
     }
     var c = card(n);
@@ -894,7 +908,14 @@ a.chip{text-decoration:none}
     if (mode === 'wide') app.style.setProperty('--sabw', Math.round(($('app').clientWidth - 32) * 0.5) + 'px');
     if (mode === 'tall') app.style.setProperty('--sabh', Math.round(H * 0.34) + 'px');
     if (mode !== 'compact') fitSabana($('sbgrid'), mode === 'wide' ? [6, 9] : [9, 11, 14, 18]);
-    fitCard(); fitSheetSabana();
+    fitCard(); fitSheetSabana(); fitCap();
+  }
+  // A phone on its side short of room for Ready when you are, Start calling and the link: the line under Ready gives way.
+  function fitCap() {
+    var app = $('app'), cap = $('cap'), deal = cap.parentNode; app.classList.remove('tight');
+    if (!app.classList.contains('side') || !$('startBtn')) return;
+    var c = cap.getBoundingClientRect(), d = deal.getBoundingClientRect();
+    if (c.top < d.top - 1 || c.bottom > d.bottom + 1) app.classList.add('tight');
   }
   function fitSabana(host, choices, w, h) {
     var W = w != null ? w : host.clientWidth, H = h != null ? h : host.clientHeight, g = W > 700 ? 6 : 5, best = 0, bc = 9;
@@ -924,6 +945,37 @@ a.chip{text-decoration:none}
       out += '<path class="fl ' + cls[i % 5] + '" fill-rule="evenodd" style="animation-delay:' + (-(i * 0.73) % 4.5).toFixed(2) + 's" d="' + d + '"/>';
     }
     host.innerHTML = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '">' + out + '</svg>';
+  }
+
+  // ---------- playing along ----------
+  // Play along on your phones: a link to My tablas set to the game being played and the juego last printed or
+  // checked, board.html#g=equis&j=CANELA. Clásico is 'clasico', and a shape on top of it follows after a dot,
+  // clasico.siete. The README promises this shape, so a link sent once keeps opening.
+  function alongUrl() {
+    var both = L.hasClasico(C.patterns), ids = (both ? ['clasico'] : []).concat(C.patterns.filter(function (id) { return !both || L.CLASICO.indexOf(id) < 0; }));
+    return new URL('board.html', location.href).href.split('#')[0].split('?')[0] + '#g=' + ids.join('.') + (C.juego ? '&j=' + C.juego : '');
+  }
+  // Share… is the phone's own share sheet, where there is one; Copy link always. The link's box shows only when the
+  // clipboard can't take it, selected for the phone's own Copy.
+  function alongHtml(id) {
+    return '<div class="along" id="' + id + '"><span>' + T('cantor.alongGo') + '</span><span class="row">' + (navigator.share ? '<button class="btn sec sm" type="button" data-a="share">' + T('cantor.share') + '</button>' : '') + '<button class="btn sec sm" type="button" data-a="copy">' + T('copyLink') + '</button></span><input readonly hidden aria-label="' + esc(T('copyLink')) + '" style="width:100%"></div>';
+  }
+  function wireAlong(host) {
+    var box = host.querySelector('input'), sh = host.querySelector('[data-a="share"]');
+    host.querySelector('[data-a="copy"]').addEventListener('click', function () { box.value = alongUrl(); copyLink(box.value, box); });
+    if (sh) sh.addEventListener('click', function () {
+      var game = L.gameName(C.patterns), text = C.juego ? T('cantor.alongText', { game: game, juego: C.juego }) : T('cantor.alongTextGame', { game: game });
+      navigator.share({ text: text, url: alongUrl() }).catch(function () { });
+    });
+  }
+  // It says the link is copied once it is. Where the clipboard refuses, the browser's older copy command has a go;
+  // if that can't either, the link is left selected in its box, shown, for the phone's own Copy. (As My tablas' Share.)
+  function copyLink(url, box) {
+    function pick() { box.hidden = false; box.focus({ preventScroll: true }); box.select(); box.setSelectionRange(0, box.value.length); }
+    function old() { pick(); var ok = false; try { ok = document.execCommand('copy'); } catch (e) { } if (!ok) pick(); toast(T(ok ? 'linkCopied' : 'selectCopy')); }
+    if (!box.hidden) pick();
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { toast(T('linkCopied')); }, old);
+    else old();
   }
 
   // ---------- sheets ----------
@@ -995,7 +1047,7 @@ a.chip{text-decoration:none}
       '<div class="card"><div class="row sp"><div><b>' + T('awake') + '</b><p class="note">' + T('cantor.awakeNote') + '</p>' + (WAKE.why() ? '<p class="note conote" id="awCant" style="margin-top:4px">' + esc(WAKE.why()) + '</p>' : '') + '</div><button class="chip" type="button" id="awBtn"></button></div></div>' +
       '<div class="card" id="winsCard"></div>' +
       '<div class="card" id="syncCard" hidden></div>' +
-      '<div class="card"><div class="eyebrow">' + T('cantor.alongH') + '</div><p class="note" style="margin-top:6px">' + T.html('cantor.along_html') + '</p></div>' +
+      '<div class="card" id="alongCard"><div class="eyebrow">' + T('cantor.alongH') + '</div><p class="note" style="margin-top:6px">' + T.html('cantor.along_html') + '</p>' + alongHtml('setAlong') + '<p class="note" id="alongWhat" style="margin-top:8px"></p></div>' +
       '<div class="card"><div class="eyebrow">' + T('cantor.keyboardH') + '</div><p class="note" style="margin-top:6px">' + T('cantor.keyboard') + '</p></div>' +
       '<footer class="jd-foot"><a href="https://junkdrawer.works/">' + T('foot.part') + '</a> <span aria-hidden="true">·</span> <a href="https://junkdrawer.works/privacy.html">' + T('foot.privacy') + '</a></footer></div>');
     T.switch($('langSw'), 'settings'); // a new language reloads the page, and Settings opens again
@@ -1032,6 +1084,7 @@ a.chip{text-decoration:none}
       $('chkNote').textContent = T(st.check ? 'cantor.chk.on' : 'cantor.chk.off');
       onOff($('sndBtn'), st.sound);
       onOff($('awBtn'), st.awake);
+      $('alongWhat').textContent = C.juego ? T('cantor.alongWhat', { game: L.gameName(C.patterns), juego: C.juego }) : T('cantor.alongWhatGame', { game: L.gameName(C.patterns) });
       if ($('fsBtn')) onOff($('fsBtn'), fsOn());
       winsCard();
     }
@@ -1066,6 +1119,7 @@ a.chip{text-decoration:none}
     $('sndBtn').addEventListener('click', function () { st.sound = !st.sound; save(); draw(); if (st.sound) snap(); });
     $('awBtn').addEventListener('click', function () { st.awake = !st.awake; save(); WAKE.hold(); draw(); });
     if ($('fsBtn')) $('fsBtn').addEventListener('click', function () { fullScreen(!fsOn()); });
+    wireAlong($('setAlong'));
     $('stx').addEventListener('click', closeSheet);
     UI.onVoices = draw; UI.onFull = draw; loadVoices(); draw();
     if (window.LoteriaSync) LoteriaSync.card($('syncCard'), true);

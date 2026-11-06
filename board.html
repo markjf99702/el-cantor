@@ -280,6 +280,7 @@ a{color:var(--teal);font-weight:700}
     s.patterns = (Array.isArray(s.patterns) ? s.patterns : []).filter(function (id) { return pat(id); });
     if (!s.patterns.length) s.patterns = CLASICO.slice();
     if (!s.settings || typeof s.settings !== 'object') s.settings = fresh().settings;
+    if (!s.play || typeof s.play !== 'object' || typeof s.play.juego !== 'string') delete s.play; // El Cantor's link: { juego, t }
     return s;
   }
   function loaded(o) { var s = o && o.players && o.players.length ? mend(Object.assign(fresh(), o)) : null; return s && s.players.length ? s : null; }
@@ -658,8 +659,11 @@ a{color:var(--teal);font-weight:700}
       $('ptAdd').disabled = !pick;
       host.innerHTML = pick ? preview(pick) : '';
     }
-    var last = ''; try { var c = JSON.parse(localStorage.getItem('loteria.cantor') || 'null'); last = (c && c.juego) || ''; } catch (e) { }
-    $('ptJ').value = typed.j != null ? typed.j : last; // to start, the juego El Cantor last printed or checked on this device
+    // To start, the juego of El Cantor's link opened here, or the one El Cantor last printed or checked on this device,
+    // whichever came last.
+    var last = '', at = 0; try { var c = JSON.parse(localStorage.getItem('loteria.cantor') || 'null'); last = (c && c.juego) || ''; at = (c && c.last) || 0; } catch (e) { }
+    if (S.play && S.play.juego && S.play.t >= at) last = S.play.juego;
+    $('ptJ').value = typed.j != null ? typed.j : last;
     $('ptN').value = typed.n;
     $('ptJ').addEventListener('input', draw);
     $('ptN').addEventListener('input', function () { this.value = this.value.replace(/\D/g, ''); draw(); });
@@ -719,7 +723,7 @@ a{color:var(--teal);font-weight:700}
   // was hidden) for the phone's own Copy.
   function copyLink(url, box) {
     function pick() { box.hidden = false; box.focus({ preventScroll: true }); box.select(); box.setSelectionRange(0, box.value.length); }
-    function old() { pick(); var ok = false; try { ok = document.execCommand('copy'); } catch (e) { } if (!ok) pick(); toast(T(ok ? 'linkCopied' : 'board.selectCopy')); }
+    function old() { pick(); var ok = false; try { ok = document.execCommand('copy'); } catch (e) { } if (!ok) pick(); toast(T(ok ? 'linkCopied' : 'selectCopy')); }
     if (!box.hidden) pick();
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { toast(T('linkCopied')); }, old);
     else old();
@@ -762,6 +766,31 @@ a{color:var(--teal);font-weight:700}
     imp.link = h; // as it came, to put back if the page reloads in another language
     importSheet(imp);
   }
+  // ---------- El Cantor's link ----------
+  // board.html#g=equis&j=CANELA, from El Cantor's Play along on your phones: this phone plays the caller's game
+  // (Clásico is 'clasico', with a shape on top after a dot) and + A printed tabla starts on the caller's juego. A full
+  // stop or bracket after it, from the end of a sentence, isn't part of it. Nothing is cheered: the game is set, as
+  // the caller has it. On a first visit nothing is saved before someone is set up, as ever, and the link goes back in
+  // the address before a change of language reloads the page.
+  function readPlay(h) {
+    var m = /^#g=([a-z.]*)(?:&j=([A-Za-z0-9]*))?$/.exec(h.replace(/[^0-9a-z]+$/i, '')), ids = [];
+    if (!m) return null;
+    m[1].split('.').forEach(function (id) { (id === 'clasico' ? CLASICO : [id]).forEach(function (x) { var p = pat(x); if (p && !p.combo && ids.indexOf(x) < 0) ids.push(x); }); });
+    return ids.length ? { patterns: ids, juego: L.juegoName(m[2] || '') } : null;
+  }
+  function maybePlay() {
+    var h = location.hash; if (!/^#g=/.test(h)) return;
+    var play = readPlay(h);
+    history.replaceState(null, '', location.pathname + location.search);
+    if (!play) { toast(T('board.linkCut'), 5000); return; }
+    UI.play = h;
+    S.patterns = play.patterns;
+    if (play.juego) S.play = { juego: play.juego, t: Date.now() };
+    if (!firstRun) { save(); evaluate(false); }
+    render();
+    toast(T('board.likeCantor', { game: gameName() }), 5000);
+  }
+
   // In a Safari tab on an iPhone or iPad, the offer says how to take the link to El Cantor on the Home Screen, which
   // keeps its own tablas: copy it here and paste it there (Settings, or Who's playing on its first visit).
   function homeHint(imp) {
@@ -838,7 +867,10 @@ a{color:var(--teal);font-weight:700}
     UI.blank = true; render(); // over no tablas and no name, as a shared link's offer: nothing here is anyone's yet
     if (window.LoteriaSync) LoteriaSync.card($('wSync'), false, function () { return firstRun; }); // "Saving to", until someone is set up here
     // Nothing is saved before a choice, so a new language just reloads; a name already typed comes back with it.
-    T.switch($('shLang'), null, function () { try { sessionStorage.setItem('loteria.wName', $('wName').value); } catch (e) { } });
+    T.switch($('shLang'), null, function () {
+      try { sessionStorage.setItem('loteria.wName', $('wName').value); } catch (e) { }
+      if (UI.play) history.replaceState(null, '', location.pathname + location.search + UI.play); // El Cantor's game, set again
+    });
     if (name) $('wName').value = name;
     try { var typed = sessionStorage.getItem('loteria.wName'); sessionStorage.removeItem('loteria.wName'); if (typed) $('wName').value = typed; } catch (e) { }
     // It's asked once, so it waits for a name rather than making one up: Mark's four don't make you Mark.
@@ -928,9 +960,10 @@ a{color:var(--teal);font-weight:700}
   if (!firstRun) save();
   if (firstRun && !(/^#t=/.test(location.hash) && readLink(location.hash))) welcomeSheet();
   maybeImport(); // a link cut short says so, over Who's playing on a first visit
+  maybePlay();
   // Back from a change of language in Settings (strings.js reloads the page): Settings again, the switch under the finger.
   try { if (sessionStorage.getItem('loteria.reopen') === 'settings') { sessionStorage.removeItem('loteria.reopen'); if ($('sheet').hidden) settingsSheet(); } } catch (e) { }
-  window.addEventListener('hashchange', maybeImport);
+  window.addEventListener('hashchange', function () { maybeImport(); maybePlay(); });
 })();
 </script>
 </body>
