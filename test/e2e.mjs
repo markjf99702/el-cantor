@@ -1997,6 +1997,23 @@ check('cantor: Print tablas at two per page draws the cut line between two tabla
   } finally { await ctx.close(); }
 });
 
+check('cantor: on a phone the Sábana sheet shows all 54 cards at once, upright or sideways', async () => {
+  for (const viewport of [{ width: 390, height: 844 }, { width: 360, height: 740 }, { width: 844, height: 390 }]) {
+    const ctx = await context({ ...PHONE, viewport });
+    try {
+      const page = await ctx.newPage(), problems = watch(page), at = viewport.width + '×' + viewport.height + ': ';
+      await seed(page, { 'loteria.cantor': { order: run(1, 54), pos: 20, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], juego: '', wins: [], settings: { speak: false, sound: false, check: false } } });
+      await page.goto(base + 'cantor.html');
+      await page.click('#sabBtn');
+      const fit = await page.evaluate(() => { const g = document.getElementById('ssgrid'), bd = g.parentNode, last = g.lastElementChild.getBoundingClientRect(); return { n: g.children.length, last: last.bottom, edge: bd.getBoundingClientRect().bottom, scrolls: bd.scrollHeight > bd.clientHeight + 1, tile: last.width }; });
+      assert.equal(fit.n, 54);
+      assert.ok(!fit.scrolls && fit.last <= fit.edge, at + `the last row ends at ${fit.last}, past the sheet’s ${fit.edge}`);
+      assert.ok(fit.tile >= 38, at + `the cards are only ${fit.tile} px wide`);
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
+});
+
 check('badges: the sábana’s call order and a double’s ×2 sit at the top right, off the card’s printed name', async () => {
   // The cards print their number in a tag at the top left and their name along the bottom.
   const high = (page, sel, box) => page.$$eval(sel, (els, box) => els.map(e => { const c = e.closest(box).getBoundingClientRect(), r = e.getBoundingClientRect(); return (r.bottom - c.top) / c.height; }), box);

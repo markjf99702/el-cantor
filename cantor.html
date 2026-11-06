@@ -819,10 +819,10 @@ a.chip{text-decoration:none}
     if (mode === 'wide') app.style.setProperty('--sabw', Math.round(($('app').clientWidth - 32) * 0.5) + 'px');
     if (mode === 'tall') app.style.setProperty('--sabh', Math.round(H * 0.34) + 'px');
     if (mode !== 'compact') fitSabana($('sbgrid'), mode === 'wide' ? [6, 9] : [9, 11, 14, 18]);
-    fitCard();
+    fitCard(); fitSheetSabana();
   }
-  function fitSabana(host, choices) {
-    var W = host.clientWidth, H = host.clientHeight, g = W > 700 ? 6 : 5, best = 0, bc = 9;
+  function fitSabana(host, choices, w, h) {
+    var W = w != null ? w : host.clientWidth, H = h != null ? h : host.clientHeight, g = W > 700 ? 6 : 5, best = 0, bc = 9;
     if (!W) return;
     choices.forEach(function (c) { var r = Math.ceil(54 / c), w = Math.min((W - (c - 1) * g) / c, H ? ((H - (r - 1) * g) / r) / 1.635 : 1e9); if (w > best) { best = w; bc = c; } });
     host.style.setProperty('--cols', bc); host.style.setProperty('--tw', Math.floor(best) + 'px'); host.style.setProperty('--tg', g + 'px');
@@ -890,9 +890,17 @@ a.chip{text-decoration:none}
     openSheet('<div class="hd"><h2>Sábana</h2><span class="eyebrow" id="ssCount"></span><button class="btn sec sm" type="button" id="ssx">' + T('done') + '</button></div><div class="bd"><div class="sbgrid" id="ssgrid"></div></div>');
     var host = $('ssgrid'); SB.sheet = { host: host, map: sabanaInto(host) }; paintSabana(SB.sheet.map);
     $('ssCount').textContent = counts();
-    host.style.setProperty('--cols', 6); host.style.setProperty('--tg', '6px');
-    host.style.setProperty('--tw', Math.floor(Math.min(90, (host.clientWidth - 30) / 6)) + 'px');
+    fitSheetSabana();
     $('ssx').addEventListener('click', closeSheet);
+  }
+  // All 54 at once, in the columns that make the cards biggest: measured in the sheet at its full height, which
+  // it then gives back, so it's only as tall as the cards. Again when the screen turns.
+  function fitSheetSabana() {
+    var host = SB.sheet && SB.sheet.host; if (!host || !host.isConnected) return;
+    var sh = host.closest('.sheet'), bd = host.parentNode, cs;
+    sh.setAttribute('data-tall', ''); cs = getComputedStyle(bd);
+    fitSabana(host, [6, 7, 8, 9, 11, 14, 18], bd.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight), bd.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom));
+    sh.removeAttribute('data-tall');
   }
 
   function settingsSheet() {
