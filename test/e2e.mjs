@@ -1011,6 +1011,39 @@ check('cantor: the screen off mid-round pauses calling and says so when it’s b
   } finally { await ctx.close(); }
 });
 
+check('cantor: the opening call moves: the card back is squared up and the banderitas sway faster, and neither with less motion', async () => {
+  for (const motion of ['no-preference', 'reduce']) {
+    const ctx = await context(PHONE, { reducedMotion: motion });
+    try {
+      const page = await ctx.newPage(), problems = watch(page);
+      await seed(page, { 'loteria.cantor': { order: run(1, 54), pos: 0, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], juego: '', wins: [], settings: { speak: false, sound: false, awake: false, pace: 'slow' } } });
+      await page.goto(base + 'cantor.html');
+      const moving = () => page.evaluate(() => ({ opening: document.getElementById('app').classList.contains('opening'), card: getComputedStyle(document.getElementById('inner')).animationName, flag: getComputedStyle(document.querySelector('.picado .fl')).animationDuration }));
+      const before = await moving();
+      assert.deepEqual([before.opening, before.card], [false, 'none'], 'the card back moves before ▶');
+      await page.click('#playBtn');
+      const during = await moving();
+      assert.equal(during.opening, true, 'no opening call');
+      assert.match(await page.textContent('#cap h2'), /Se va y se corre/);
+      if (motion === 'reduce') assert.equal(during.card, 'none', 'the card back moves with Reduce motion on');
+      else assert.deepEqual([during.card, during.flag], ['riffle', '1.1s'], 'the opening call doesn’t move');
+      // The first card turns over as ever once it's said, and the deck is still again.
+      await until(page, () => /^No\. 1/.test(document.querySelector('#cap .no') ? document.querySelector('#cap .no').textContent : ''), null, 8000);
+      const after = await moving();
+      assert.equal(after.opening, false, 'still opening after the first card');
+      assert.notEqual(after.card, 'riffle');
+      assert.equal(after.flag, motion === 'reduce' ? '0s' : '4.5s', 'the banderitas kept the fast sway'); // with less motion they don't sway at all
+      // The layout drawn again (a phone turned) keeps the opening call's class while it plays.
+      await page.click('#playBtn'); // pause
+      await page.click('#newBtn'); await page.click('#nrOk'); await page.click('#ptx');
+      await page.click('#playBtn');
+      await page.setViewportSize({ width: 844, height: 390 }); await page.waitForTimeout(150);
+      assert.ok(await page.evaluate(() => document.getElementById('app').classList.contains('opening')), 'turning the phone lost the opening call');
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
+});
+
 check('cantor: a tap on the card’s name, or R, says it again and then waits its usual time; Adivinanza says the verse and the name', async () => {
   const ctx = await context(PHONE);
   try {
