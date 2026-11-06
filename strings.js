@@ -8,6 +8,7 @@
 //   T(key, vars)       the text, with {name} filled in from vars. A count's text is { one, other }, picked by vars.n.
 //   T.html(key, vars)  the same for a key ending _html: its own <b> and <a> stay, and the values are escaped.
 //                      A key missing in Spanish falls back to English, then to the key itself.
+//   T.in(l, key, vars) T(key, vars) in language l ('en' or 'es'), whichever is shown.
 //   T.list(names)      'A, B and C' / 'A, B y C'.        T.ord(5)    '5th' / '5.ª'.
 //   T.locale           'en-US' / 'es-MX', for dates.     T.lang      'en' / 'es'.
 //   T.apply(root)      fills in markup: data-t (its text), data-t-html, data-t-aria (aria-label), data-t-title
@@ -202,10 +203,11 @@
       'cantor.v.groupPack': 'Recorded voices',
       'cantor.v.groupDevice': 'This device',
       'cantor.v.default': 'This device’s default voice',
-      'cantor.v.rec': 'Recorded on this device: it stays here, and isn’t saved to Google Drive.',
+      'cantor.v.rec': 'Recorded by the family. It stays on this device, and isn’t saved to Google Drive: Send this voice… takes it to another.',
       'cantor.v.recSome': '{n} of {of} recorded so far: this device’s voice says the rest.',
       'cantor.v.recVerses': 'This device’s voice reads the verses that aren’t recorded.',
       'rec.here': 'recorded here',
+      'rec.there': 'from another device',
       'rec.new': 'Record a voice…',
       'rec.edit': '{name}’s recordings…',
       'rec.title': 'Record a voice',
@@ -243,6 +245,21 @@
       'rec.versesNote': 'For Verse, then name and Adivinanza. A verse not recorded is read by this device’s voice.',
       'rec.delete': 'Delete this voice',
       'rec.deleteAgain': 'Tap again to delete all of {name}’s recordings',
+      // a recorded voice as one file, to send to another device and add there
+      'vfile.send': 'Send this voice…',
+      'vfile.add': 'Add a voice…',
+      'vfile.title': '{name}’s voice for El Cantor', // the file's name and its heading
+      'vfile.about': 'This file is {name}’s voice, recorded in El Cantor: {recordings}. To call the cards with it on another phone, tablet or computer, open El Cantor there (el-cantor.junkdrawer.works), tap Settings › Add a voice…, and pick this file.',
+      'vfile.recordings': { one: '1 recording', other: '{n} recordings' },
+      'vfile.saved': '{name}’s voice is downloaded as one file. On the other device, open it with Add a voice…, in Settings.',
+      'vfile.again': 'Ready — tap Send this voice… again.',
+      'vfile.cantMake': 'Couldn’t make the file — try again.',
+      'vfile.added': { one: 'Added {name}’s voice: 1 recording.', other: 'Added {name}’s voice: {n} recordings.' },
+      'vfile.foreign': 'That file isn’t a voice from El Cantor.',
+      'vfile.damaged': 'That voice file is damaged, so nothing was added. Ask for it to be sent again.',
+      'vfile.newer': 'That voice comes from a newer El Cantor. Close El Cantor and open it again to update, then add it.',
+      'vfile.cantPlay': 'This browser can’t play the kind of sound file {name}’s voice was recorded in, so it wasn’t added. Record the voice on this device instead.',
+      'vfile.cantSome': { one: '1 of its recordings is in a kind of sound file this device can’t play, so this device’s voice says that line.', other: '{n} of its recordings are in a kind of sound file this device can’t play, so this device’s voice says those lines.' },
       'cantor.winners': 'Winners',
       'cantor.winnersNone': 'When you confirm a ¡Lotería!, add the winner’s name and it’s kept here.',
       'cantor.unnamed': 'Unnamed',
@@ -809,10 +826,11 @@
       'cantor.v.groupPack': 'Voces grabadas',
       'cantor.v.groupDevice': 'De este dispositivo',
       'cantor.v.default': 'La voz que trae este dispositivo',
-      'cantor.v.rec': 'Grabada en este dispositivo: se queda aquí y no se guarda en Google Drive.',
+      'cantor.v.rec': 'Grabada por la familia. Se queda en este dispositivo y no se guarda en Google Drive: Enviar esta voz… la lleva a otro.',
       'cantor.v.recSome': 'Llevas {n} de {of}: la voz de este dispositivo dice las demás.',
       'cantor.v.recVerses': 'La voz de este dispositivo lee los versos que no están grabados.',
       'rec.here': 'grabada aquí',
+      'rec.there': 'de otro dispositivo',
       'rec.new': 'Grabar una voz…',
       'rec.edit': 'Grabaciones de {name}…',
       'rec.title': 'Grabar una voz',
@@ -850,6 +868,20 @@
       'rec.versesNote': 'Para Verso y luego nombre y para Adivinanza. Un verso sin grabar lo lee la voz de este dispositivo.',
       'rec.delete': 'Borrar esta voz',
       'rec.deleteAgain': 'Toca otra vez para borrar todas las grabaciones de {name}',
+      'vfile.send': 'Enviar esta voz…',
+      'vfile.add': 'Agregar una voz…',
+      'vfile.title': 'La voz de {name} para El Cantor',
+      'vfile.about': 'Este archivo es la voz de {name}, grabada en El Cantor: {recordings}. Para que cante las cartas en otro teléfono, tableta o computadora, abre El Cantor ahí (el-cantor.junkdrawer.works), toca Ajustes › Agregar una voz… y elige este archivo.',
+      'vfile.recordings': { one: '1 grabación', other: '{n} grabaciones' },
+      'vfile.saved': 'La voz de {name} se descargó en un solo archivo. En el otro dispositivo, ábrelo con Agregar una voz…, en Ajustes.',
+      'vfile.again': 'Lista — toca Enviar esta voz… otra vez.',
+      'vfile.cantMake': 'No se pudo hacer el archivo — inténtalo otra vez.',
+      'vfile.added': { one: 'Se agregó la voz de {name}: 1 grabación.', other: 'Se agregó la voz de {name}: {n} grabaciones.' },
+      'vfile.foreign': 'Ese archivo no es una voz de El Cantor.',
+      'vfile.damaged': 'Ese archivo de voz está dañado, así que no se agregó nada. Pide que te lo manden otra vez.',
+      'vfile.newer': 'Esa voz viene de una versión más nueva de El Cantor. Cierra El Cantor y vuelve a abrirlo para actualizarlo, y luego agrégala.',
+      'vfile.cantPlay': 'Este navegador no puede reproducir el tipo de archivo de sonido en que se grabó la voz de {name}, así que no se agregó. Mejor graba la voz en este dispositivo.',
+      'vfile.cantSome': { one: '1 de sus grabaciones está en un tipo de archivo de sonido que este dispositivo no puede reproducir, así que esa línea la dice la voz de este dispositivo.', other: '{n} de sus grabaciones están en un tipo de archivo de sonido que este dispositivo no puede reproducir, así que esas líneas las dice la voz de este dispositivo.' },
       'cantor.winners': 'Ganadores',
       'cantor.winnersNone': 'Cuando confirmes una ¡Lotería!, escribe quién ganó y aquí se guarda.',
       'cantor.unnamed': 'Sin nombre',
@@ -1255,8 +1287,8 @@
   try { document.documentElement.lang = lang === 'es' ? 'es-MX' : 'en'; } catch (e) { }
 
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-  function text(key, vars, html) {
-    var v = S[lang][key];
+  function text(key, vars, html, l) {
+    var v = S[l || lang][key];
     if (v == null) v = S.en[key];
     if (v == null) return key;
     if (typeof v === 'object') v = vars && vars.n === 1 ? v.one : v.other;
@@ -1264,6 +1296,7 @@
   }
   function T(key, vars) { return text(key, vars, false); }
   T.html = function (key, vars) { return text(key, vars, true); };
+  T.in = function (l, key, vars) { return text(key, vars, false, S[l] ? l : lang); }; // in the other language too, for a file read in either
   T.lang = lang;
   T.locale = lang === 'es' ? 'es-MX' : 'en-US';
   T.list = function (names) { return names.length < 2 ? names.join('') : names.slice(0, -1).join(', ') + T('and') + names[names.length - 1]; };

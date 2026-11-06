@@ -1205,7 +1205,8 @@ a.chip{text-decoration:none}
       '<div class="card"><div class="eyebrow">' + T('lang.label') + '</div><div id="langSw" style="margin-top:8px"></div></div>' +
       '<div class="card stack"><div class="row sp"><div><b>' + T('cantor.readAloud') + '</b><p class="note" id="vNote"></p></div><button class="chip" type="button" id="spBtn"></button></div>' +
       '<div class="row" id="vRow" style="align-items:flex-end;flex-wrap:nowrap"><label class="fld" style="flex:1"><span>' + T('cantor.voice') + '</span><select id="vSel"></select></label><button class="btn sec" type="button" id="vTest">' + T('cantor.tryIt') + '</button></div>' +
-      '<div class="row" id="recRow"><button class="btn sec sm" type="button" id="recNew">' + T('rec.new') + '</button><button class="btn sec sm" type="button" id="recEdit"></button></div>' +
+      '<div class="stack" id="recRow" style="gap:8px"><div class="row" id="recMine"><button class="btn sec sm" type="button" id="recEdit"></button><button class="btn sec sm" type="button" id="vSend">' + T('vfile.send') + '</button></div>' +
+      '<div class="row"><button class="btn sec sm" type="button" id="recNew">' + T('rec.new') + '</button><button class="btn sec sm" type="button" id="vAdd">' + T('vfile.add') + '</button><input type="file" id="vAddF" accept=".html,.htm,text/html" hidden></div></div>' +
       '<label class="fld" id="rRow"><span>' + T('cantor.rate') + ' · <b id="rateV"></b></span><input type="range" id="rate" min="0.7" max="1.3" step="0.05"></label></div>' +
       '<div class="card"><div class="eyebrow">' + T('cantor.styleH') + '</div><div class="styles" id="styles"></div></div>' +
       '<div class="card"><div class="eyebrow">' + T('cantor.paceGroup') + '</div><div class="row" style="margin-top:8px"><div class="seg" id="paceSeg">' + ['slow', 'normal', 'fast'].map(paceOpt).join('') + '</div></div><p class="note" style="margin-top:8px">' + T('cantor.paceNote') + '</p></div>' +
@@ -1233,9 +1234,9 @@ a.chip{text-decoration:none}
     }
     function onOff(b, on) { b.textContent = T(on ? 'on' : 'off'); b.classList.toggle('on', on); }
     function rateWord() { return T(st.rate === 1 ? 'cantor.rate.normal' : st.rate < 1 ? 'cantor.rate.slower' : 'cantor.rate.faster'); }
-    // A recorded voice is described in the chosen language (voices.json's own words are English); one recorded on
-    // this device is "recorded here".
-    function about(p) { if (p.rec) return T('rec.here'); var k = 'voice.' + p.id, t = T('voice.' + p.id); return t !== k ? t : p.about || ''; }
+    // A recorded voice is described in the chosen language (voices.json's own words are English); one the family
+    // recorded is "recorded here", or "recorded on another device" when it came from one.
+    function about(p) { var here = p.from === 'here'; if (p.rec) return T(here ? 'rec.here' : 'rec.there'); var k = 'voice.' + p.id, t = T('voice.' + p.id); return t !== k ? t : p.about || ''; }
     function draw() {
       var has = !!TTS || PACKS.length > 0 || RECS.length > 0, ch = choice(), mine = ch.pack && ch.pack.rec ? ch.pack : null;
       onOff($('spBtn'), st.speak && has); $('spBtn').disabled = !has;
@@ -1245,10 +1246,12 @@ a.chip{text-decoration:none}
         var got = recCount(mine, 'names');
         if (got < 56) $('vNote').textContent += ' ' + T('cantor.v.recSome', { n: got, of: 56 });
         else if (st.style !== 'name' && recCount(mine, 'verses') < 54) $('vNote').textContent += ' ' + T('cantor.v.recVerses');
+        if (mine.cant) $('vNote').textContent += ' ' + T('vfile.cantSome', { n: mine.cant }); // recorded in a browser whose sound this one can't play
       }
       $('vRow').hidden = !(has && st.speak); $('rRow').hidden = !(has && st.speak && !ch.pack);
-      $('recRow').hidden = !(has && st.speak && canRecord());
-      $('recEdit').hidden = !mine; if (mine) $('recEdit').textContent = T('rec.edit', { name: mine.name });
+      $('recRow').hidden = !(has && st.speak && canKeep());
+      $('recMine').hidden = !mine; if (mine) $('recEdit').textContent = T('rec.edit', { name: mine.name });
+      $('recEdit').hidden = !canRecord(); $('recNew').hidden = !canRecord();
       // The recorded voices and this device's own, each under its heading, so a line is short enough for a phone.
       var packs = PACKS.concat(RECS).map(function (p) { var a = about(p); return '<option value="' + (p.rec ? 'rec:' : 'pack:') + esc(p.id) + '"' + (ch.pack === p ? ' selected' : '') + '>' + esc(p.name) + (a ? ' · ' + esc(a) : '') + '</option>'; });
       var devs = VOICES.map(function (v) { return '<option value="dev:' + esc(v.voiceURI) + '"' + (ch.dev === v ? ' selected' : '') + '>' + esc(v.name) + ' · ' + esc(v.lang) + '</option>'; });
@@ -1290,6 +1293,9 @@ a.chip{text-decoration:none}
     $('vSel').addEventListener('change', function () { st.voice = this.value; save(); draw(); });
     $('recNew').addEventListener('click', function () { recSheet(null); });
     $('recEdit').addEventListener('click', function () { var p = choice().pack; recSheet(p && p.rec ? p : null); });
+    $('vSend').addEventListener('click', function () { var p = choice().pack; if (p && p.rec) sendVoice(p); });
+    $('vAdd').addEventListener('click', function () { $('vAddF').click(); });
+    $('vAddF').addEventListener('change', function () { var f = this.files && this.files[0]; this.value = ''; if (f) addVoiceFile(f); });
     $('vTest').addEventListener('click', function () {
       if (R.phase === 'speaking') { toast(T('cantor.tryBetween')); return; }
       unlock(); say([st.style === 'name' ? { n: 23, part: 'name', text: 'La Luna' } : { n: 23, part: 'all', text: 'El farol de los enamorados. La Luna.' }], null);
@@ -1311,8 +1317,10 @@ a.chip{text-decoration:none}
   // Settings › Record a voice…: someone in the family reads the cards for El Cantor, one line at a time. Names first:
   // the opening line, the 54 names in the deck's order and ¡Lotería!; then, if wanted, the 54 verses, for Verse, then
   // name and Adivinanza. A line not recorded is read by this device's voice. The voice stays on this device, in
-  // IndexedDB 'loteria.voices' (Google Drive doesn't carry it): voices holds { id, name, made } and clips
-  // { k: id + '/' + key, buf, type, t }, the key as recKey() makes it. Settings' voice is then 'rec:' + id.
+  // IndexedDB 'loteria.voices' (Google Drive doesn't carry it): voices holds { id, name, made, from, takes } and clips
+  // { k: id + '/' + key, buf, type, t }, the key as recKey() makes it. Settings' voice is then 'rec:' + id. from is
+  // 'here' for a voice recorded on this device, 'file' for one added from a file (Send this voice…, below); takes
+  // { key: { t, type, cant } } says when each line was recorded, and cant marks one this device can't play.
   var VDB = null;
   function vdb() {
     if (!VDB) {
@@ -1342,24 +1350,30 @@ a.chip{text-decoration:none}
   }
   function got(r, set) { r.onsuccess = function () { set(r.result); }; }
   function recClip(k) { return vtx(['clips'], 'readonly', function (t, set) { got(t.objectStore('clips').get(k), set); }); }
-  function recRow(v) { return { id: v.id, name: v.name, made: v.made }; }
+  function recRow(v) { return { id: v.id, name: v.name, made: v.made, from: v.from || 'here', takes: v.takes || {} }; }
+  // RECS from storage. A voice already in RECS is the same object afterwards, filled in again, so a sheet holding it
+  // keeps working with it. have: the lines this device plays; cant: how many it can't.
   function loadRecs() {
-    if (!window.indexedDB) return;
-    vtx(['voices', 'clips'], 'readonly', function (t, set) {
+    if (!window.indexedDB) return Promise.resolve();
+    return vtx(['voices', 'clips'], 'readonly', function (t, set) {
       var vs = null, ks = null;
       function both() { if (vs && ks) set({ vs: vs, ks: ks }); }
       got(t.objectStore('voices').getAll(), function (r) { vs = r; both(); });
       got(t.objectStore('clips').getAllKeys(), function (r) { ks = r; both(); });
     }).then(function (o) {
+      var was = {}; RECS.forEach(function (r) { was[r.id] = r; });
       RECS = o.vs.filter(function (v) { return v && v.id; }).sort(function (a, b) { return a.made - b.made; }).map(function (v) {
-        var have = {}; o.ks.forEach(function (k) { k = String(k); if (k.indexOf(v.id + '/') === 0) have[k.slice(v.id.length + 1)] = true; });
-        return { id: v.id, name: v.name || '?', made: v.made || 0, rec: true, have: have };
+        var r = was[v.id] || { id: v.id, rec: true };
+        r.name = v.name || '?'; r.made = v.made || 0; r.from = v.from || 'here'; r.takes = v.takes && typeof v.takes === 'object' ? v.takes : {}; r.have = {}; r.cant = 0;
+        o.ks.forEach(function (k) { k = String(k); if (k.indexOf(v.id + '/') !== 0) return; var line = k.slice(v.id.length + 1); if (r.takes[line] && r.takes[line].cant) r.cant++; else r.have[line] = true; });
+        return r;
       });
       if (UI.onVoices) UI.onVoices();
       renderBar();
     }, function () { });
   }
-  function canRecord() { return !!(window.MediaRecorder && navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.indexedDB && !MIC.noDb); }
+  function canKeep() { return !!(window.indexedDB && !MIC.noDb); } // a browser that keeps nothing has nowhere to put a voice
+  function canRecord() { return !!(window.MediaRecorder && navigator.mediaDevices && navigator.mediaDevices.getUserMedia) && canKeep(); }
   // In a format the family's other browsers play too. AAC in MP4 first, which Safari records and every browser plays.
   // Then WebM with Opus, which Chrome and Firefox record and an iPhone plays from iOS 17.5 (caniuse, "Opus audio
   // format": in a WebM container from Safari 17.5 on iOS, with a regression in 17.4). Chrome's own audio/mp4 holds
@@ -1497,13 +1511,15 @@ a.chip{text-decoration:none}
         return new Promise(function (ok, bad) { var q = a.decodeAudioData(b.slice(0), ok, bad); if (q && q.then) q.then(ok, bad); }).catch(function () { throw { quiet: true }; }); // nothing in it to play
       }).then(function (dec) {
         if (dec && (dec.duration < 0.25 || heard(dec)[2] < 0.01)) throw { quiet: true };
-        var box = UI.rec === S && $('rcName'), nv = S.v || { id: 'r' + Date.now().toString(36), name: (box && box.value.trim()) || S.who, made: Date.now(), rec: true, have: {} }; // the name as it is now, typed on during the take too
+        var box = UI.rec === S && $('rcName'), nv = S.v || { id: 'r' + Date.now().toString(36), name: (box && box.value.trim()) || S.who, made: Date.now(), from: 'here', rec: true, have: {}, takes: {}, cant: 0 }; // the name as it is now, typed on during the take too
+        var at = Date.now(), row = recRow(nv); row.takes = Object.assign({}, row.takes); row.takes[s.key] = { t: at, type: blob.type };
         return vtx(['voices', 'clips'], 'readwrite', function (t) {
-          t.objectStore('voices').put(recRow(nv));
-          t.objectStore('clips').put({ k: nv.id + '/' + s.key, buf: buf, type: blob.type, t: Date.now() });
+          t.objectStore('voices').put(row);
+          t.objectStore('clips').put({ k: nv.id + '/' + s.key, buf: buf, type: blob.type, t: at });
         }).then(function () {
           if (!S.v) { S.v = nv; RECS.push(nv); C.settings.voice = 'rec:' + nv.id; save(); } // the voice El Cantor calls with, from its first line
-          nv.have[s.key] = true; forget(clipUrl(nv, s));
+          if (nv.takes[s.key] && nv.takes[s.key].cant) nv.cant--; // recorded again here, in a sound this device plays
+          nv.takes = row.takes; nv.have[s.key] = true; forget(clipUrl(nv, s));
         });
       }).then(function () { S.state = 'idle'; draw(); }, function (e) {
         S.state = 'idle'; draw();
@@ -1537,6 +1553,110 @@ a.chip{text-decoration:none}
     $('rcx').addEventListener('click', function () { leave(); settingsSheet(); });
     UI.onClose = leave; // Escape, or a tap outside
     draw();
+  }
+
+  // ---------- Send this voice… and Add a voice… ----------
+  // A recorded voice goes to another device as one file, for the phone's share sheet (texting it, AirDrop) or, on a
+  // computer, a download; Add a voice… on the other device opens it. The file is a small web page: opened by mistake,
+  // it says what it is and what to do with it, in both languages. A page because Chrome's share sheet takes only some
+  // kinds of file, a web page among them and JSON not (Chromium, share_service_impl.cc and the Android
+  // ShareServiceImpl.java: their permitted extensions). The voice is in it as JSON:
+  //   a script element of type application/json, id el-cantor-voice, holding
+  //   { kind: 'el-cantor-voice', v: 1, id, name, made, takes: [{ line, type, t, audio }] }
+  // line: 'open', 'loteria', n01–n54 or v01–v54; type: the take's sound, as recorded; t: when; audio: its bytes, base64.
+  // This shape holds from now on: a file sent today opens in every El Cantor after it.
+  var VFILE = 1;
+  function b64(buf) { var u = new Uint8Array(buf), s = '', i; for (i = 0; i < u.length; i += 32768) s += String.fromCharCode.apply(null, u.subarray(i, i + 32768)); return btoa(s); }
+  function unb64(s) { var b = atob(s), u = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u.buffer; }
+  function fileName(name) { return T('vfile.title', { name: name }).replace(/[\\/:*?"<>|]+/g, '') + '.html'; }
+  function voiceFile(v) {
+    return vtx(['clips'], 'readonly', function (t, set) { got(t.objectStore('clips').getAll(IDBKeyRange.bound(v.id + '/', v.id + '/￿')), set); }).then(function (cs) {
+      var takes = cs.map(function (c) { var line = String(c.k).slice(v.id.length + 1), m = v.takes[line] || {}; return { line: line, type: c.type || m.type || '', t: c.t || m.t || v.made, audio: b64(c.buf) }; });
+      var data = JSON.stringify({ kind: 'el-cantor-voice', v: VFILE, id: v.id, name: v.name, made: v.made, takes: takes }).replace(/</g, '\\u003c');
+      function part(l) { return '<section lang="' + (l === 'es' ? 'es-MX' : 'en') + '"><h1>' + esc(T.in(l, 'vfile.title', { name: v.name })) + '</h1><p>' + esc(T.in(l, 'vfile.about', { name: v.name, recordings: T.in(l, 'vfile.recordings', { n: takes.length }) })) + '</p></section>'; }
+      var html = '<!doctype html>\n<html lang="' + (T.lang === 'es' ? 'es-MX' : 'en') + '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>' + esc(T('vfile.title', { name: v.name })) + '</title>' +
+        '<style>body{font:17px/1.5 system-ui,-apple-system,sans-serif;max-width:36em;margin:0 auto;padding:24px 16px;background:#FBF4E4;color:#2B221C}h1{font-size:22px;line-height:1.2;margin:0 0 8px}section+section{margin-top:24px;padding-top:20px;border-top:1px solid #C4AE84}</style></head><body>\n' +
+        part(T.lang) + '\n' + part(T.lang === 'es' ? 'en' : 'es') + '\n<script type="application/json" id="el-cantor-voice">' + data + '<\/script>\n</body></html>\n'; // <\/: this page's own script would end at the plain one
+      return new File([html], fileName(v.name), { type: 'text/html' });
+    });
+  }
+  // On a phone, the share sheet; it opens only straight from a tap, so a file that took longer to make than a tap lasts
+  // waits for the next tap. A computer downloads it.
+  var SENT = null;
+  function sendVoice(v) {
+    var sig = v.id + JSON.stringify(v.takes) + v.name;
+    if (SENT && SENT.sig === sig) { give(SENT.file); return; }
+    voiceFile(v).then(function (file) {
+      if (!shareFiles(file)) return saveFile(file, file.name).then(function (how) { if (how) toast(T('vfile.saved', { name: v.name }), 7000); });
+      SENT = { sig: sig, file: file }; give(file);
+    }).catch(function (e) { toast(e && e.message ? e.message : T('vfile.cantMake')); });
+    function give(file) {
+      navigator.share({ files: [file] }).then(function () { SENT = null; }, function (e) {
+        if (e && e.name === 'AbortError') return; // the share sheet closed with nothing picked
+        if (e && e.name === 'NotAllowedError') { toast(T('vfile.again'), 6000); return; } // the tap ran out while it was made
+        SENT = null; saveFile(file, file.name).then(function (how) { if (how) toast(T('vfile.saved', { name: v.name }), 7000); });
+      });
+    }
+  }
+  // Whether this device plays a take: a voice from another browser can be in a sound it can't play (WebM's Opus on an
+  // iPhone before iOS 17.5, say: caniuse, "Opus audio format"). Such a line is read by this device's voice and Settings
+  // says so, rather than a silence where the card should be.
+  var OFF = null;
+  function plays(buf) {
+    try { if (!OFF) { var O = window.OfflineAudioContext || window.webkitOfflineAudioContext; OFF = O ? new O(1, 1, 44100) : ctx(); } } catch (e) { OFF = ctx(); }
+    if (!OFF) return Promise.resolve(false);
+    return new Promise(function (ok, bad) { var q = OFF.decodeAudioData(buf.slice(0), ok, bad); if (q && q.then) q.then(ok, bad); }).then(function (d) { return !!d && d.duration > 0; }, function () { return false; });
+  }
+  // A voice from another device: each take checked that it plays here, then kept with the voice, all at once, so a
+  // voice is never half here. A line already here stays unless the one coming was recorded later. A voice this device
+  // can't play a word of isn't added. meta: { id, name, made }; takes: [{ line, type, t, buf }]. Gives the voice.
+  function arrive(meta, takes, from) {
+    var v = RECS.filter(function (r) { return r.id === meta.id; })[0];
+    return Promise.all(takes.map(function (k) { return plays(k.buf).then(function (ok) { k.cant = !ok; }); })).then(function () {
+      if (!v && takes.every(function (k) { return k.cant; })) throw { noSound: meta.name };
+      var row = recRow(v || { id: meta.id, name: meta.name, made: meta.made, from: from });
+      row.takes = Object.assign({}, row.takes);
+      var fresh = takes.filter(function (k) { var was = row.takes[k.line]; return !was || !(was.t >= k.t) || (was.cant && !k.cant); });
+      fresh.forEach(function (k) { row.takes[k.line] = k.cant ? { t: k.t, type: k.type, cant: true } : { t: k.t, type: k.type }; });
+      return vtx(['voices', 'clips'], 'readwrite', function (t) {
+        t.objectStore('voices').put(row);
+        fresh.forEach(function (k) { t.objectStore('clips').put({ k: row.id + '/' + k.line, buf: k.buf, type: k.type, t: k.t }); });
+      }).then(function () {
+        fresh.forEach(function (k) { forget('rec:' + row.id + '/' + k.line); });
+        return loadRecs();
+      }).then(function () { return RECS.filter(function (r) { return r.id === row.id; })[0]; });
+    });
+  }
+  function readText(f) {
+    if (f.text) return f.text();
+    return new Promise(function (ok, bad) { var r = new FileReader(); r.onload = function () { ok(r.result); }; r.onerror = function () { bad(r.error); }; r.readAsText(f); });
+  }
+  // Add a voice…: the file checked before anything is kept. Not one of ours, damaged (cut short, say), or from a newer
+  // El Cantor: it says which, and adds nothing. Added, it's the voice El Cantor calls with.
+  var NOT_OURS = {}, DAMAGED = {}, NEWER_V = {};
+  function addVoiceFile(f) {
+    var lines = {}; recSteps('names').concat(recSteps('verses')).forEach(function (s) { lines[s.key] = 1; });
+    (f.size > 64e6 ? Promise.reject(NOT_OURS) : readText(f)).then(function (text) {
+      var m = /<script type="application\/json" id="el-cantor-voice">([\s\S]*?)<\/script>/.exec(text), o = null;
+      if (!m) throw NOT_OURS;
+      try { o = JSON.parse(m[1]); } catch (e) { throw DAMAGED; }
+      if (!o || typeof o !== 'object' || o.kind !== 'el-cantor-voice') throw NOT_OURS;
+      if (typeof o.v === 'number' && o.v > VFILE) throw NEWER_V;
+      if (o.v !== VFILE || typeof o.id !== 'string' || !/^r[a-z0-9]{1,24}$/.test(o.id) || typeof o.name !== 'string' || !o.name.trim() || !Array.isArray(o.takes) || !o.takes.length) throw DAMAGED;
+      var seen = {}, takes = o.takes.map(function (k) {
+        if (!k || !lines[k.line] || seen[k.line] || typeof k.type !== 'string' || !/^audio\/[\w.+-]+/.test(k.type) || typeof k.t !== 'number' || !(k.t > 0) || typeof k.audio !== 'string' || !k.audio) throw DAMAGED;
+        var buf; try { buf = unb64(k.audio); } catch (e) { throw DAMAGED; }
+        seen[k.line] = 1;
+        return { line: k.line, type: k.type, t: k.t, buf: buf };
+      });
+      return arrive({ id: o.id, name: o.name.trim().slice(0, 30), made: typeof o.made === 'number' ? o.made : Date.now() }, takes, 'file');
+    }).then(function (v) {
+      C.settings.voice = 'rec:' + v.id; save();
+      if (UI.onVoices) UI.onVoices();
+      toast(T('vfile.added', { name: v.name, n: Object.keys(v.takes).length }), 6000);
+    }, function (e) { // and anything else: storage that wouldn't keep it
+      toast(T(e === NOT_OURS ? 'vfile.foreign' : e === DAMAGED ? 'vfile.damaged' : e === NEWER_V ? 'vfile.newer' : e && e.noSound ? 'vfile.cantPlay' : 'rec.cantKeep', { name: e && e.noSound }), 8000);
+    });
   }
 
   // ---------- checking a ¡Lotería! ----------
@@ -2002,13 +2122,13 @@ a.chip{text-decoration:none}
     $('prx').addEventListener('click', closeSheet);
     info(); preview();
   }
-  // A phone that can give a PDF to its share sheet. Not a computer, which saves it straight away.
-  function shareFiles() {
+  // A phone that can give a file (a PDF unless one is given) to its share sheet. Not a computer, which saves it straight away.
+  function shareFiles(file) {
     if (window.claude || !navigator.share || !navigator.canShare || !window.File || !(window.matchMedia && matchMedia('(hover: none) and (pointer: coarse)').matches)) return false;
-    try { return navigator.canShare({ files: [new File([new Uint8Array(4)], 'tablas.pdf', { type: 'application/pdf' })] }); } catch (e) { return false; }
+    try { return navigator.canShare({ files: [file || new File([new Uint8Array(4)], 'tablas.pdf', { type: 'application/pdf' })] }); } catch (e) { return false; }
   }
-  function savePdf(bytes, filename) {
-    var blob = new Blob([bytes], { type: 'application/pdf' });
+  function savePdf(bytes, filename) { return saveFile(new Blob([bytes], { type: 'application/pdf' }), filename); }
+  function saveFile(blob, filename) {
     if (DL) {
       return DL.save({ filename: filename, data: blob }).then(function () { return T('cantor.prSaved'); }, function (e) {
         var code = e && e.code;

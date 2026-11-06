@@ -169,14 +169,14 @@ check('strings: every word is there in English and in Spanish, with the same {va
     }
   }
   // Each key a page uses is there, and each key there is used. A key is used as data-t…="key", in the first
-  // argument of T( or T.html(, which may pick one of a few: T(on ? 'on' : 'off'), or as the note in sync.js's
-  // setStatus(status, note), which it says later. 'prefix.' + id there uses every key starting prefix., and each
-  // shape, voice and pace then needs its own.
+  // argument of T( or T.html(, which may pick one of a few: T(on ? 'on' : 'off'), in the second of T.in(, or as the
+  // note in sync.js's setStatus(status, note), which it says later. 'prefix.' + id there uses every key starting
+  // prefix., and each shape, voice and pace then needs its own.
   const used = new Set(), prefixes = new Set();
   for (const f of ['index.html', 'cantor.html', 'board.html', 'print.html', 'sync.js', 'deck.js', 'strings.js']) {
     const src = await readFile(join(root, f), 'utf8');
-    for (const m of src.matchAll(/\b(T(?:\.html)?|setStatus)\(/g)) {
-      let arg = '', depth = 0, nth = m[1] === 'setStatus' ? 1 : 0;
+    for (const m of src.matchAll(/\b(T(?:\.html|\.in)?|setStatus)\(/g)) {
+      let arg = '', depth = 0, nth = m[1] === 'setStatus' || m[1] === 'T.in' ? 1 : 0;
       for (let i = m.index + m[0].length; i < src.length; i++) {
         const c = src[i];
         if (c === "'") { const j = src.indexOf("'", i + 1); if (!nth) arg += src.slice(i, j + 1); i = j; continue; }
@@ -1220,7 +1220,7 @@ check('cantor: Record a voice, one card at a time: kept on this device, El Canto
     assert.equal(await sheetTitle(page), 'Settings');
     assert.equal(await page.inputValue('#vSel'), 'rec:' + id);
     assert.equal(await page.$eval('#vSel option:checked', o => o.textContent), 'Abuela · recorded here');
-    assert.equal(await page.textContent('#vNote'), 'Recorded on this device: it stays here, and isn’t saved to Google Drive. 3 of 56 recorded so far: this device’s voice says the rest.');
+    assert.equal(await page.textContent('#vNote'), 'Recorded by the family. It stays on this device, and isn’t saved to Google Drive: Send this voice… takes it to another. 3 of 56 recorded so far: this device’s voice says the rest.');
     assert.equal(await page.textContent('#recEdit'), 'Abuela’s recordings…');
     // After a reload Abuela calls the round: her opening line, El Gallo and El Diablito. La Dama, not recorded, is read
     // by this device's voice at once, with no note about a voice not loading, and nothing of Dora's is asked for.
@@ -1296,7 +1296,7 @@ check('cantor: Record a voice, one card at a time: kept on this device, El Canto
     await page.click('#setBtn');
     await until(page, v => document.getElementById('vSel').value === v, 'rec:' + id);
     assert.deepEqual([await page.$eval('#vSel option:checked', o => o.textContent), await page.textContent('#recNew'), await page.textContent('#recEdit')], ['Abuela · grabada aquí', 'Grabar una voz…', 'Grabaciones de Abuela…']);
-    assert.match(await page.textContent('#vNote'), /^Grabada en este dispositivo: se queda aquí y no se guarda en Google Drive\. Llevas 3 de 56: /);
+    assert.match(await page.textContent('#vNote'), /^Grabada por la familia\. Se queda en este dispositivo y no se guarda en Google Drive: Enviar esta voz… la lleva a otro\. Llevas 3 de 56: /);
     assert.deepEqual(await english(page), [], 'English in Settings');
     await page.click('#recEdit');
     assert.equal(await sheetTitle(page), 'Grabar una voz');
@@ -1315,6 +1315,162 @@ check('cantor: Record a voice, one card at a time: kept on this device, El Canto
     assert.deepEqual((await idb()).voices, []);
     assert.deepEqual(problems, []);
   } finally { await mic.close(); }
+});
+
+// Chromium with its stand-in microphone (it beeps), the permission to use it already given, in a UTF-8 locale as a
+// phone or computer is: in a plain C locale Chromium on Linux names a download whose name it can't spell "download".
+const micBrowser = () => pw.chromium.launch({ args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'], env: { ...process.env, LC_ALL: 'C.UTF-8' } });
+// Settings › Record a voice…: whose voice it is, a take of each of the first n lines (the opening line, El Gallo, …),
+// and back to Settings.
+async function recordLines(page, name, n) {
+  await page.click('#setBtn'); await page.click('#recNew');
+  await page.fill('#rcName', name);
+  for (let i = 0; i < n; i++) {
+    if (i) await page.click('#rcNext');
+    await page.click('#rcGo'); await until(page, () => document.getElementById('rcGo').classList.contains('on'));
+    await page.waitForTimeout(1200);
+    await page.click('#rcGo');
+    await until(page, () => document.querySelector('#rcState .t').textContent === 'Recorded');
+  }
+  await page.click('#rcx');
+}
+// Each recorded clip that starts playing, as window.__played.
+const PLAYED = () => {
+  window.__played = [];
+  const start = AudioBufferSourceNode.prototype.start;
+  AudioBufferSourceNode.prototype.start = function () { if (this.buffer && this.buffer.duration > 0.3) window.__played.push(performance.now()); return start.apply(this, arguments); };
+};
+// The voices in a page's IndexedDB: each one's row, and its clips' keys.
+const voicesKept = page => page.evaluate(() => new Promise((ok, bad) => {
+  const q = indexedDB.open('loteria.voices');
+  q.onerror = () => bad(q.error);
+  q.onsuccess = () => {
+    if (!q.result.objectStoreNames.contains('voices')) { q.result.close(); ok({ voices: [], clips: [] }); return; }
+    const t = q.result.transaction(['voices', 'clips']), out = {};
+    t.objectStore('voices').getAll().onsuccess = e => { out.voices = e.target.result; };
+    t.objectStore('clips').getAllKeys().onsuccess = e => { out.clips = e.target.result.sort(); };
+    t.oncomplete = () => { q.result.close(); ok(out); };
+  };
+}));
+const NAMES_ONLY = { order: run(1, 54), pos: 0, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], wins: [], settings: { speak: true, style: 'name', voice: 'pack:dora', rate: 1, pace: 'fast', sound: false, awake: false, check: false } };
+
+check('cantor: Send this voice… makes one file, Add a voice… opens it on another device, and a file that isn’t one, is damaged or won’t play adds nothing', async () => {
+  const mic = await micBrowser(), dir = await mkdtemp(join(tmpdir(), 'voice-'));
+  const SHARE = () => {
+    window.__shared = []; window.__refuse = '';
+    navigator.canShare = d => !!(d && d.files && d.files.every(f => f instanceof File));
+    navigator.share = d => { if (window.__refuse) { const e = window.__refuse; window.__refuse = ''; return Promise.reject(new DOMException('no', e)); } window.__shared.push(d.files.map(f => ({ name: f.name, type: f.type, size: f.size }))); return Promise.resolve(); };
+  };
+  try {
+    // Abuela records the opening line, El Gallo and El Diablito on a computer, and sends her voice: a computer downloads it.
+    const a = await mic.newContext({ ...DESKTOP, locale: 'en-US', serviceWorkers: 'block', acceptDownloads: true });
+    await a.route(url => !url.href.startsWith(base), route => route.abort());
+    const A = await a.newPage(), aProblems = watch(A);
+    await seed(A, { 'loteria.cantor': NAMES_ONLY });
+    await A.goto(base + 'cantor.html');
+    await recordLines(A, 'Abuela', 3);
+    assert.equal(await sheetTitle(A), 'Settings');
+    assert.deepEqual([await A.textContent('#recEdit'), await A.textContent('#vSend'), await A.textContent('#recNew'), await A.textContent('#vAdd')], ['Abuela’s recordings…', 'Send this voice…', 'Record a voice…', 'Add a voice…']);
+    assert.equal(await A.textContent('#vNote'), 'Recorded by the family. It stays on this device, and isn’t saved to Google Drive: Send this voice… takes it to another. 3 of 56 recorded so far: this device’s voice says the rest.');
+    const [dl] = await Promise.all([A.waitForEvent('download'), A.click('#vSend')]);
+    assert.equal(dl.suggestedFilename(), 'Abuela’s voice for El Cantor.html');
+    await until(A, () => /downloaded/.test(document.getElementById('toast').textContent));
+    assert.equal(await A.textContent('#toast'), 'Abuela’s voice is downloaded as one file. On the other device, open it with Add a voice…, in Settings.');
+    const file = join(dir, 'abuela.html'); // a plain name: this computer's C locale can't open one with ’ in it, as a phone or computer would
+    await dl.saveAs(file);
+    // The file says what it is, in both languages, and holds her three takes as they were recorded.
+    const html = await readFile(file, 'utf8'), data = JSON.parse(/<script type="application\/json" id="el-cantor-voice">([\s\S]*?)<\/script>/.exec(html)[1]);
+    assert.match(html, /<h1>Abuela’s voice for El Cantor<\/h1><p>This file is Abuela’s voice, recorded in El Cantor: 3 recordings\. To call the cards with it on another phone, tablet or computer, open El Cantor there \(el-cantor\.junkdrawer\.works\), tap Settings › Add a voice…, and pick this file\.<\/p>/);
+    assert.match(html, /<section lang="es-MX"><h1>La voz de Abuela para El Cantor<\/h1><p>Este archivo es la voz de Abuela, grabada en El Cantor: 3 grabaciones\./);
+    assert.deepEqual([data.kind, data.v, data.name, data.takes.map(t => t.line).sort(), data.takes.map(t => t.type)], ['el-cantor-voice', 1, 'Abuela', ['n01', 'n02', 'open'], Array(3).fill('audio/webm;codecs=opus')]);
+    const kept = await voicesKept(A);
+    assert.equal(data.id, kept.voices[0].id);
+    assert.ok(data.takes.every(t => Buffer.from(t.audio, 'base64').length > 1000), 'a take in the file is empty');
+
+    // A phone that has never seen her adds the file: she's listed as recorded on another device, chosen, and calls
+    // El Gallo there; the opening line too, and La Dama, not recorded, is this phone's own voice.
+    const b = await context(PHONE), B = await b.newPage(), bProblems = watch(B);
+    try {
+      await B.addInitScript(FAKE_TTS); await B.addInitScript(DEALS); await B.addInitScript(PLAYED); await B.addInitScript(SHARE);
+      await seed(B, { 'loteria.cantor': NAMES_ONLY });
+      await B.goto(base + 'cantor.html');
+      await B.click('#setBtn');
+      assert.ok(await B.isHidden('#recMine'), 'Send this voice… with no recorded voice chosen');
+      assert.ok(await B.isVisible('#vAdd'));
+      await B.setInputFiles('#vAddF', file);
+      await until(B, () => /^Added/.test(document.getElementById('toast').textContent));
+      assert.equal(await B.textContent('#toast'), 'Added Abuela’s voice: 3 recordings.');
+      assert.equal(await B.inputValue('#vSel'), 'rec:' + data.id);
+      assert.equal(await B.$eval('#vSel option:checked', o => o.textContent), 'Abuela · from another device');
+      assert.equal((await saved(B, 'loteria.cantor')).settings.voice, 'rec:' + data.id);
+      assert.deepEqual((await voicesKept(B)).clips, [data.id + '/n01', data.id + '/n02', data.id + '/open']);
+      await B.click('#stx');
+      await B.evaluate(() => { window.__played = []; window.__said = []; window.__dealt = []; });
+      await B.click('#playBtn');
+      await until(B, () => window.__said.length >= 1 && window.__dealt.length >= 3, null, 40000);
+      await B.click('#playBtn');
+      const r = await B.evaluate(() => ({ said: window.__said.map(s => s.text), dealt: window.__dealt.map(d => d.name), played: window.__played.length }));
+      assert.deepEqual(r.dealt.slice(0, 3), ['El Gallo', 'El Diablito', 'La Dama']);
+      assert.ok(r.played >= 3, 'her opening line, El Gallo and El Diablito: ' + r.played + ' played');
+      assert.equal(r.said[0], 'La Dama');
+      // The same file again changes nothing: still one Abuela, with her three.
+      await B.click('#setBtn');
+      await B.setInputFiles('#vAddF', file);
+      await until(B, () => /^Added/.test(document.getElementById('toast').textContent));
+      assert.equal((await B.$$eval('#vSel option', os => os.map(o => o.textContent))).filter(t => /Abuela/.test(t)).length, 1);
+      assert.equal((await voicesKept(B)).voices.length, 1);
+
+      // A phone sends it with its share sheet. When the file took longer to make than the tap lasted, it says to tap
+      // again, and the next tap shares the same file.
+      await B.evaluate(() => { window.__refuse = 'NotAllowedError'; });
+      await B.click('#vSend');
+      await until(B, () => /again/.test(document.getElementById('toast').textContent));
+      assert.equal(await B.textContent('#toast'), 'Ready — tap Send this voice… again.');
+      await B.click('#vSend');
+      await until(B, () => window.__shared.length === 1);
+      const shared = await B.evaluate(() => window.__shared[0]);
+      assert.deepEqual(shared.map(f => [f.name, f.type]), [['Abuela’s voice for El Cantor.html', 'text/html']]);
+      assert.ok(Math.abs(shared[0].size - (await readFile(file)).length) < 2000, 'the phone shared ' + shared[0].size + ' bytes');
+
+      // Files that add nothing, each saying why: a web page that isn't a voice, a voice file cut short, one from a newer
+      // El Cantor, and one in a sound this browser can't play.
+      const one = (name, body) => { const f = join(dir, name); return writeFile(f, body).then(() => f); };
+      const as = o => html.replace(/(<script type="application\/json" id="el-cantor-voice">)[\s\S]*?(<\/script>)/, (m, x, y) => x + JSON.stringify(o) + y);
+      const cases = [
+        [await one('page.html', '<!doctype html><title>A recipe</title><p>Tamales'), 'That file isn’t a voice from El Cantor.'],
+        [await one('cut.html', html.slice(0, Math.floor(html.length / 2)) + '</script>'), 'That voice file is damaged, so nothing was added. Ask for it to be sent again.'],
+        [await one('bad.html', as({ ...data, takes: data.takes.map((t, i) => i ? t : { ...t, audio: '***' }) })), 'That voice file is damaged, so nothing was added. Ask for it to be sent again.'],
+        [await one('newer.html', as({ ...data, v: 2 })), 'That voice comes from a newer El Cantor. Close El Cantor and open it again to update, then add it.'],
+        [await one('tio.html', as({ ...data, id: 'rtio', name: 'Tío', takes: data.takes.map(t => ({ ...t, type: 'audio/x-unknown', audio: Buffer.from('not a sound at all, just words').toString('base64') })) })), 'This browser can’t play the kind of sound file Tío’s voice was recorded in, so it wasn’t added. Record the voice on this device instead.']
+      ];
+      for (const [f, says] of cases) {
+        await B.evaluate(() => { document.getElementById('toast').textContent = ''; });
+        await B.setInputFiles('#vAddF', f);
+        await until(B, () => document.getElementById('toast').textContent !== '');
+        assert.equal(await B.textContent('#toast'), says, f);
+      }
+      assert.deepEqual((await voicesKept(B)).voices.map(v => v.name), ['Abuela']);
+      assert.deepEqual((await voicesKept(B)).clips, [data.id + '/n01', data.id + '/n02', data.id + '/open']);
+      // A newer take of hers, El Gallo's verse, in a sound this browser can't play: added, and Settings says this
+      // device's voice reads it.
+      const more = await one('more.html', as({ ...data, takes: data.takes.concat([{ line: 'v01', type: 'audio/x-unknown', t: Date.now(), audio: Buffer.from('no sound').toString('base64') }]) }));
+      await B.setInputFiles('#vAddF', more);
+      await until(B, () => /recordings\.$/.test(document.getElementById('toast').textContent));
+      assert.equal(await B.textContent('#toast'), 'Added Abuela’s voice: 4 recordings.');
+      assert.match(await B.textContent('#vNote'), / 1 of its recordings is in a kind of sound file this device can’t play, so this device’s voice says that line\.$/);
+      // In Spanish: Enviar esta voz… and Agregar una voz…, and no English left in Settings.
+      await B.evaluate(() => localStorage.setItem('loteria.lang', 'es'));
+      await B.reload();
+      await B.click('#setBtn');
+      await until(B, v => document.getElementById('vSel').value === v, 'rec:' + data.id);
+      assert.deepEqual([await B.$eval('#vSel option:checked', o => o.textContent), await B.textContent('#vSend'), await B.textContent('#vAdd')], ['Abuela · de otro dispositivo', 'Enviar esta voz…', 'Agregar una voz…']);
+      assert.match(await B.textContent('#vNote'), /^Grabada por la familia\. Se queda en este dispositivo y no se guarda en Google Drive: Enviar esta voz… la lleva a otro\. .* 1 de sus grabaciones está en un tipo de archivo de sonido que este dispositivo no puede reproducir, así que esa línea la dice la voz de este dispositivo\.$/);
+      assert.deepEqual(await english(B), [], 'English in Ajustes');
+      await noSideways(B, 'Ajustes');
+      assert.deepEqual(bProblems, []);
+    } finally { await b.close(); }
+    assert.deepEqual(aProblems, []);
+  } finally { await mic.close(); await rm(dir, { recursive: true, force: true }); }
 });
 
 // A stand-in for Screen Wake Lock: window.__held is how many screen locks the page holds. refuse: every request fails,
