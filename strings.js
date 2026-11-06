@@ -131,6 +131,8 @@
       'cantor.anyOne': 'a tabla wins with any one of them', // a game of two shapes or more
       'cantor.readyH': 'Ready when you are',
       'cantor.readyP': 'All 54 cards are shuffled. El Cantor turns them over one at a time and reads each one out.',
+      'cantor.icons.sabana': 'Sábana: every card, as it’s called', // on a phone, under Start calling: what the icons at the top do
+      'cantor.icons.more': 'Voice and pace',
       'cantor.capNo': 'No. {n} · {ord} card',
       'cantor.lastCard': 'That was the last card — ↺ below starts a new round',
       'cantor.firstCard': 'First card of the round',
@@ -670,6 +672,8 @@
       'cantor.anyOne': 'una tabla gana con cualquiera de ellas',
       'cantor.readyH': 'Cuando quieras',
       'cantor.readyP': 'Las 54 cartas ya están barajadas. El Cantor las voltea una por una y canta cada una.',
+      'cantor.icons.sabana': 'Sábana: todas las cartas, según van saliendo',
+      'cantor.icons.more': 'Voz y ritmo',
       'cantor.capNo': 'No. {n} · {ord} en salir',
       'cantor.lastCard': 'Esa fue la última carta — ↺ abajo empieza otra ronda',
       'cantor.firstCard': 'Primera carta de la ronda',

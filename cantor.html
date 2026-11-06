@@ -110,6 +110,10 @@ a.chip{text-decoration:none}
 .cap h2{margin:3px 0 4px;font:400 clamp(28px,4.4vw,48px)/1.04 var(--disp);text-wrap:balance}
 .cap p{margin:0;font-style:italic;color:var(--ink2);font-size:clamp(14.5px,1.8vw,19px);line-height:1.35;text-wrap:balance}
 .cap .btn{margin-top:12px}
+.cap .icons{display:none;flex-wrap:wrap;justify-content:center;gap:0 16px;margin:14px 0 0;font:700 12.5px/1.7 var(--body);color:var(--ink2)} /* on a phone, what the icons at the top do */
+.cap .icons span{white-space:nowrap}
+.cap .icons svg{width:14px;height:14px;vertical-align:-2px;margin-right:2px}
+.cap .icons b{font-size:15px;line-height:1}
 /* the game being played, with its little diagram: over Ready when you are, and beside Sábana */
 .gm{display:flex;align-items:center;gap:10px;text-align:left;max-width:100%}
 .gm .minis{display:flex;gap:4px;flex:none}
@@ -337,6 +341,7 @@ a.chip{text-decoration:none}
   .vf>.stack{order:-1} /* the boxes and the verdict above the tabla, so the verdict sits right under the number typed */
   .vfwin .card{grid-template-columns:minmax(0,1fr)}.vfwin .chips{grid-row:auto}
   .cap{min-height:70px}
+  .cap .icons{display:flex}
 }
 @media (max-width:560px) and (max-height:780px){.vf .grid{max-width:170px}} /* a short phone keeps the verdict and the winner row on screen with the tabla */
 @media (max-width:440px){.stat{display:none}.top h1 .t{display:none}}
@@ -765,7 +770,10 @@ a.chip{text-decoration:none}
     var head = '<div class="gm">' + gameHtml(T('cantor.playingRound', { r: C.round }), true) + '</div>';
     if (R.opening) { el.innerHTML = head + '<h2>¡Se va y se corre…</h2><p>…con la vieja en el coche!</p>'; return; }
     if (!n) {
-      el.innerHTML = head + '<h2>' + T('cantor.readyH') + '</h2><p>' + T('cantor.readyP') + '</p><button class="btn red big" type="button" id="startBtn">' + T('cantor.start') + '</button>';
+      // A phone shows the icons at the top without their words: the first round says what they do, with the same icons.
+      var icon = function (id) { return $(id).querySelector('svg').outerHTML; };
+      var icons = C.round === 1 ? '<p class="icons"><span>' + icon('sabBtn') + ' ' + esc(T('cantor.icons.sabana')) + '</span><span>' + icon('printBtn') + ' ' + esc(T('printTablas')) + '</span><span><b aria-hidden="true">⋯</b> ' + esc(T('cantor.icons.more')) + '</span></p>' : '';
+      el.innerHTML = head + '<h2>' + T('cantor.readyH') + '</h2><p>' + T('cantor.readyP') + '</p><button class="btn red big" type="button" id="startBtn">' + T('cantor.start') + '</button>' + icons;
       $('startBtn').addEventListener('click', play);
       return;
     }

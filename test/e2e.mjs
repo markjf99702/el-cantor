@@ -1011,6 +1011,32 @@ check('cantor: the screen off mid-round pauses calling and says so when it’s b
   } finally { await ctx.close(); }
 });
 
+check('cantor: on a phone the first round says what the icons at the top do, with the same icons', async () => {
+  for (const lang of ['en', 'es']) {
+    const ctx = await context(PHONE);
+    try {
+      const page = await ctx.newPage(), problems = watch(page);
+      await seed(page, { 'loteria.lang': lang, 'loteria.cantor': { order: run(1, 54), pos: 0, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], juego: '', wins: [], last: Date.now(), settings: { speak: false, sound: false, awake: false } } });
+      await page.goto(base + 'cantor.html');
+      const line = () => page.evaluate(() => { const p = document.querySelector('#cap .icons'); return p && p.offsetParent ? [...p.children].map(s => s.textContent.trim()) : null; });
+      assert.deepEqual(await line(), lang === 'en' ? ['Sábana: every card, as it’s called', 'Print tablas', '⋯ Voice and pace'] : ['Sábana: todas las cartas, según van saliendo', 'Imprimir tablas', '⋯ Voz y ritmo']);
+      const same = await page.evaluate(() => { const svg = document.querySelectorAll('#cap .icons svg'); return [svg[0].outerHTML === document.querySelector('#sabBtn svg').outerHTML, svg[1].outerHTML === document.querySelector('#printBtn svg').outerHTML]; });
+      assert.deepEqual(same, [true, true], 'the line’s icons are the buttons’ own');
+      await noSideways(page, 'the icons line');
+      await page.click('#nextBtn');
+      assert.equal(await line(), null, 'the line stays after the first card');
+      // A later round, and a computer, where the buttons have their words, don't show it.
+      await page.click('#newBtn'); await page.click('#nrOk'); await page.click('#ptx');
+      assert.equal(await line(), null, 'the line shows in round 2');
+      await page.setViewportSize({ width: 1280, height: 800 });
+      await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('loteria.cantor')); s.round = 1; localStorage.setItem('loteria.cantor', JSON.stringify(s)); });
+      await page.reload();
+      assert.equal(await line(), null, 'the line shows on a computer');
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
+});
+
 check('cantor: the opening call moves: the card back is squared up and the banderitas sway faster, and neither with less motion', async () => {
   for (const motion of ['no-preference', 'reduce']) {
     const ctx = await context(PHONE, { reducedMotion: motion });
