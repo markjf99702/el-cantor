@@ -1238,6 +1238,28 @@ check('board: Escape leaves the first-visit sheet up, and saves nobody', async (
   } finally { await ctx.close(); }
 });
 
+check('board: behind Who’s playing a new device shows no tablas and no name, as behind a shared link’s offer', async () => {
+  // On a computer the header shows whose tablas they are beside the title; behind the question nobody is set up yet.
+  const ctx = await context(DESKTOP);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await page.goto(base + 'board.html');
+    assert.equal(await sheetTitle(page), 'Who’s playing on this device?');
+    assert.equal(await page.locator('#boards .tabla').count(), 0, 'Mark’s four show behind Who’s playing');
+    assert.equal(await page.textContent('#who'), '', 'the header names someone behind Who’s playing');
+    // No thanks on a shared link's offer goes on to Who's playing, over the same empty board.
+    await page.goto(base + 'board.html#t=Mom~Tabla%201:1.2.3.4.5.6.7.8.9.a.b.c.d.e.f.g');
+    await page.click('#imNo');
+    assert.equal(await sheetTitle(page), 'Who’s playing on this device?');
+    assert.deepEqual([await page.locator('#boards .tabla').count(), await page.textContent('#who')], [0, '']);
+    await page.fill('#wName', 'Ana');
+    await page.click('#wMark');
+    assert.equal(await page.locator('#boards .tabla').count(), 4);
+    assert.equal(await page.textContent('#who'), 'Ana');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('board: Who’s playing waits for a name, so nobody is saved as Mark or as Player', async () => {
   const ctx = await context(PHONE);
   try {
@@ -2948,11 +2970,13 @@ check('offline: every page opens with no network once it has been opened, and sw
       if (f === 'sw.js' || /^audio\/.+\.mp3$/.test(f)) continue; // the voices are kept as they play
       assert.ok(kept.indexOf(f) >= 0, 'sw.js doesn’t keep ' + f + ', so it won’t open offline');
     }
+    // Someone is set up by now, so My tablas has tablas to show, with the card pictures from the offline copy (a new
+    // device asks who's playing over an empty board).
+    await page.evaluate(a => localStorage.setItem('loteria.v1', JSON.stringify(a)), ANA);
     await ctx.setOffline(true);
     for (const p in PAGES) {
       await page.goto(base + p);
       await page.waitForSelector(PAGES[p]);
-      // The board shows its tablas behind the welcome sheet, with the card pictures from the offline copy.
       if (p === 'board.html') await until(page, () => [...document.querySelectorAll('#boards .cell img')].some(i => i.complete && i.naturalWidth > 0));
     }
     await ctx.setOffline(false);

@@ -344,7 +344,7 @@ a{color:var(--teal);font-weight:700}
   function renderBoards() {
     var p = player(), host = $('boards'), guide = S.settings.guide ? guideCells() : null, back = boardSpot();
     host.innerHTML = '';
-    if (firstRun && UI.blank) return; // a shared link's offer on a new device: the stand-in tablas aren't anyone's
+    if (firstRun && UI.blank) return; // Who's playing, or a shared link's offer, on a new device: the stand-in tablas aren't anyone's
     var list = p.boards.map(function (b, i) { return { b: b, i: i }; }).filter(function (x) { return UI.focus == null || x.b.id === UI.focus; });
     if (UI.focus != null && !list.length) { UI.focus = null; list = p.boards.map(function (b, i) { return { b: b, i: i }; }); }
     list.forEach(function (x) {
@@ -734,6 +734,7 @@ a{color:var(--teal);font-weight:700}
       (window.LoteriaSync && LoteriaSync.ready ? '<p class="note">' + T('board.alreadyDrive') + '</p><div class="card" id="wSync"></div>' : '') +
       '<p class="later"><a href="./" id="wLater">' + T('board.notNow') + '</a></p>' + langRow() + '</div>');
     UI.welcome = true; // waits for a choice: no tap outside, no Escape. Not now goes home, and it asks again next time.
+    UI.blank = true; render(); // over no tablas and no name, as a shared link's offer: nothing here is anyone's yet
     if (window.LoteriaSync) LoteriaSync.card($('wSync'));
     // Nothing is saved before a choice, so a new language just reloads; a name already typed comes back with it.
     T.switch($('shLang'), null, function () { try { sessionStorage.setItem('loteria.wName', $('wName').value); } catch (e) { } });
