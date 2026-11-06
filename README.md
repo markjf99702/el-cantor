@@ -97,7 +97,7 @@ It's a static site: plain HTML, CSS and JavaScript, with no build step. It runs 
 
 ```sh
 npx serve .                   # or any static file server, then open the printed address
-npm test                      # uses the three tools in Chromium through the real pages (needs Playwright)
+npm test                      # checks the game's logic, then uses the three tools in Chromium through the real pages (needs Playwright)
 npm install                   # once, for the screenshots
 node tools/screenshots.mjs    # redraws the pictures in docs/
 node tools/make-icons.mjs     # redraws the PNG icons from icon.svg
@@ -128,7 +128,8 @@ To put it online with GitHub Pages: **Settings → Pages → Build and deploymen
   - `voices.json` lists the voices and where each verse ends, so Adivinanza can stop before the name.
 - `tools/make_voices.py` — renders `audio/` with [Kokoro-82M](https://github.com/hexgrad/kokoro) (Apache-2.0), using espeak-ng's Latin American Spanish for pronunciation. Rerun it after changing a verse in `deck.js`; the usage is at the top of the script.
 - `tools/screenshots.mjs` — draws the pictures in `docs/`, with each tool opened on the same saved tablas every time. It saves them with 256 colours using upng-js, from `npm install`.
-- `test/e2e.mjs` — what `npm test` runs: El Cantor, My tablas and Make tablas used through the real pages in Chromium, El Cantor's PDFs read back card by card, a recorded voice calling a round, two devices saving to a stand-in Google Drive (`test/fake-google.mjs`), the first visit bringing tablas from the old address, every page offline, and the words: each one in English and Spanish, and the screens in Spanish swept for English left behind. It runs Chromium in US English, whatever the computer's language, and so does `tools/screenshots.mjs`.
+- `test/logic.mjs` — what `npm test` runs first, in a few seconds and with no browser: the juegos' rules across many names (16 different cards, no two tablas alike, the deck dealt out evenly, no Clásico four printed twice), every winning shape checked against the rules with doubles, when a printed tabla first won, the random tablas' rules, and the shuffle's fairness.
+- `test/e2e.mjs` — what `npm test` runs next: El Cantor, My tablas and Make tablas used through the real pages in Chromium, El Cantor's PDFs read back card by card, a recorded voice calling a round, two devices saving to a stand-in Google Drive (`test/fake-google.mjs`), the first visit bringing tablas from the old address, every page offline, and the words: each one in English and Spanish, and the screens in Spanish swept for English left behind. It runs Chromium in US English, whatever the computer's language, and so does `tools/screenshots.mjs`.
 
 ## License
 
