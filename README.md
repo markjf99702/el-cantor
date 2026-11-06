@@ -122,7 +122,7 @@ To put it online with GitHub Pages: **Settings → Pages → Build and deploymen
 - `fonts/` — Bree Serif and Nunito Sans (SIL Open Font License), served from here so nothing loads from elsewhere.
 - `tools/cards/` — draws the cards.
   - Each card is an SVG in a cut-paper style, written in Python: `card.py` is the template and shared pieces, and `art1.py` to `art5.py` hold the pictures.
-  - `python3 tools/cards/build.py` writes the SVGs, then `node tools/cards/render.mjs` (with [Playwright](https://playwright.dev)) turns them into `cards/*.jpg`. Rerun both after changing a card.
+  - `python3 tools/cards/build.py` writes the SVGs, then `node tools/cards/render.mjs` (with [Playwright](https://playwright.dev)) turns them into `cards/*.jpg`. Rerun both after changing a card; `build.py 8,37` draws just those numbers. The names are written in the Bree Serif in `fonts/`, so nothing is fetched, and the tool stops if the font didn't load rather than draw them in another one.
 - `audio/` — the recorded voices.
   - One clip per card: the verse, a breath, the name. Plus the opening line and ¡Lotería!
   - `voices.json` lists the voices and where each verse ends, so Adivinanza can stop before the name.

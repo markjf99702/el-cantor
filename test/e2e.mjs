@@ -3,9 +3,10 @@
 // share tablas through a stand-in Google Drive, and every page works offline.
 // To run some of the checks only, name them:  node test/e2e.mjs cantor print
 import { createRequire } from 'node:module';
-import { execSync } from 'node:child_process';
+import { execSync, execFile } from 'node:child_process';
 import { createServer } from 'node:http';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile, mkdtemp, rm, unlink } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { existsSync } from 'node:fs';
 import { join, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -637,6 +638,26 @@ check('fonts: every page has Bree Serif and Nunito Sans, served from here', asyn
     }
     assert.deepEqual(problems, []);
   } finally { await ctx.close(); }
+});
+
+check('fonts: the card drawing tool writes the names in the repo’s own Bree Serif, and stops when it didn’t load', async () => {
+  // tools/cards/render.mjs on one card with a name, into a folder of its own: with fonts/fonts.css, then with a font
+  // stylesheet that declares nothing, where a stand-in serif would draw the name.
+  const dir = await mkdtemp(join(tmpdir(), 'el-cantor-render-'));
+  try {
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 656" width="400" height="656"><text x="200" y="600" font-family="Bree Serif" font-size="40" text-anchor="middle">EL CAMARÓN</text></svg>';
+    await writeFile(join(dir, 'cards.json'), JSON.stringify({ 8: { file: 'ElCamaron', svg } }));
+    await writeFile(join(dir, 'none.css'), '/* no fonts */');
+    const render = (env = {}) => new Promise(done => execFile(process.execPath, [join(root, 'tools/cards/render.mjs')], { env: { ...process.env, CARDS_JSON: join(dir, 'cards.json'), CARDS_OUT: dir, ...env }, timeout: 90000 }, (err, stdout, stderr) => done({ code: err ? err.code || 1 : 0, out: stdout + stderr })));
+    const ok = await render();
+    assert.equal(ok.code, 0, 'the tool failed with the repo’s fonts:\n' + ok.out);
+    assert.ok(existsSync(join(dir, 'ElCamaron.jpg')), 'no card was written');
+    await unlink(join(dir, 'ElCamaron.jpg'));
+    const none = await render({ FONT_CSS: join(dir, 'none.css') });
+    assert.notEqual(none.code, 0, 'the tool drew the card without Bree Serif');
+    assert.match(none.out, /Bree Serif did not load/);
+    assert.ok(!existsSync(join(dir, 'ElCamaron.jpg')), 'a card was written without Bree Serif');
+  } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
 check('colours: the light palette’s muted text reads at 4.5:1 on every page', async () => {
