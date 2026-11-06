@@ -78,7 +78,7 @@
 
       // the shapes (deck.js), in both game pickers, and what holding one does
       'pat.clasico': '4 in a row, 4 corners, or 4 in a square',
-      'pat.linea': 'any row, column or diagonal',
+      'pat.linea': 'any row, column or diagonal — a chorro',
       'pat.esquinas': 'the four corners',
       'pat.centro': 'the middle four',
       'pat.cuadro': 'any 2×2 block',
@@ -551,7 +551,7 @@
 
       // the shapes (deck.js), in both game pickers, and what holding one does
       'pat.clasico': 'línea, esquinas o cuadrito', // as the shapes beside it are named
-      'pat.linea': 'cualquier fila, columna o diagonal',
+      'pat.linea': 'cualquier fila, columna o diagonal: un chorro',
       'pat.esquinas': 'las cuatro esquinas',
       'pat.centro': 'las cuatro del centro',
       'pat.cuadro': 'cualquier cuadrito de 2×2',
