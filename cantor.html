@@ -784,6 +784,21 @@ a.chip{text-decoration:none}
   }
   function renderAll() { renderTop(); renderAntes(); renderSabana(); renderBar(); }
 
+  // ---------- full screen ----------
+  // For a laptop or a TV at the head of the table: the browser's tabs and address bar go, Esc brings them back. Only
+  // where the browser allows it: not on an iPhone, where Safari lets only a video fill the screen.
+  function fsOk() { var d = document; return !!((d.fullscreenEnabled && d.documentElement.requestFullscreen) || (d.webkitFullscreenEnabled && d.documentElement.webkitRequestFullscreen)); }
+  function fsOn() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+  function fullScreen(on) {
+    var d = document, el = d.documentElement, q;
+    try {
+      if (on && !fsOn()) q = el.requestFullscreen ? el.requestFullscreen() : el.webkitRequestFullscreen();
+      else if (!on && fsOn()) q = d.exitFullscreen ? d.exitFullscreen() : d.webkitExitFullscreen();
+    } catch (e) { }
+    if (q && q.catch) q.catch(function () { });
+  }
+  ['fullscreenchange', 'webkitfullscreenchange'].forEach(function (ev) { document.addEventListener(ev, function () { if (UI.onFull) UI.onFull(); relayout(); }); });
+
   // ---------- layout ----------
   function layout() {
     var app = $('app'), W = window.innerWidth, H = window.innerHeight;
@@ -831,7 +846,7 @@ a.chip{text-decoration:none}
   // Space there would press that button again instead of starting or pausing.
   function keyed(el) { try { return el.matches(':focus-visible'); } catch (x) { return false; } }
   function openSheet(html) { var s = $('sheet'); if (s.hidden) UI.opener = keyed(document.activeElement) ? document.activeElement : null; s.innerHTML = '<div class="sheetbg"><div class="sheet" role="dialog" aria-modal="true" tabindex="-1">' + html + '</div></div>'; s.hidden = false; s.querySelector('.sheetbg').addEventListener('click', function (e) { if (e.target === e.currentTarget) closeSheet(); }); UI.sheet = s.querySelector('.sheet'); UI.sheet.focus({ preventScroll: true }); return UI.sheet; }
-  function closeSheet() { var s = $('sheet'); if (s.hidden) return; s.hidden = true; s.innerHTML = ''; UI.sheet = null; UI.onVoices = null; var o = UI.opener; UI.opener = null; if (o && o !== document.body && o.isConnected) o.focus({ preventScroll: true }); if (UI.onClose) { var f = UI.onClose; UI.onClose = null; f(); } }
+  function closeSheet() { var s = $('sheet'); if (s.hidden) return; s.hidden = true; s.innerHTML = ''; UI.sheet = null; UI.onVoices = null; UI.onFull = null; var o = UI.opener; UI.opener = null; if (o && o !== document.body && o.isConnected) o.focus({ preventScroll: true }); if (UI.onClose) { var f = UI.onClose; UI.onClose = null; f(); } }
 
   function patternSheet(title) {
     openSheet('<div class="hd"><h2>' + esc(title || T('whatPlaying')) + '</h2><button class="btn sec sm" type="button" id="ptx">' + T('done') + '</button></div><div class="bd stack"><p class="note">' + T.html('cantor.patsNote_html') + '</p><div class="pats" id="pats"></div></div>');
@@ -882,6 +897,7 @@ a.chip{text-decoration:none}
       '<div class="card"><div class="eyebrow">' + T('cantor.shoutH') + '</div><div class="row" style="margin-top:8px"><div class="seg" id="chkSeg"><button type="button" data-v="trust">' + T('cantor.trust') + '</button><button type="button" data-v="check">' + T('cantor.check') + '</button></div></div><p class="note" style="margin-top:8px" id="chkNote"></p></div>' +
       '<div class="card" id="rulesCard"><div class="eyebrow">' + T('cantor.rulesH') + '</div><div class="rule"><b>' + T('cantor.twoH') + '</b><div class="styles" id="twoOpts"></div></div><div class="rule"><b>' + T('cantor.lateH') + '</b><div class="styles" id="lateOpts"></div></div></div>' +
       '<div class="card"><div class="row sp"><div><b>' + T('sounds') + '</b><p class="note">' + T('cantor.soundsNote') + '</p></div><button class="chip" type="button" id="sndBtn"></button></div></div>' +
+      (fsOk() ? '<div class="card"><div class="row sp"><div><b>' + T('cantor.full') + '</b><p class="note">' + T('cantor.fullNote') + '</p></div><button class="chip" type="button" id="fsBtn"></button></div></div>' : '') +
       '<div class="card"><div class="row sp"><div><b>' + T('awake') + '</b><p class="note">' + T('cantor.awakeNote') + '</p>' + (WAKE.why() ? '<p class="note conote" id="awCant" style="margin-top:4px">' + esc(WAKE.why()) + '</p>' : '') + '</div><button class="chip" type="button" id="awBtn"></button></div></div>' +
       '<div class="card" id="winsCard"></div>' +
       '<div class="card" id="syncCard" hidden></div>' +
@@ -922,6 +938,7 @@ a.chip{text-decoration:none}
       $('chkNote').textContent = T(st.check ? 'cantor.chk.on' : 'cantor.chk.off');
       onOff($('sndBtn'), st.sound);
       onOff($('awBtn'), st.awake);
+      if ($('fsBtn')) onOff($('fsBtn'), fsOn());
       winsCard();
     }
     function winsCard() {
@@ -954,8 +971,9 @@ a.chip{text-decoration:none}
     document.querySelectorAll('#chkSeg button').forEach(function (b) { b.addEventListener('click', function () { st.check = b.dataset.v === 'check'; save(); draw(); }); });
     $('sndBtn').addEventListener('click', function () { st.sound = !st.sound; save(); draw(); if (st.sound) snap(); });
     $('awBtn').addEventListener('click', function () { st.awake = !st.awake; save(); WAKE.hold(); draw(); });
+    if ($('fsBtn')) $('fsBtn').addEventListener('click', function () { fullScreen(!fsOn()); });
     $('stx').addEventListener('click', closeSheet);
-    UI.onVoices = draw; loadVoices(); draw();
+    UI.onVoices = draw; UI.onFull = draw; loadVoices(); draw();
     if (window.LoteriaSync) LoteriaSync.card($('syncCard'), true);
   }
   function setPace(v) { C.settings.pace = v; save(); if (R.phase === 'waiting' && R.playing) wait(); else renderBar(); }
@@ -1584,6 +1602,7 @@ a.chip{text-decoration:none}
     else if (e.key === 'ArrowLeft') { e.preventDefault(); back(); }
     else if (e.key === 'l' || e.key === 'L') { e.preventDefault(); shout(); }
     else if (e.key === 'r' || e.key === 'R') { e.preventDefault(); again(); }
+    else if ((e.key === 'f' || e.key === 'F') && fsOk()) { e.preventDefault(); fullScreen(!fsOn()); }
   });
   var rT; function relayout() { clearTimeout(rT); rT = setTimeout(function () { picado(); layout(); }, 60); }
   window.addEventListener('resize', relayout);

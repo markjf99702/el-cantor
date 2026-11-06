@@ -209,7 +209,9 @@
       'cantor.alongH': 'Playing along',
       'cantor.along_html': 'Anyone can mark their tablas on their own phone with <a href="board.html">My tablas</a> — tap <b>Cantaron…</b> there as you call. Printed tablas work too: <b>Print tablas</b> makes a numbered set, or <a href="print.html">make your own</a> card by card.',
       'cantor.keyboardH': 'Keyboard',
-      'cantor.keyboard': 'Space starts or pauses · → next card · ← puts the last card back · R says the card again (or tap its name) · L checks a ¡Lotería!',
+      'cantor.keyboard': 'Space starts or pauses · → next card · ← puts the last card back · R says the card again (or tap its name) · L checks a ¡Lotería! · F full screen',
+      'cantor.full': 'Full screen',
+      'cantor.fullNote': 'Hides the browser’s tabs and address bar, for a laptop or a TV at the head of the table. F does it too, and Esc brings them back.',
       'cantor.againTitle': 'Say it again',
       'cantor.againAria': '{card} — say it again',
 
@@ -731,7 +733,9 @@
       'cantor.alongH': 'Jugar en el teléfono',
       'cantor.along_html': 'Cada quien puede marcar sus tablas en su propio teléfono con <a href="board.html">Mis tablas</a> — ahí tocan <b>Cantaron…</b> mientras cantas. También sirven tablas impresas: <b>Imprimir tablas</b> hace un juego numerado, o <a href="print.html">haz las tuyas</a> carta por carta.',
       'cantor.keyboardH': 'Teclado',
-      'cantor.keyboard': 'Espacio empieza o pausa · → siguiente carta · ← regresa la última carta · R la vuelve a cantar (o toca su nombre) · L revisa una ¡Lotería!',
+      'cantor.keyboard': 'Espacio empieza o pausa · → siguiente carta · ← regresa la última carta · R la vuelve a cantar (o toca su nombre) · L revisa una ¡Lotería! · F pantalla completa',
+      'cantor.full': 'Pantalla completa',
+      'cantor.fullNote': 'Esconde las pestañas y la barra de direcciones del navegador, para una laptop o una tele en la cabecera de la mesa. F también lo hace, y Esc las regresa.',
       'cantor.againTitle': 'Cántala otra vez',
       'cantor.againAria': '{card} — cántala otra vez',
 

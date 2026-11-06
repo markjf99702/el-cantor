@@ -1075,6 +1075,43 @@ check('awake: My tablas keeps the screen on while a round is being played, with 
   } finally { await ctx.close(); }
 });
 
+check('cantor: Full screen in Settings, and F, hide the browser’s bars where the browser allows it, and not on an iPhone', async () => {
+  let ctx = await context(DESKTOP);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await page.goto(base + 'cantor.html');
+    const full = () => page.evaluate(() => !!document.fullscreenElement);
+    await page.click('#setBtn');
+    assert.equal(await page.textContent('#fsBtn'), 'Off');
+    await page.click('#fsBtn');
+    await until(page, () => !!document.fullscreenElement);
+    await until(page, () => document.getElementById('fsBtn').textContent === 'On');
+    await page.click('#fsBtn');
+    await until(page, () => !document.fullscreenElement);
+    await page.click('#stx');
+    await page.keyboard.press('f');
+    await until(page, () => !!document.fullscreenElement);
+    await page.keyboard.press('F');
+    await until(page, () => !document.fullscreenElement);
+    assert.equal(await full(), false);
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+  // An iPhone's Safari can't put a page full screen: no switch, and F does nothing.
+  ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await page.addInitScript(() => { for (const k of ['fullscreenEnabled', 'webkitFullscreenEnabled']) Object.defineProperty(Document.prototype, k, { get: () => false, configurable: true }); });
+    await page.goto(base + 'cantor.html');
+    await page.click('#setBtn');
+    assert.equal(await page.locator('#fsBtn').count(), 0, 'Full screen where the browser can’t');
+    await page.click('#stx');
+    await page.keyboard.press('f');
+    await page.waitForTimeout(200);
+    assert.equal(await page.evaluate(() => !!document.fullscreenElement), false);
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('cantor: the card called is the card itself, edge to edge on its own cream paper, with no white mat round it', async () => {
   // The cards are drawn on cream (#FBF4E4) with their own rounded frame; a white mat round them made a second frame,
   // and the brightest thing on a dark screen.
