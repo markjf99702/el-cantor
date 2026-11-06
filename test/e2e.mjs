@@ -4426,6 +4426,38 @@ check('drive: a shared link on a new phone that saves to Drive asks again once t
   } finally { await A.ctx.close(); await B.ctx.close(); }
 });
 
+check('drive: turning Drive on from Who’s playing with nothing in that Drive says so there, and says it’s saving to it', async () => {
+  for (const lang of ['en', 'es']) {
+    const B = await driveDevice(fakeGoogle(), { 'loteria.lang': lang, 'loteria.sync': { on: false } }); // a new phone, and an empty Drive
+    try {
+      await B.page.goto(base + 'board.html');
+      assert.ok(await B.page.isHidden('#wNone'), 'it says Drive is empty before it was turned on');
+      await B.page.click('#wSync [data-a="on"]');
+      await synced(B.page);
+      await until(B.page, () => !document.getElementById('wNone').hidden);
+      assert.equal(await B.page.textContent('#wNone'), lang === 'en' ? 'Nothing is saved in this Google Drive yet. Pick how to start above, and your tablas will be saved there.' : 'Todavía no hay nada guardado en este Google Drive. Elige arriba cómo empezar y tus tablas se guardarán ahí.');
+      assert.match(await B.page.textContent('#wSync .note'), lang === 'en' ? /^Saving to mark@gmail\.com: tablas set up here show up/ : /^Se guarda en mark@gmail\.com: las tablas que armes aquí/);
+      assert.equal(await sheetTitle(B.page), lang === 'en' ? 'Who’s playing on this device?' : '¿Quién juega en este dispositivo?', 'Who’s playing closed');
+      // Once someone is set up, the card in Settings says the tablas are saved there.
+      await B.page.fill('#wName', 'Beto'); await B.page.click('#wRandom');
+      await B.page.click('#setBtn');
+      await until(B.page, en => { const n = document.querySelector('#syncCard .note'); return n && n.textContent.indexOf(en ? 'Tablas are saved to mark@gmail.com' : 'Las tablas se guardan en mark@gmail.com') === 0; }, lang === 'en');
+      assert.deepEqual(B.problems, []);
+    } finally { await B.ctx.close(); }
+  }
+  // With tablas in Drive, they come over as before, and the note never shows.
+  const g = fakeGoogle();
+  const A = await driveDevice(g, { 'loteria.v1': ANA }), C = await driveDevice(g, { 'loteria.sync': { on: false } });
+  try {
+    await A.page.goto(base + 'board.html'); await synced(A.page);
+    await C.page.goto(base + 'board.html');
+    await C.page.click('#wSync [data-a="on"]');
+    await until(C.page, () => document.getElementById('sheet').hidden);
+    assert.equal(await C.page.textContent('#toast'), 'Your tablas are here from Google Drive');
+    assert.deepEqual(A.problems, []); assert.deepEqual(C.problems, []);
+  } finally { await A.ctx.close(); await C.ctx.close(); }
+});
+
 check('drive: the Tablas sheet, a card being picked and a printed tabla being typed in all survive a sync landing meanwhile', async () => {
   const g = fakeGoogle();
   const A = await driveDevice(g, { 'loteria.v1': ANA });

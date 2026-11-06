@@ -441,6 +441,7 @@
       'board.anotherPrinted': '+ Another printed tabla',
       'board.eitherWay_html': 'However you start, you can change every square later under <b>Tablas</b>.',
       'board.alreadyDrive': 'Already saving tablas to Google Drive on another device? Turn it on here and they come right over.',
+      'board.driveEmpty': 'Nothing is saved in this Google Drive yet. Pick how to start above, and your tablas will be saved there.',
       'board.nameFirst': 'Your name first',
       'board.notNow': 'Not now',
       'board.tapTablas': 'Playing as {name} — tap Tablas to change any square',
@@ -532,6 +533,7 @@
       'sync.savedH': 'Saved to Google Drive',
       'sync.errH': 'Google Drive', // the card's heading when the last sync went wrong
       'sync.savedTo_html': 'Tablas are saved to <b>{email}</b> and show up on every device where you turn this on.',
+      'sync.savingTo_html': 'Saving to <b>{email}</b>: tablas set up here show up on every device where you turn this on.', // a first visit, with nothing saved here yet
       'sync.yourDrive': 'your Google Drive',
       'sync.now': 'Sync now',
       'sync.stop': 'Stop saving on this device',
@@ -981,6 +983,7 @@
       'board.anotherPrinted': '+ Otra tabla impresa',
       'board.eitherWay_html': 'Como sea, después puedes cambiar cada casilla en <b>Tablas</b>.',
       'board.alreadyDrive': '¿Ya guardas tablas en Google Drive en otro dispositivo? Actívalo aquí y llegan solitas.',
+      'board.driveEmpty': 'Todavía no hay nada guardado en este Google Drive. Elige arriba cómo empezar y tus tablas se guardarán ahí.',
       'board.nameFirst': 'Primero tu nombre',
       'board.notNow': 'Ahora no',
       'board.tapTablas': 'Juegas como {name} — toca Tablas para cambiar cualquier casilla',
@@ -1072,6 +1075,7 @@
       'sync.savedH': 'Guardado en Google Drive',
       'sync.errH': 'Google Drive',
       'sync.savedTo_html': 'Las tablas se guardan en <b>{email}</b> y aparecen en cada dispositivo donde actives esto.',
+      'sync.savingTo_html': 'Se guarda en <b>{email}</b>: las tablas que armes aquí aparecen en cada dispositivo donde actives esto.',
       'sync.yourDrive': 'tu Google Drive',
       'sync.now': 'Sincronizar ahora',
       'sync.stop': 'Dejar de guardar en este dispositivo',

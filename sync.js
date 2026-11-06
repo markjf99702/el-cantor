@@ -222,7 +222,7 @@
 
   // ---------- Google Drive ----------
   var st = Object.assign({ on: false, email: '', name: '', last: 0 }, get(KS) || {}), tok = get(KT);
-  var status = 'off', note = '', busy = null, again = false, client = null, gisLoading = false, gisFailed = false, pushT = null, ups = [], watchers = [], says = [], waits = [];
+  var status = 'off', note = '', busy = null, again = false, client = null, gisLoading = false, gisFailed = false, pushT = null, ups = [], watchers = [], says = [], waits = [], dones = [];
   var asked = false, busyT = null, busyTried = false, era = 0; // era: one more each Stop, so a sync begun before it writes nothing
   function saveSt() { put(KS, st); }
   function live() { return !!(tok && tok.token && tok.exp - 60000 > Date.now() && String(tok.scope || '').indexOf(SCOPE) >= 0); }
@@ -344,6 +344,7 @@
       clearTimeout(busyT); busyT = null; busyTried = false;
       setStatus('ok'); lapse();
       if (changed.length) ups.forEach(function (f) { try { f(changed); } catch (e) { if (window.console) console.error("Loteria sync: applying synced data failed", e); } });
+      dones.forEach(function (f) { try { f(changed); } catch (e) { } });
       return changed;
     }, function (e) {
       if (e !== STOPPED) failed(e);
@@ -455,7 +456,8 @@
     watch(function () { btn.hidden = !st.on; btn.dataset.s = status; btn.title = title(); btn.setAttribute('aria-label', title()); });
   }
   // A settings card: turn it on, see where it's saving, sync now, or stop. El Cantor's (cantor) says what it saves.
-  function card(host, cantor) {
+  // empty(): this device has nothing saved yet (a first visit), so it says it's saving to that Drive, not that tablas are saved there.
+  function card(host, cantor, empty) {
     if (!host) return;
     if (!CLIENT_ID) { host.hidden = true; return; }
     css(); loadGis(); host.hidden = false; host.classList.add('lsync-card');
@@ -464,7 +466,7 @@
       if (!host.isConnected) return false; // the sheet it was in has closed
       var wrong = status === 'error' || cantor && status === 'tap' && waiting(); // then it doesn't say "Saved to", nor while El Cantor's winner waits here
       host.innerHTML = st.on
-        ? '<div class="eyebrow">' + T(wrong ? 'sync.errH' : 'sync.savedH') + '</div><p class="note">' + T.html(cantor ? 'sync.c.savedTo_html' : 'sync.savedTo_html', { email: st.email || T('sync.yourDrive') }) + ' ' + line(cantor) + '</p>' +
+        ? '<div class="eyebrow">' + T(wrong ? 'sync.errH' : 'sync.savedH') + '</div><p class="note">' + T.html(cantor ? 'sync.c.savedTo_html' : empty && empty() ? 'sync.savingTo_html' : 'sync.savedTo_html', { email: st.email || T('sync.yourDrive') }) + ' ' + line(cantor) + '</p>' +
           '<div class="row"><button class="btn sm" type="button" data-a="now"' + (status === 'busy' ? ' disabled' : '') + '>' + T('sync.now') + '</button><button class="btn sec sm" type="button" data-a="off">' + T(armed ? 'sync.stopAgain' : 'sync.stop') + '</button></div>'
         : '<div class="eyebrow">' + T('sync.offH') + '</div><p class="note">' + esc(T(cantor ? 'sync.c.offNote' : 'sync.offNote')) + (note ? ' ' + esc(T(note)) : '') + '</p>' +
           '<div class="row"><button class="btn red sm" type="button" data-a="on">' + T('sync.on') + '</button></div>';
@@ -584,6 +586,7 @@
     onUpdate: function (f) { ups.push(f); }, // f(keys): synced data landed in these localStorage keys
     onNote: function (f) { says.push(f); }, // f(text): what went wrong after a tap, to show for a few seconds
     onWait: function (f) { waits.push(f); }, // f(): something was saved here after the hour, and waits for a tap to go to Drive
+    onSynced: function (f) { dones.push(f); }, // f(keys): a sync went through; keys: where synced data landed, none if nothing came
     _merge: mergeCol, _cols: COLS, _read: readDrive // for tests
   };
 

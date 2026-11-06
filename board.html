@@ -831,12 +831,12 @@ a{color:var(--teal);font-weight:700}
   // ---------- first visit ----------
   function welcomeSheet(name) { // name: one typed in a shared link's offer, turned down
     openSheet('<div class="hd"><h2>' + T('board.welcomeH') + '</h2></div><div class="bd stack"><p class="note">' + T(window.LoteriaSync && LoteriaSync.ready ? 'board.welcomeDrive' : 'board.welcomeLocal') + '</p><input id="wName" placeholder="' + esc(T('board.yourName')) + '" autocomplete="off" autocapitalize="words" aria-describedby="wNeed"><p class="need" id="wNeed" hidden>' + T('board.nameFirst') + '</p><div class="card"><div class="eyebrow">' + T('board.startWith') + '</div><div class="row" style="margin-top:8px"><button class="btn red" type="button" id="wRandom">' + T('board.wRandom') + '</button><button class="btn sec" type="button" id="wMark">' + T('board.wMark') + '</button><button class="btn sec" type="button" id="wPrinted">' + T('board.wPrinted') + '</button></div><p class="note" style="margin-top:8px">' + T.html('board.eitherWay_html') + '</p></div>' +
-      (window.LoteriaSync && LoteriaSync.ready ? '<p class="note">' + T('board.alreadyDrive') + '</p><div class="card" id="wSync"></div>' : '') +
+      (window.LoteriaSync && LoteriaSync.ready ? '<p class="note">' + T('board.alreadyDrive') + '</p><div class="card" id="wSync"></div><p class="note" id="wNone" role="status" style="color:var(--ink);font-weight:700" hidden>' + T('board.driveEmpty') + '</p>' : '') +
       '<div class="later" id="wPasteRow"><a href="#" id="wPaste">' + T('board.pasteAsk') + '</a></div>' +
       '<p class="later"><a href="./" id="wLater">' + T('board.notNow') + '</a></p>' + langRow() + '</div>');
     UI.welcome = true; // waits for a choice: no tap outside, no Escape. Not now goes home, and it asks again next time.
     UI.blank = true; render(); // over no tablas and no name, as a shared link's offer: nothing here is anyone's yet
-    if (window.LoteriaSync) LoteriaSync.card($('wSync'));
+    if (window.LoteriaSync) LoteriaSync.card($('wSync'), false, function () { return firstRun; }); // "Saving to", until someone is set up here
     // Nothing is saved before a choice, so a new language just reloads; a name already typed comes back with it.
     T.switch($('shLang'), null, function () { try { sessionStorage.setItem('loteria.wName', $('wName').value); } catch (e) { } });
     if (name) $('wName').value = name;
@@ -878,6 +878,8 @@ a{color:var(--teal);font-weight:700}
     LoteriaSync.chip($('syncBtn'));
     LoteriaSync.onNote(function (m) { toast(m, 6000); }); // what went wrong after a tap on ☁ or Sync now, long enough to read
     LoteriaSync.onUpdate(function (keys) { if (keys.indexOf(LS) >= 0) landed(true); }); // tablas saved on another device
+    // A sync went through on a first visit and Who's playing is still up: no tablas came, so it says so there.
+    LoteriaSync.onSynced(function () { var n = $('wNone'); if (n && UI.welcome && firstRun) n.hidden = false; });
   }
   // The installed app and a browser tab, or two tabs, share one save. Each takes the cards the other calls as they
   // come, so its next call doesn't put its own older round back over them. At El Cantor's own address sync.js

@@ -83,7 +83,7 @@ Someone calls the cards; you tap **Cantaron…**, pick the card, and it marks it
 
 ## Saving to Google Drive
 
-Anyone can turn this on from the home screen, from Settings in My tablas or El Cantor, or from the bottom of Make tablas. It needs a Google account, and each person's tablas go to their own Drive. Everyone who signs in with the same account shares one set.
+Anyone can turn this on from the home screen, from Settings in My tablas or El Cantor, or from the bottom of Make tablas. It needs a Google account, and each person's tablas go to their own Drive. Everyone who signs in with the same account shares one set. On a new phone, turning it on under My tablas' Who's playing brings that person's tablas over; when that Drive has none yet, Who's playing says so, and its card says it's saving to that account, so nobody waits for tablas that aren't coming.
 
 - **What's saved:** the people and tablas in My tablas, the tablas in Make tablas, El Cantor's winners, the juego it last printed or checked, and how many tablas it printed of each juego. Called cards, voices and other settings stay with each device.
 - **Where:** one file, `Lotería tablas.json`, in a `Lotería` folder in the person's Google Drive. The app asks only for `drive.file`, Google's narrowest Drive permission: the junkdrawer.works apps can open only the files they made, and nothing else in Drive. Deleting the folder removes the Drive copy; the next sync makes a new one from whatever the device has.
