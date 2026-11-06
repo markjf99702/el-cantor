@@ -1202,6 +1202,10 @@ check('cantor: Record a voice, one card at a time: kept on this device, El Canto
     await take();
     await page.click('#rcNext');
     await take();
+    // A look at Verses and back: Names opens where the recording left off, at La Dama.
+    await page.click('#rcPart [data-v="verses"]');
+    await page.click('#rcPart [data-v="names"]');
+    assert.deepEqual([await page.textContent('#rcStage .eyebrow'), await page.textContent('#rcStage h3')], ['Card 3 of 54 · its name', 'La Dama']);
     // Kept in this browser's IndexedDB as recorded: audio/mp4 where the browser makes it, as Safari on an iPhone does.
     let kept = await idb();
     assert.deepEqual(kept.voices.map(v => v.name), ['Abuela']);

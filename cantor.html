@@ -1373,7 +1373,7 @@ a.chip{text-decoration:none}
   function recSheet(v) {
     if (R.playing || R.phase !== 'idle' || R.opening) stopCalling(); // El Cantor isn't calling over the microphone
     var S = { v: v, part: 'names', i: 0, state: 'idle', armed: false };
-    function first(part) { var all = recSteps(part); for (var i = 0; i < all.length; i++) if (!v || !v.have[all[i].key]) return i; return -1; }
+    function first(part) { var all = recSteps(part), w = S.v; for (var i = 0; i < all.length; i++) if (!w || !w.have[all[i].key]) return i; return -1; } // S.v: a voice begun in this sheet too
     if (v) { var a = first('names'), b = first('verses'); if (a < 0 && b >= 0) { S.part = 'verses'; S.i = b; } else S.i = Math.max(0, a); }
     var safari = window.LoteriaSync && LoteriaSync.safariTab();
     openSheet('<div class="hd"><h2>' + T('rec.title') + '</h2><button class="btn sec sm" type="button" id="rcx">' + T('done') + '</button></div><div class="bd stack rec">' +
