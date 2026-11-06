@@ -440,7 +440,7 @@ a.chip{text-decoration:none}
   function nth(o) { return T.lang === 'es' ? T.ord(o) : '#' + o; } // a card's place in the order: #3, or la 3.ª in Spanish
   function isOut(n) { return orderOf(n) > 0; }
 
-  var R = { playing: false, phase: 'idle', timer: 0, raf: 0, waitStart: 0, waitMs: 0, token: 0, down: false, opening: false, stale: false };
+  var R = { playing: false, phase: 'idle', timer: 0, raf: 0, waitStart: 0, waitMs: 0, token: 0, down: false, opening: false, stale: false, slow: null };
   newNight();
   var PACE = { slow: 7000, normal: 4000, fast: 2000 };
   function paceName(v) { return T('pace.' + v); }
@@ -490,24 +490,35 @@ a.chip{text-decoration:none}
   function voiceOn() { return C.settings.speak && (PACKS.length > 0 || !!TTS); }
   function pad2(n) { return (n < 10 ? '0' : '') + n; }
   function clipUrl(p, ln) { return 'audio/' + p.id + '/' + (ln.n ? pad2(ln.n) : ln.clip) + '.' + (p.ext || 'mp3'); }
-  var BUF = {}, BUFQ = [], SRC = null;
+  var BUF = {}, READY = {}, BUFQ = [], SRC = null;
   function buffer(url) {
     if (BUF[url]) return BUF[url];
     var a = ctx(); if (!a || !window.fetch) return Promise.reject(new Error('no audio'));
     var pr = BUF[url] = fetch(url).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); }).then(function (b) {
       return new Promise(function (ok, bad) { var q = a.decodeAudioData(b, ok, bad); if (q && q.then) q.then(ok, bad); });
     });
-    pr.catch(function () { if (BUF[url] === pr) delete BUF[url]; });
-    BUFQ.push(url); while (BUFQ.length > 10) delete BUF[BUFQ.shift()];
+    pr.then(function () { if (BUF[url] === pr) READY[url] = true; }, function () { if (BUF[url] === pr) delete BUF[url]; });
+    BUFQ.push(url); while (BUFQ.length > 10) { var old = BUFQ.shift(); delete BUF[old]; delete READY[old]; }
     return pr;
   }
   function prefetch(n) { var p = C.settings.speak && choice().pack; if (p && n) buffer(clipUrl(p, { n: n })).catch(function () { }); }
+  // A clip that hasn't come in 3 seconds is read by this device's voice instead. From then until the round is over,
+  // a card whose clip isn't here yet doesn't wait for it, so a slow connection holds up the table once, with one note.
+  // R.slow is the voice that was slow.
+  var CLIP_WAIT = 3000;
+  function slowVoice(p) {
+    if (R.slow === p.id) return;
+    R.slow = p.id;
+    if (TTS) toast(T('cantor.voiceSlow'), 5000);
+  }
   // One line: { text } plus { n, part: 'verse' | 'name' | 'all' } for a card, or { clip } for the other clips.
   function playClip(p, ln, token, next) {
-    var done = false, fb = setTimeout(miss, 12000);
+    var url = clipUrl(p, ln);
+    if (R.slow === p.id && !READY[url]) { buffer(url).catch(function () { }); device(ln.text, token, next); return; } // here for a later card, maybe
+    var done = false, fb = setTimeout(miss, CLIP_WAIT);
     function ok() { if (done) return; done = true; clearTimeout(fb); next(); }
-    function miss() { if (done) return; done = true; clearTimeout(fb); if (token === R.token) device(ln.text, token, next); }
-    buffer(clipUrl(p, ln)).then(function (buf) {
+    function miss() { if (done) return; done = true; clearTimeout(fb); if (token !== R.token) return; slowVoice(p); device(ln.text, token, next); }
+    buffer(url).then(function (buf) {
       if (done || token !== R.token) return;
       var a = ctx(), k = ln.n && p.cards[ln.n], from = 0, to = buf.duration;
       if (k && ln.part === 'verse') to = Math.min(buf.duration, k[0] + 0.15);
@@ -544,6 +555,25 @@ a.chip{text-decoration:none}
     R.token++;
     if (SRC) { try { SRC.onended = null; SRC.stop(); } catch (e) { } SRC = null; }
     try { if (TTS && (TTS.speaking || TTS.pending)) TTS.cancel(); } catch (e) { }
+  }
+  // The whole voice, for a night with no signal: once calling starts with a recorded voice on a device that's online
+  // and hasn't asked to save data, the rest of that voice's clips (about 1.5 MB) come down quietly, one at a time, the
+  // round's cards in the order they'll be called. sw.js keeps each one, so the next game with no signal sounds the
+  // same; with no service worker to keep them it doesn't bother. Once a page load for each voice, unless it stopped.
+  var FILLED = {};
+  function fillVoice() {
+    var p = C.settings.speak && choice().pack, sw = navigator.serviceWorker, cn = navigator.connection;
+    if (!p || FILLED[p.id] || !window.fetch || !window.caches || !sw || !sw.controller || navigator.onLine === false || (cn && cn.saveData)) return;
+    FILLED[p.id] = true;
+    var todo = [{ clip: 'loteria' }].concat(C.order.slice(C.pos).concat(C.order.slice(0, C.pos)).map(function (n) { return { n: n }; }), [{ clip: 'open' }]).map(function (ln) { return clipUrl(p, ln); });
+    (function step() {
+      if (!todo.length) return;
+      if (choice().pack !== p || !C.settings.speak || navigator.onLine === false) { FILLED[p.id] = false; return; } // another voice now, or no signal: the next start goes on
+      var url = todo.shift();
+      caches.match(url).then(function (kept) {
+        return kept || fetch(url, { priority: 'low' }).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); });
+      }).then(function () { setTimeout(step, 0); }, function () { FILLED[p.id] = false; });
+    })();
   }
 
   // ---------- screen wake ----------
@@ -590,7 +620,8 @@ a.chip{text-decoration:none}
   function play() {
     if (C.pos >= 54) { newRoundAsk(); return; }
     R.playing = true; unlock(); wake(true); if (!VOICES.length) loadVoices();
-    if (!C.pos) { begin(); return; }
+    if (!C.pos) { begin(); fillVoice(); return; }
+    fillVoice();
     if (R.phase === 'idle') wait(); else renderBar();
   }
   function pause() { R.playing = false; clearTimeout(R.timer); R.timer = 0; if (R.phase === 'waiting') R.phase = 'idle'; renderBar(); }
@@ -602,7 +633,7 @@ a.chip{text-decoration:none}
       R.opening = false; R.phase = 'idle'; renderCaption(); renderBar();
     });
   }
-  function next() { if (C.pos >= 54) { newRoundAsk(); return; } hush(); unlock(); wake(true); deal(); }
+  function next() { if (C.pos >= 54) { newRoundAsk(); return; } hush(); unlock(); wake(true); deal(); fillVoice(); }
   function back() {
     if (!C.pos) return;
     pause(); hush(); R.phase = 'idle'; R.opening = false;
@@ -616,7 +647,7 @@ a.chip{text-decoration:none}
   function finish() { R.playing = false; R.phase = 'idle'; clearTimeout(R.timer); wake(false); renderAll(); }
   function newRound() {
     hush(); pause(); R.phase = 'idle'; R.opening = false;
-    C.order = shuffled(); C.pos = 0; C.round = R.stale ? 1 : C.round + 1; R.stale = false; C.tie = null; R.co = null; save(); renderTie();
+    C.order = shuffled(); C.pos = 0; C.round = R.stale ? 1 : C.round + 1; R.stale = false; C.tie = null; R.co = null; R.slow = null; save(); renderTie();
     wake(false); showCard(false, true); renderAll();
   }
   function newRoundAsk() {

@@ -810,6 +810,90 @@ check('cantor: a recorded voice reads each card, and a clip that won’t load fa
   } finally { await ctx.close(); }
 });
 
+// A stand-in for the device's own voice: it says each line at once, and keeps what it said and when.
+const FAKE_TTS = () => {
+  window.__said = [];
+  const s = window.speechSynthesis;
+  s.speak = u => { window.__said.push({ text: u.text, at: performance.now() }); setTimeout(() => { if (u.onend) u.onend(); }, 30); };
+  s.cancel = () => { };
+  for (const k of ['speaking', 'pending']) Object.defineProperty(s, k, { get: () => false, configurable: true });
+};
+// When each card was turned (#live says its name), and every toast shown.
+const DEALS = () => {
+  window.__dealt = []; window.__toasts = [];
+  addEventListener('DOMContentLoaded', () => {
+    if (!document.getElementById('live')) return; // not El Cantor
+    new MutationObserver(() => window.__dealt.push({ name: document.getElementById('live').textContent, at: performance.now() })).observe(document.getElementById('live'), { childList: true, characterData: true, subtree: true });
+    new MutationObserver(() => window.__toasts.push(document.getElementById('toast').textContent)).observe(document.getElementById('toast'), { childList: true, characterData: true, subtree: true });
+  });
+};
+
+check('cantor: a clip that hasn’t come in 3 seconds is read by the device’s voice, the cards after it don’t wait, and one note says so', async () => {
+  // Dora reading names at the fast pace. Card 3's clip never comes, and card 4's takes 6 seconds: card 3 waits 3
+  // seconds and is read by the device's voice, card 4 is read by it straight away, and card 5, here in time, is Dora's.
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await page.addInitScript(FAKE_TTS);
+    await page.addInitScript(DEALS);
+    await page.addInitScript(() => {
+      window.__played = [];
+      const start = AudioBufferSourceNode.prototype.start;
+      AudioBufferSourceNode.prototype.start = function () { if (this.buffer && this.buffer.duration > 0.3) window.__played.push(performance.now()); return start.apply(this, arguments); };
+    });
+    await ctx.route(base + 'audio/dora/03.mp3', () => { }); // never answers
+    await ctx.route(base + 'audio/dora/04.mp3', r => setTimeout(() => r.continue().catch(() => { }), 6000));
+    await seed(page, { 'loteria.cantor': { order: run(1, 54), pos: 0, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], wins: [], settings: { speak: true, style: 'name', voice: 'pack:dora', rate: 1, pace: 'fast', sound: false, awake: false, check: false } } });
+    await page.goto(base + 'cantor.html');
+    await page.click('#playBtn');
+    await until(page, () => window.__dealt.length >= 6, null, 40000);
+    await page.click('#playBtn'); // pause
+    const r = await page.evaluate(() => ({ dealt: window.__dealt, said: window.__said, toasts: window.__toasts, played: window.__played }));
+    assert.deepEqual(r.dealt.slice(0, 5).map(d => d.name), ['El Gallo', 'El Diablito', 'La Dama', 'El Catrín', 'El Paraguas']);
+    assert.deepEqual(r.said.map(s => s.text), ['La Dama', 'El Catrín'], 'the device’s voice read other cards than 3 and 4');
+    const wait3 = r.said[0].at - r.dealt[2].at, wait4 = r.said[1].at - r.dealt[3].at;
+    assert.ok(wait3 > 2700 && wait3 < 4500, 'card 3 waited ' + Math.round(wait3) + ' ms for its clip, not 3 s');
+    assert.ok(wait4 < 800, 'card 4 waited ' + Math.round(wait4) + ' ms for its clip, after card 3’s didn’t come');
+    assert.ok(r.played.some(t => t > r.dealt[4].at && t < r.dealt[5].at), 'card 5, here in time, wasn’t Dora’s');
+    assert.equal(r.toasts.filter(t => t === 'The recorded voice isn’t loading — using this device’s voice').length, 1, 'the note: ' + JSON.stringify(r.toasts));
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
+check('cantor: calling with a recorded voice brings the rest of it down for a game with no signal, unless the phone asks to save data', async () => {
+  const seedCantor = { 'loteria.cantor': { order: run(1, 54), pos: 0, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], wins: [], settings: { speak: true, style: 'name', voice: 'pack:alex', rate: 1, pace: 'slow', sound: false, awake: false, check: false } } };
+  const clips = run(1, 54).map(n => String(n).padStart(2, '0')).concat(['open', 'loteria']).sort();
+  // Alex's clips in the offline copy, by name.
+  const keptClips = page => page.evaluate(() => caches.keys().then(ks => Promise.all(ks.map(k => caches.open(k).then(c => c.keys())))).then(ls => ls.flat().map(r => (/audio\/alex\/(\w+)\.mp3$/.exec(r.url) || [])[1]).filter(Boolean).sort()));
+  for (const saveData of [false, true]) {
+    const ctx = await context(PHONE, { serviceWorkers: 'allow' });
+    try {
+      const page = await ctx.newPage(), problems = watch(page);
+      if (saveData) await page.addInitScript(() => Object.defineProperty(navigator, 'connection', { get: () => ({ saveData: true }), configurable: true }));
+      await page.addInitScript(FAKE_TTS);
+      await seed(page, seedCantor);
+      await page.goto(base + 'cantor.html');
+      await until(page, () => navigator.serviceWorker && navigator.serviceWorker.controller, null, 30000);
+      await page.click('#nextBtn');
+      if (saveData) {
+        await page.waitForTimeout(3000);
+        const kept = await keptClips(page);
+        assert.ok(kept.length <= 2, 'with Save data on it brought down ' + kept.join(' '));
+      } else {
+        for (let t = Date.now(); (await keptClips(page)).length < clips.length && Date.now() - t < 60000;) await page.waitForTimeout(250);
+        assert.deepEqual(await keptClips(page), clips);
+        // With no signal, the cards still to come are Alex's, from the copy.
+        await ctx.setOffline(true);
+        await page.reload();
+        await page.waitForSelector('#playBtn');
+        assert.ok(await page.evaluate(() => fetch('audio/alex/54.mp3').then(r => r.ok, () => false)), 'the last card’s clip isn’t kept for a night with no signal');
+        await ctx.setOffline(false);
+      }
+      assert.deepEqual(problems.filter(p => !/ERR_INTERNET_DISCONNECTED/.test(p)), []);
+    } finally { await ctx.close(); }
+  }
+});
+
 check('cantor: the card called is the card itself, edge to edge on its own cream paper, with no white mat round it', async () => {
   // The cards are drawn on cream (#FBF4E4) with their own rounded frame; a white mat round them made a second frame,
   // and the brightest thing on a dark screen.
@@ -3737,7 +3821,7 @@ check('offline: every page opens with no network once it has been opened, and sw
       await until(page, () => navigator.serviceWorker && navigator.serviceWorker.controller, null, 30000);
     }
     for (const f of loaded) {
-      if (f === 'sw.js' || /^audio\/.+\.mp3$/.test(f)) continue; // the voices are kept as they play
+      if (f === 'sw.js' || /^audio\/.+\.mp3$/.test(f)) continue; // a voice is kept as El Cantor fetches it
       assert.ok(kept.indexOf(f) >= 0, 'sw.js doesn’t keep ' + f + ', so it won’t open offline');
     }
     // Someone is set up by now, so My tablas has tablas to show, with the card pictures from the offline copy (a new

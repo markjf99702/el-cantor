@@ -12,7 +12,7 @@
   <img src="docs/phone-print.png" alt="Make tablas on a phone: Tabla 1 full, with Las Jaras on it twice, Tabla 2 nine cards in with its tenth square picked, and the deck of cards below to tap or drag from" width="250">
 </p>
 
-Install it from the browser (on an iPhone, Share → Add to Home Screen) and it runs as its own app, named El Cantor whichever page it was added from. It works offline too: installing keeps the card pictures, and the recorded voices are kept as they play.
+Install it from the browser (on an iPhone, Share → Add to Home Screen) and it runs as its own app, named El Cantor whichever page it was added from. It works offline too: installing keeps the card pictures, and once a round starts with a recorded voice, the rest of that voice (about 1.5 MB) comes down quietly in the background, unless the phone is set to save data, so the next game with no signal sounds the same.
 
 **Keeping tablas in Safari.** Safari deletes what a website saved after seven days of Safari use without a visit, while a web app on the Home Screen keeps its own count (WebKit blog, "Full Third-Party Cookie Blocking and More", 24 March 2020). So in a Safari tab on an iPhone or iPad, with Google Drive saving off, My tablas and Make tablas say so in a line, with the two ways to keep the tablas: the Home Screen, or Google Drive. Its × puts it away for good on that device. Every page also asks the browser to keep what it saves (`navigator.storage.persist()`, which Safari 17 grants on signs like being opened from the Home Screen), except in Firefox, which would ask the person first.
 
@@ -31,7 +31,7 @@ Every page has a ⌂ button back to the home screen. They all load the same `dec
 ### El Cantor — calling the game
 
 - **Calls the cards.** Shuffles the 54 cards and turns them over one at a time, calling each one aloud in Spanish. It says just the name by default, or the verse and then the name. Tap ▶, or the card itself, to call on its own and to pause; **Next card** turns them by hand. On a phone, the timer button beside it switches between slow, normal and fast (7, 4 or 2 seconds between cards).
-- **Recorded voices.** Dora, Alex or Santa read the cards, so every phone and tablet sounds the same. The device's own Spanish voice is the fallback. On an iPhone it plays even with the silent switch on.
+- **Recorded voices.** Dora, Alex or Santa read the cards, so every phone and tablet sounds the same. The device's own Spanish voice is the fallback: a card whose clip hasn't arrived in 3 seconds is read by it, the cards after it that round don't wait for theirs, and one note says *The recorded voice isn't loading — using this device's voice*. On an iPhone it plays even with the silent switch on.
 - **Adivinanza** mode reads the verse with the card face down, so the table can guess before it turns over.
 - **The sábana** shows all 54 cards, lit in the order they were called.
 - **Print tablas** makes a PDF of numbered tablas to print at home, one large or two per page, Letter or A4. A set — a *juego* — is built from its name, so `CANELA` tabla 7 is always the same tabla. Its third choice, **The deck**, prints the 54 cards to cut out instead, for a night without power or signal, or for calling from real cards: 9 to a page on 6 pages, each about 2 × 3.3 in, with a light grey grid to cut along.
@@ -120,7 +120,7 @@ To put it online with GitHub Pages: **Settings → Pages → Build and deploymen
 - `carry.js` — the first time it opens at el-cantor.junkdrawer.works, brings the tablas saved at its old address, junkdrawer.works/el-cantor/.
 - `strings.js` — every word the app shows, in English and in Spanish, and the English / Español setting. Change a wording in both languages: `npm test` fails when a word is missing in either one, or is there but used nowhere.
 - `manifest.webmanifest`, `icon.svg` and the `icon-*.png` sizes — installing it as an app. `node tools/make-icons.mjs` redraws the PNGs from `icon.svg` and `tools/icon-full-bleed.svg`.
-- `sw.js` — the offline copy: the pages, the fonts, the card pictures, and each voice clip once it has played. On a connection that isn't answering, a page opens from that copy after four seconds. `FILES` in it is a fingerprint of the files it keeps: change one and `npm test` says what to set it to, so a release never leaves the copy half old.
+- `sw.js` — the offline copy: the pages, the fonts, the card pictures, and the recorded voice in use, which El Cantor brings down once a round starts. On a connection that isn't answering, a page opens from that copy after four seconds. `FILES` in it is a fingerprint of the files it keeps: change one and `npm test` says what to set it to, so a release never leaves the copy half old.
 - `sync.js` — saving to Google Drive: signing in, the Drive file, and merging changes from every device.
 - `deck.js` — the cards, their verses, the winning shapes, Mark's four tablas, and the juego generator. Every page loads it.
   - The generator is frozen: changing it would change every tabla already printed.

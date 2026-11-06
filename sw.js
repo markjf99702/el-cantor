@@ -1,6 +1,6 @@
 // Offline support: keep a copy of the app so it works with no signal.
 // Anything the person saves lives in localStorage, not here. The card pictures are kept at install, so tablas
-// show with no signal; the recorded voices are kept as they play.
+// show with no signal; a recorded voice is kept as El Cantor fetches it, the whole voice once a round starts with it.
 // Network first, so a new version shows up as soon as you're online, but a page the network hasn't answered in a few
 // seconds opens from the copy instead (see page()).
 
@@ -9,7 +9,7 @@
 // fingerprint of every file in SHELL and CARDS: change any of them, a card picture included, and test/e2e.mjs fails
 // until FILES is changed to match (it says what to), which changes this file, so every copy is made whole again at once.
 const CACHE = 'el-cantor-v3'; // bump the number when the file list changes
-const FILES = '615971b2'; // test/e2e.mjs checks this
+const FILES = 'dc8237a1'; // test/e2e.mjs checks this
 const SHELL = [
   './', 'index.html', 'carry.js', 'strings.js', 'cantor.html', 'board.html', 'print.html', 'deck.js', 'sync.js',
   'icon.svg', 'icon-180.png', 'icon-192.png', 'manifest.webmanifest', 'audio/voices.json',

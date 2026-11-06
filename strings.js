@@ -144,6 +144,7 @@
       'cantor.otherWindow': 'Paused — another window turned a card',
       'cantor.syncWait': 'Saved here — tap Sync now in Settings (⋯) to send it to Google Drive.', // after Google's hour
       'cantor.tapToKeep': 'Paused — tap the card to keep calling',
+      'cantor.voiceSlow': 'The recorded voice isn’t loading — using this device’s voice',
       'cantor.noCardsYet': 'No cards called yet — ▶ starts the round',
 
       // El Cantor: Settings
@@ -659,6 +660,7 @@
       'cantor.otherWindow': 'En pausa — otra ventana volteó una carta',
       'cantor.syncWait': 'Guardado aquí — toca Sincronizar ahora en Ajustes (⋯) para mandarlo a Google Drive.',
       'cantor.tapToKeep': 'En pausa — toca la carta para seguir cantando',
+      'cantor.voiceSlow': 'La voz grabada no está cargando — uso la voz de este dispositivo',
       'cantor.noCardsYet': 'Todavía no sale ninguna carta — ▶ empieza la ronda',
 
       // El Cantor: Settings
