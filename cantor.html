@@ -256,6 +256,16 @@ a.chip{text-decoration:none}
 .vfwin .chips{grid-column:1/-1;grid-row:2;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -14px;padding:0 14px} /* one line, so the row stays short */
 .vfwin .chips::-webkit-scrollbar{display:none}
 .vfwin .chips .chip{flex:none}
+/* Our tablas: Mark's four and Make tablas' own, each a small picture with its name, under its heading */
+.otg+.otg{margin-top:12px}
+.ots{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;margin-top:6px}
+.ot{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:4px 4px 5px;text-align:center;font:inherit;color:inherit;min-width:0}
+.ot .og{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;padding:1px;background:var(--line2);border-radius:4px;overflow:hidden}
+.ot .og img{width:100%;aspect-ratio:200/327;object-fit:cover;display:block;background:#fff}
+.ot .nm{display:block;font:400 12px/1.15 var(--disp);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ot.on{border-color:var(--teal);box-shadow:0 0 0 2px var(--teal);background:var(--teal-soft)}
+.otnote{margin-top:10px}
+.row.vfhd{flex-wrap:wrap}
 /* card picker */
 .pick{display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:7px}
 .pk{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:4px 4px 5px;text-align:center;cursor:pointer;position:relative;font:inherit;color:inherit}
@@ -341,6 +351,7 @@ a.chip{text-decoration:none}
   .vf{grid-template-columns:1fr}.vf .grid{max-width:200px;margin:0 auto}
   .vf>.stack{order:-1} /* the boxes and the verdict above the tabla, so the verdict sits right under the number typed */
   .vfwin .card{grid-template-columns:minmax(0,1fr)}.vfwin .chips{grid-row:auto}
+  .vfhd .seg{display:flex;width:100%}.vfhd .seg button{flex:1 1 auto;padding:7px 6px} /* the checker's three ways, across the phone */
   .cap{min-height:70px}
   .cap .icons{display:flex}
 }
@@ -427,7 +438,8 @@ a.chip{text-decoration:none}
   function shuffled() { var d = CARDS.map(function (c) { return c.n; }); for (var i = d.length - 1; i > 0; i--) { var j = rand(i + 1), t = d[i]; d[i] = d[j]; d[j] = t; } return d; }
   // The house rules: two, for two or more ¡Lotería!s on the same card, 'next' (the next card decides), 'share' or
   // 'first' (first to shout wins); late, for a ¡Lotería! called late, 'counts' or 'strict' (too late after the next card).
-  function freshSettings() { return { speak: true, style: 'name', voice: '', rate: 1, pace: 'normal', sound: true, awake: true, check: false, two: 'next', late: 'counts' }; }
+  // checkWith: the checker's way of the last check ('printed', 'cards' or 'ours'), so the next one opens on it.
+  function freshSettings() { return { speak: true, style: 'name', voice: '', rate: 1, pace: 'normal', sound: true, awake: true, check: false, two: 'next', late: 'counts', checkWith: '' }; }
   function freshPrint() { return { name: '', count: 12, per: 1, deck: false, paper: L.defaultPaper() }; }
   function fresh() { return { order: shuffled(), pos: 0, round: 1, patterns: L.CLASICO.slice(), juego: '', printed: {}, wins: [], tie: null, print: freshPrint(), settings: freshSettings() }; }
   var C = fresh();
@@ -920,7 +932,7 @@ a.chip{text-decoration:none}
   // Space there would press that button again instead of starting or pausing.
   function keyed(el) { try { return el.matches(':focus-visible'); } catch (x) { return false; } }
   function openSheet(html) { var s = $('sheet'); if (s.hidden) UI.opener = keyed(document.activeElement) ? document.activeElement : null; s.innerHTML = '<div class="sheetbg"><div class="sheet" role="dialog" aria-modal="true" tabindex="-1">' + html + '</div></div>'; s.hidden = false; s.querySelector('.sheetbg').addEventListener('click', function (e) { if (e.target === e.currentTarget) closeSheet(); }); UI.sheet = s.querySelector('.sheet'); UI.sheet.focus({ preventScroll: true }); return UI.sheet; }
-  function closeSheet() { var s = $('sheet'); if (s.hidden) return; s.hidden = true; s.innerHTML = ''; UI.sheet = null; UI.onVoices = null; UI.onFull = null; var o = UI.opener; UI.opener = null; if (o && o !== document.body && o.isConnected) o.focus({ preventScroll: true }); if (UI.onClose) { var f = UI.onClose; UI.onClose = null; f(); } }
+  function closeSheet() { var s = $('sheet'); if (s.hidden) return; s.hidden = true; s.innerHTML = ''; UI.sheet = null; UI.onVoices = null; UI.onFull = null; UI.onOurs = null; var o = UI.opener; UI.opener = null; if (o && o !== document.body && o.isConnected) o.focus({ preventScroll: true }); if (UI.onClose) { var f = UI.onClose; UI.onClose = null; f(); } }
 
   function patternSheet(title) {
     openSheet('<div class="hd"><h2>' + esc(title || T('whatPlaying')) + '</h2><button class="btn sec sm" type="button" id="ptx">' + T('done') + '</button></div><div class="bd stack"><p class="note">' + T.html('cantor.patsNote_html') + '</p><div class="pats" id="pats"></div></div>');
@@ -1076,6 +1088,23 @@ a.chip{text-decoration:none}
       return '<div class="cell' + (out ? ' marked' : '') + (hit[i] ? ' hit' : '') + (need[i] ? ' need' : '') + '"><img src="' + src(n) + '" alt="' + esc(out ? T('calledAria', { card: card(n).name }) : card(n).name) + '" draggable="false">' + (out ? '<div class="mk" style="--rot:' + (((i * 53) % 70) - 35) + 'deg">' + BEAN + '</div>' : '') + '</div>';
     }).join('') + '</div>';
   }
+  // Our tablas, for the checker: Mark's four, and every full tabla in Make tablas on this device, those Google Drive
+  // brought from another device too; each once, the first time its cards come. key: where it's from and which it is;
+  // name: under its picture; full: its name with whose it is, for the verdict and the tally.
+  function realCard(n) { return n === (n | 0) && n >= 1 && n <= 54; }
+  function ourTablas() {
+    var out = [], seen = {};
+    function add(group, head, list, whose) {
+      list.forEach(function (t) {
+        var k = t.cards.join('.'); if (seen[k]) return; seen[k] = 1;
+        out.push({ key: group + ':' + t.id, group: group, head: head, name: t.name, full: whose ? T('cantor.ours.whose', { who: whose, tabla: t.name }) : t.name, cards: t.cards });
+      });
+    }
+    add('m', T('print.marks'), L.originals().map(function (c, i) { return { id: i + 1, name: 'Tabla ' + (i + 1), cards: c }; }), 'Mark');
+    var made = []; try { var o = JSON.parse(localStorage.getItem('loteria.print') || 'null'); if (o && Array.isArray(o.tablas)) made = o.tablas; } catch (e) { }
+    add('p', T('tool.print'), made.filter(function (t, i) { return t && Array.isArray(t.cards) && t.cards.length === 16 && t.cards.every(realCard); }).map(function (t, i) { return { id: t.id || i, name: String(t.name || 'Tabla'), cards: t.cards.slice() }; }));
+    return out;
+  }
   // The house rule for a late ¡Lotería!: with Too late on, a tabla good two or more cards back is too late. The card
   // just called and the one before it still count, to allow for the pace.
   function tooLate(when) { return C.settings.late === 'strict' && C.pos - when >= 2; }
@@ -1159,10 +1188,11 @@ a.chip{text-decoration:none}
   function cheer() { if (UI.cheered === C.round) return; UI.cheered = C.round; fanfare(); if (voiceOn()) say([{ clip: 'loteria', text: '¡Lotería!' }], null); }
   function verifySheet(resume, who) {
     var was = arguments.length ? resume : R.playing; stopCalling();
-    var V = { mode: C.juego ? 'printed' : 'cards', picked: [], how: '', tabla: '', cards: null, q: '' };
+    // It opens the way the last check went, or on Printed tabla once a juego has been printed or checked.
+    var last = C.settings.checkWith, V = { mode: ['printed', 'cards', 'ours'].indexOf(last) >= 0 ? last : C.juego ? 'printed' : 'cards', picked: [], how: '', tabla: '', cards: null, q: '', oq: '', sel: '' };
     openSheet('<div class="hd wrap"><h2>' + T('cantor.checkIt') + '</h2><button class="btn sec sm" type="button" id="vfx">' + T('cantor.keepCalling') + '</button></div><div class="bd stack">' +
       (co().length ? '<p class="note conote">' + esc(T('cantor.coCheck', { list: names(co()) })) + '</p>' : '') +
-      '<div class="row sp" style="flex-wrap:wrap"><div class="seg" id="vfSeg"><button type="button" data-v="printed">' + T('cantor.printedTabla') + '</button><button type="button" data-v="cards">' + T('cantor.cardByCard') + '</button></div><span class="note">' + esc(L.gameName(C.patterns)) + ' · ' + T('cantor.cardsCalled', { n: C.pos }) + '</span></div>' +
+      '<div class="row sp vfhd"><div class="seg" id="vfSeg"><button type="button" data-v="printed">' + T('cantor.printedTabla') + '</button><button type="button" data-v="cards">' + T('cantor.cardByCard') + '</button><button type="button" data-v="ours">' + T('cantor.ours') + '</button></div><span class="note">' + esc(L.gameName(C.patterns)) + ' · ' + T('cantor.cardsCalled', { n: C.pos }) + '</span></div>' +
       '<div id="vfBody"></div>' +
       '<div class="vfwin"><div class="card"><input id="vfWho" placeholder="' + T('cantor.whoWon') + '" autocomplete="off" autocapitalize="words" enterkeyhint="go" maxlength="30" aria-label="' + T('cantor.whoWonAria') + '">' + namesHtml('vfNames') + '<div class="btns"><button class="btn red" type="button" id="vfBack" hidden>' + T('cantor.keepCalling') + '</button><button class="btn red" type="button" id="vfWin">' + T('cantor.buenaNew') + '</button></div></div></div></div>');
     // Closed with no winner: calling goes on, unless winners are already in on this card; then their box comes back.
@@ -1171,6 +1201,7 @@ a.chip{text-decoration:none}
     // Enter is ¡Buena! New round; on a Not yet it only puts the keyboard away, so the caller sees both buttons.
     $('vfWho').addEventListener('keydown', function (e) { if (e.key !== 'Enter') return; e.preventDefault(); if ($('vfBack').hidden) $('vfWin').click(); else this.blur(); });
     function body() {
+      UI.onOurs = null;
       document.querySelectorAll('#vfSeg button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === V.mode); });
       UI.sheet.toggleAttribute('data-tall', V.mode === 'cards'); // the search box stays put as the cards narrow down
       if (V.mode === 'printed') {
@@ -1182,6 +1213,13 @@ a.chip{text-decoration:none}
         $('vfP').addEventListener('click', function () { var k = Math.min(999, (parseInt(V.n, 10) || 0) + 1); V.n = String(k); $('vfN').value = V.n; printed(); });
         printed();
         if (!('ontouchstart' in window)) (C.juego ? $('vfN') : $('vfJ')).focus();
+      } else if (V.mode === 'ours') {
+        $('vfBody').innerHTML = '<div class="vf"><div id="vfTabla"></div><div class="stack"><input id="vfOQ" type="search" enterkeyhint="search" placeholder="' + esc(T('cantor.ours.find')) + '" aria-label="' + esc(T('cantor.ours.find')) + '" autocomplete="off"><div id="vfOurs"></div><div class="verdict" id="vfV"></div></div></div>';
+        $('vfOQ').value = V.oq;
+        $('vfOQ').addEventListener('input', function () { V.oq = this.value; oursList(); });
+        $('vfOQ').addEventListener('keydown', function (e) { if (e.key !== 'Enter') return; e.preventDefault(); var all = $('vfOurs').querySelectorAll('.ot'); if (all.length === 1) all[0].click(); else this.blur(); });
+        oursList(); ours();
+        UI.onOurs = function () { oursList(); ours(); }; // Make tablas' tablas from Google Drive, landing meanwhile
       } else {
         $('vfBody').innerHTML = '<div class="stack"><div class="verdict" id="vfV"></div><div class="chips" id="vfChips"></div><input id="vfQ" type="search" enterkeyhint="search" placeholder="' + T('cantor.findCard') + '" autocomplete="off"><div class="pick" id="vfPick"></div></div>';
         $('vfQ').value = V.q;
@@ -1200,28 +1238,60 @@ a.chip{text-decoration:none}
       V.how = ''; V.tabla = ''; V.cards = null; V.hit = null; winRow(false);
       if (!name) { host.innerHTML = ''; v.className = 'verdict'; v.innerHTML = '<p class="note" style="margin:0">' + (C.juego ? T('cantor.typeJuegoHave') : T.html('cantor.typeJuego_html')) + '</p>'; return; }
       if (!(k >= 1 && k <= 999)) { host.innerHTML = ''; v.className = 'verdict'; v.innerHTML = '<p class="note" style="margin:0">' + T('cantor.typeNumber') + '</p>'; return; }
-      var t = L.juegoTabla(name, k), hit = {}, need = {}, best = null;
       // Remembered, so the next check opens on this juego (and My tablas' + A printed tabla starts with it).
       if (C.juego !== name) { C.juego = name; save(); }
+      judge(L.juegoTabla(name, k), name + ' ' + k, function (when) { return esc(T('cantor.goodLine', { juego: name, k: k, when: when })); }, function (n, shape, miss) { return T.html('cantor.closest_html', { n: n, juego: name, k: k, shape: shape, miss: miss }); });
+      // A number past the tablas printed of this juego was most likely misheard: dieciséis taken for sesenta.
+      if (k > (C.printed[name] || 999)) v.insertAdjacentHTML('beforeend', '<p class="vfwarn">' + esc(T('cantor.printedWith', { juego: name, n: C.printed[name] })) + '</p>');
+      inView();
+    }
+    // The verdict on a whole tabla, a printed one or one of Our tablas: the tabla with beans on the cards called, and
+    // either the winning line in gold with when it first won, or what it's closest to with the squares it still needs
+    // in red. tabla: its name for the tally; good(when) and close(n, shape, miss) say so in the verdict's sentence.
+    function judge(t, tabla, good, close) {
+      var v = $('vfV'), hit = {}, need = {}, best = null;
       C.patterns.forEach(function (pid) { var p = L.pat(pid); if (!p) return; var w = wonAt(t, p); if (w && (!best || w.when < best.when)) best = { when: w.when, cells: w.cells, pat: p }; });
       if (best) {
-        best.cells.forEach(function (c) { hit[c] = 1; }); V.how = best.pat.name; V.tabla = name + ' ' + k; V.cards = t; V.hit = best.cells; // a win counted anyway has no tabla, unless it was good and only late
+        best.cells.forEach(function (c) { hit[c] = 1; }); V.how = best.pat.name; V.tabla = tabla; V.cards = t; V.hit = best.cells; // a win counted anyway has no tabla, unless it was good and only late
         if (tooLate(best.when)) { winRow(true); v.className = 'verdict no'; v.innerHTML = '<h3>' + T('cantor.tooLate') + '</h3><p>' + esc(T('cantor.lateGood', { card: card(C.order[best.when - 1]).name, n: C.pos - best.when })) + '</p>'; }
-        else { v.className = 'verdict ok'; v.innerHTML = '<h3>¡Buena! ' + esc(best.pat.name) + '</h3><p>' + esc(T('cantor.goodLine', { juego: name, k: k, when: whenText(best.when) })) + '</p>'; }
+        else { v.className = 'verdict ok'; v.innerHTML = '<h3>¡Buena! ' + esc(best.pat.name) + '</h3><p>' + good(whenText(best.when)) + '</p>'; }
       } else {
         var cl = L.closest(t, isOut, C.patterns);
         (cl.missing || []).forEach(function (c) { need[c] = 1; });
         // The sentence agrees with how many are missing: le falta El Gallo, le faltan El Gallo y La Luna.
         var many = cl.pat.min ? cl.need : cl.missing.length, miss = cl.pat.min ? T('cantor.moreCards', { n: cl.need }) : T.list(cl.missing.map(function (c) { return card(t[c]).name; }));
         winRow(true);
-        v.className = 'verdict no'; v.innerHTML = '<h3>' + T('cantor.notYet') + '</h3><p>' + T.html('cantor.closest_html', { n: many, juego: name, k: k, shape: cl.pat.name, miss: miss }) + '</p>';
+        v.className = 'verdict no'; v.innerHTML = '<h3>' + T('cantor.notYet') + '</h3><p>' + close(many, cl.pat.name, miss) + '</p>';
       }
-      // A number past the tablas printed of this juego was most likely misheard: dieciséis taken for sesenta.
-      if (k > (C.printed[name] || 999)) v.insertAdjacentHTML('beforeend', '<p class="vfwarn">' + esc(T('cantor.printedWith', { juego: name, n: C.printed[name] })) + '</p>');
-      host.innerHTML = tablaHtml(t, hit, need);
-      // On a short screen the winner row would cover the verdict: the sheet scrolls just enough to show it above the row.
-      var bd = v.closest('.bd'), over = v.getBoundingClientRect().bottom - (bd.querySelector('.vfwin').getBoundingClientRect().top - 12);
-      if (over > 0) bd.scrollTop += over;
+      $('vfTabla').innerHTML = tablaHtml(t, hit, need);
+    }
+    // On a short screen the winner row would cover the verdict: the sheet scrolls just enough to show it above the row.
+    // A tabla tapped in Our tablas shows whole as well, under its verdict on a phone, as far as the verdict stays in view.
+    function inView(whole) {
+      var v = $('vfV'), bd = v.closest('.bd'), r = v.getBoundingClientRect(), g = whole && $('vfTabla').firstChild, low = g ? Math.max(r.bottom, g.getBoundingClientRect().bottom) : r.bottom;
+      var over = low - (bd.querySelector('.vfwin').getBoundingClientRect().top - 12);
+      if (over > 0) bd.scrollTop += g ? Math.min(over, Math.max(0, r.top - bd.getBoundingClientRect().top - 8)) : over;
+    }
+    // Our tablas: each a small picture with its name, under where it's from, the box narrowing them by name.
+    function oursList() {
+      var q = L.fold(V.oq.trim()), list = ourTablas(), groups = [], host = $('vfOurs');
+      list.forEach(function (o) {
+        if (q && L.fold(o.name + ' ' + o.full).indexOf(q) < 0) return;
+        var g = groups[groups.length - 1]; if (!g || g.id !== o.group) groups.push(g = { id: o.group, head: o.head, list: [] });
+        g.list.push(o);
+      });
+      host.innerHTML = groups.map(function (g) {
+        return '<div class="otg"><div class="eyebrow">' + esc(g.head) + '</div><div class="ots">' + g.list.map(function (o) {
+          return '<button type="button" class="ot' + (o.key === V.sel ? ' on' : '') + '" data-k="' + esc(o.key) + '" aria-pressed="' + (o.key === V.sel) + '" aria-label="' + esc(o.full) + '"><span class="og">' + o.cards.map(function (n) { return '<img src="' + src(n) + '" alt="" loading="lazy" draggable="false">'; }).join('') + '</span><span class="nm">' + esc(o.name) + '</span></button>';
+        }).join('') + '</div></div>';
+      }).join('') + (groups.length ? '' : '<p class="note">' + esc(T('cantor.ours.none', { q: V.oq.trim() })) + '</p>') + '<p class="note otnote">' + T('cantor.ours.note') + '</p>';
+      host.querySelectorAll('.ot').forEach(function (b) { b.addEventListener('click', function () { V.sel = b.dataset.k; oursList(); ours(); inView(true); }); });
+    }
+    function ours() {
+      var o = ourTablas().filter(function (x) { return x.key === V.sel; })[0], v = $('vfV');
+      V.how = ''; V.tabla = ''; V.cards = null; V.hit = null; winRow(false);
+      if (!o) { $('vfTabla').innerHTML = ''; v.className = 'verdict'; v.innerHTML = '<p class="note" style="margin:0">' + T('cantor.ours.pick') + '</p>'; return; }
+      judge(o.cards, o.full, function (when) { return esc(T('cantor.goodLineOurs', { tabla: o.full, when: when })); }, function (n, shape, miss) { return T.html('cantor.closestOurs_html', { n: n, tabla: o.full, shape: shape, miss: miss }); });
     }
     function pickGrid() {
       var host = $('vfPick'); host.innerHTML = '';
@@ -1252,7 +1322,7 @@ a.chip{text-decoration:none}
       if (tooLate(last)) { winRow(true); v.className = 'verdict no'; v.innerHTML = '<h3>' + T('cantor.tooLate') + '</h3><p>' + esc(T('cantor.lateCards', { card: card(C.order[last - 1]).name, n: C.pos - last })) + '</p>'; return; }
       v.className = 'verdict ok'; v.innerHTML = '<h3>' + T('cantor.allOut', { n: out.length }) + '</h3><p>' + esc(T(out.length < need ? 'cantor.ifShapeDoubles' : 'cantor.ifShape', { game: game, when: whenText(last) })) + '</p>';
     }
-    document.querySelectorAll('#vfSeg button').forEach(function (b) { b.addEventListener('click', function () { V.mode = b.dataset.v; body(); }); });
+    document.querySelectorAll('#vfSeg button').forEach(function (b) { b.addEventListener('click', function () { V.mode = C.settings.checkWith = b.dataset.v; save(); body(); }); });
     $('vfx').addEventListener('click', closeSheet);
     $('vfBack').addEventListener('click', closeSheet);
     $('vfWin').addEventListener('click', function () {
@@ -1659,6 +1729,7 @@ a.chip{text-decoration:none}
   // El Cantor has no ☁ button: a winner or a juego saved after Google's hour says it waits here for Sync now.
   if (window.LoteriaSync) LoteriaSync.onWait(function () { toast(T('cantor.syncWait'), 6000); });
   if (window.LoteriaSync) LoteriaSync.onUpdate(function (keys) { // winners, the juego and what was printed, from another device
+    if (keys.indexOf('loteria.print') >= 0 && UI.onOurs) UI.onOurs(); // and Make tablas' tablas, for Our tablas
     if (keys.indexOf(LS) < 0) return;
     try { var o = JSON.parse(localStorage.getItem(LS)); if (o) { if (Array.isArray(o.wins)) C.wins = goodWins(o.wins); if (typeof o.juego === 'string') C.juego = o.juego; C.printed = goodPrinted(o.printed); } } catch (e) { }
   });

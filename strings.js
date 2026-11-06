@@ -231,6 +231,14 @@
       'cantor.checkIt': '¡Lotería! — check it',
       'cantor.printedTabla': 'Printed tabla',
       'cantor.cardByCard': 'Card by card',
+      'cantor.ours': 'Our tablas', // the checker's third way: Mark's four and Make tablas' own, each one tap
+      'cantor.ours.find': 'Find a tabla by name',
+      'cantor.ours.pick': 'Tap the tabla they’re playing.',
+      'cantor.ours.none': 'No tabla here is called “{q}”.',
+      'cantor.ours.note': 'A store-bought tabla checks here too, once it’s made card for card in Make tablas.',
+      'cantor.ours.whose': '{who}’s {tabla}', // Mark’s Tabla 1, in the verdict and the tally
+      'cantor.goodLineOurs': '{tabla} — {when}',
+      'cantor.closestOurs_html': { one: '{tabla} is closest to <b>{shape}</b> and still needs {miss}. Squares outlined in red haven’t been called.', other: '{tabla} is closest to <b>{shape}</b> and still needs {miss}. Squares outlined in red haven’t been called.' },
       'cantor.buenaNew': '¡Buena! New round',
       'cantor.countAnyway': 'Count it anyway',
       'cantor.prevTabla': 'Previous tabla',
@@ -282,7 +290,7 @@
 
       // El Cantor: Print tablas, and the PDF
       'cantor.prIntro_html': 'Makes a PDF of numbered tablas to print at home. A set of tablas — a <b>juego</b> — is built from its name, so the same name always gives the same tablas. When someone shouts ¡Lotería!, you check their tabla here by its number.',
-      'cantor.prByHand_html': 'Rather pick the cards yourself, doubles and all? <a href="print.html">Make tablas by hand</a> — you check those card by card.',
+      'cantor.prByHand_html': 'Rather pick the cards yourself, doubles and all? <a href="print.html">Make tablas by hand</a> — you check those in <b>Our tablas</b>.',
       'cantor.prName': 'Juego name',
       'cantor.prNew': 'New name',
       'cantor.prHowMany': 'How many',
@@ -775,6 +783,14 @@
       'cantor.checkIt': '¡Lotería! — a ver',
       'cantor.printedTabla': 'Tabla impresa',
       'cantor.cardByCard': 'Carta por carta',
+      'cantor.ours': 'Nuestras tablas',
+      'cantor.ours.find': 'Busca una tabla por su nombre',
+      'cantor.ours.pick': 'Toca la tabla con la que juega.',
+      'cantor.ours.none': 'Ninguna tabla aquí se llama “{q}”.',
+      'cantor.ours.note': 'Una tabla de la tienda también se revisa aquí, si la haces igualita en Hacer tablas.',
+      'cantor.ours.whose': '{tabla} de {who}',
+      'cantor.goodLineOurs': '{tabla} — {when}',
+      'cantor.closestOurs_html': { one: '{tabla} va más cerca de <b>{shape}</b> y le falta {miss}. Las casillas con borde rojo todavía no salen.', other: '{tabla} va más cerca de <b>{shape}</b> y le faltan {miss}. Las casillas con borde rojo todavía no salen.' },
       'cantor.buenaNew': '¡Buena! Nueva ronda',
       'cantor.countAnyway': 'Darla por buena',
       'cantor.prevTabla': 'Tabla anterior',
@@ -825,7 +841,7 @@
 
       // El Cantor: Print tablas, and the PDF
       'cantor.prIntro_html': 'Hace un PDF de tablas numeradas para imprimir en casa. Un <b>juego</b> de tablas sale de su nombre, así que el mismo nombre siempre da las mismas tablas. Cuando alguien grite ¡Lotería!, aquí revisas su tabla por su número.',
-      'cantor.prByHand_html': '¿Prefieres escoger tú las cartas, con dobles y todo? <a href="print.html">Haz tablas a mano</a> — esas se revisan carta por carta.',
+      'cantor.prByHand_html': '¿Prefieres escoger tú las cartas, con dobles y todo? <a href="print.html">Haz tablas a mano</a> — esas se revisan en <b>Nuestras tablas</b>.',
       'cantor.prName': 'Nombre del juego',
       'cantor.prNew': 'Otro nombre',
       'cantor.prHowMany': '¿Cuántas?',

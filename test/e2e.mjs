@@ -144,7 +144,7 @@ check('deck: Clásico already wins with every shape but Siete Loco, and a game�
 // ---------------------------------------------------------------- the words, without a browser
 // The keys whose Spanish reads the same as the English (the language switch's labels by design, and names); every other key's
 // Spanish is a translation.
-const SAME = ['lang.label', 'lang.en', 'lang.es', 'tablas', 'pace.normal', 'cantor.rate.normal', 'cantor.goodLine', 'print.mini', 'sync.errH'];
+const SAME = ['lang.label', 'lang.en', 'lang.es', 'tablas', 'pace.normal', 'cantor.rate.normal', 'cantor.goodLineOurs', 'cantor.goodLine', 'print.mini', 'sync.errH'];
 // strings.js as a page loads it on a device in this language, with this choice saved (or none).
 async function loadStrings(language = 'en-US', chosen = null) {
   const box = { navigator: { language, languages: [language] }, document: { documentElement: {} }, localStorage: { getItem: k => k === 'loteria.lang' ? chosen : null } };
@@ -364,6 +364,13 @@ check('espanol: El Cantor in Spanish, every sheet and the ¡Lotería! box, and t
       assert.match(await page.textContent('#vfV p'), /^(CANELA|CAPIROTADA) No\. 7 va más cerca de \S.* y le faltan? .+\. Las casillas con borde rojo todavía no salen\.$/);
       assert.equal(await page.textContent('#vfWin'), 'Darla por buena');
       assert.deepEqual(await english(page), [], where + 'English on Not yet');
+      // Our tablas: Mark's four under their heading, and the verdict on one, in Spanish.
+      await page.click('#vfSeg [data-v="ours"]');
+      assert.deepEqual([await page.textContent('#vfSeg .on'), await page.textContent('#vfOurs .otg .eyebrow'), await page.textContent('#vfV')], ['Nuestras tablas', 'Las cuatro de Mark', 'Toca la tabla con la que juega.']);
+      assert.deepEqual(await english(page), [], where + 'English in Our tablas');
+      await page.click('#vfOurs .ot');
+      assert.match(await page.textContent('#vfV p'), /^Tabla 1 de Mark va más cerca de \S.* y le faltan? .+\. Las casillas con borde rojo todavía no salen\.$/);
+      assert.deepEqual(await english(page), [], where + 'English on a tabla of Our tablas');
       await page.click('#vfSeg [data-v="cards"]');
       assert.equal(await page.textContent('#vfV p'), 'Pídele que te lea sus cartas ganadoras y toca cada una abajo. Así funciona con una tabla de la tienda o de otro juego.');
       assert.deepEqual(await english(page), [], where + 'English in Card by card');
@@ -1479,6 +1486,67 @@ check('cantor: checks a printed tabla by juego and number (CANELA 7 never change
     await page.fill('#vfWho', 'Tío Beto');
     await page.click('#vfWin');
     assert.deepEqual((await saved(page, 'loteria.cantor')).wins.map(w => [w.round, w.who, w.tabla]), [[1, 'Tío Beto', '']], 'a win counted anyway kept the tabla that wasn’t good');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
+check('cantor: Our tablas checks Mark’s four and Make tablas’ own in one tap, with a printed tabla’s verdict, and the tally keeps its name', async () => {
+  // Mark's Tabla 3 has El Gallo, El Nopal, El Diablito and La Mano across its top row: those four have just been called.
+  const TOP3 = [1, 39, 2, 21], ABUELA = [1, 39, 2, 22, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await seed(page, {
+      'loteria.cantor': { order: TOP3.concat(run(1, 54).filter(n => !TOP3.includes(n))), pos: 4, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], juego: '', wins: [], settings: { speak: false, sound: false, check: true } },
+      // A full tabla, one with squares still to fill (not a tabla yet), and a copy of Mark's Tabla 1, listed once.
+      'loteria.print': { tablas: [{ id: 'a', name: 'Abuela', cards: ABUELA }, { id: 'h', name: 'Half done', cards: [1, 2, 3].concat(Array(13).fill(0)) }, { id: 'c', name: 'Copy', cards: [11, 24, 43, 33, 16, 51, 29, 52, 26, 31, 31, 49, 22, 19, 44, 50] }] }
+    });
+    await page.goto(base + 'cantor.html');
+    await page.click('#lotBtn');
+    assert.equal(await page.textContent('#vfSeg .on'), 'Card by card', 'with no juego yet it opens on Card by card');
+    await page.click('#vfSeg [data-v="ours"]');
+    const groups = () => page.$$eval('#vfOurs .otg', gs => gs.map(g => [g.querySelector('.eyebrow').textContent, [...g.querySelectorAll('.ot .nm')].map(n => n.textContent)]));
+    assert.deepEqual(await groups(), [['Mark’s four', ['Tabla 1', 'Tabla 2', 'Tabla 3', 'Tabla 4']], ['Make tablas', ['Abuela']]]);
+    assert.equal(await page.textContent('#vfV'), 'Tap the tabla they’re playing.');
+    await noSideways(page, 'Our tablas');
+    // One tap: the verdict a printed tabla gets, its winning line in gold over the pictures.
+    await page.click('#vfOurs .ot[aria-label="Mark’s Tabla 3"]');
+    assert.equal(await page.textContent('#vfV h3'), '¡Buena! Línea');
+    assert.equal(await page.textContent('#vfV p'), 'Mark’s Tabla 3 — It finished on the card just called, La Mano.');
+    assert.deepEqual(await page.$$eval('#vfTabla .cell', cs => cs.flatMap((c, i) => c.classList.contains('hit') ? [i] : [])), [0, 1, 2, 3]);
+    assert.equal(await page.$$eval('#vfTabla .cell .mk', b => b.length), 4, 'a bean on each card called');
+    assert.equal(await page.getAttribute('#vfOurs .ot[aria-label="Mark’s Tabla 3"]', 'aria-pressed'), 'true');
+    // On a phone the verdict and the whole tabla are in view above the winner row.
+    const win = await rect(page, '.vfwin'), grid = await rect(page, '#vfTabla .grid'), verdict = await rect(page, '#vfV');
+    assert.ok(grid.bottom <= win.top && verdict.top >= 0, `the tabla tapped isn’t in view: tabla ${grid.top}–${grid.bottom}, winner row at ${win.top}`);
+    // Not yet: what it's closest to, the squares it needs in red, and Keep calling as the main button.
+    await page.click('#vfOurs .ot[aria-label="Abuela"]');
+    assert.equal(await page.textContent('#vfV h3'), 'Not yet');
+    assert.equal(await page.textContent('#vfV p'), 'Abuela is closest to Línea and still needs La Bota. Squares outlined in red haven’t been called.');
+    assert.deepEqual(await page.$$eval('#vfTabla .cell', cs => cs.flatMap((c, i) => c.classList.contains('need') ? [i] : [])), [3]);
+    const buttons = () => page.$$eval('.vfwin button', bs => bs.filter(b => b.offsetParent).map(b => b.textContent + (b.classList.contains('red') ? ' (main)' : '')));
+    assert.deepEqual(await buttons(), ['Keep calling (main)', 'Count it anyway']);
+    // The box finds a tabla by its name, or whose it is; Enter takes the one it leaves.
+    await page.fill('#vfOQ', 'zzz');
+    assert.equal(await page.textContent('#vfOurs > p.note'), 'No tabla here is called “zzz”.');
+    await page.fill('#vfOQ', 'mark');
+    assert.deepEqual(await groups(), [['Mark’s four', ['Tabla 1', 'Tabla 2', 'Tabla 3', 'Tabla 4']]]);
+    await page.fill('#vfOQ', 'tabla 3');
+    await page.press('#vfOQ', 'Enter');
+    assert.equal(await page.textContent('#vfV h3'), '¡Buena! Línea');
+    assert.deepEqual(await buttons(), ['¡Buena! New round (main)']);
+    await page.fill('#vfWho', 'Tía Lupe');
+    await page.click('#vfWin');
+    await page.waitForSelector('#winbox .winc #celOk');
+    assert.equal(await page.$$eval('#winbox .wt .cell.hit', cs => cs.length), 4, 'the box shows the tabla with its gold line');
+    const w = (await saved(page, 'loteria.cantor')).wins;
+    assert.deepEqual(w.map(x => [x.who, x.how, x.tabla]), [['Tía Lupe', 'Línea', 'Mark’s Tabla 3']]);
+    // The next check opens on Our tablas, the way this one went.
+    await page.click('#celOk');
+    await page.click('#ptx');
+    await page.click('#nextBtn');
+    await page.click('#lotBtn');
+    assert.equal(await page.textContent('#vfSeg .on'), 'Our tablas');
     assert.deepEqual(problems, []);
   } finally { await ctx.close(); }
 });
