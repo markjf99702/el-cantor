@@ -5573,6 +5573,16 @@ check('drive: a voice recorded on one device comes whole to another on the same 
     await B.page.click('#setBtn');
     await until(B.page, () => [...document.querySelectorAll('#vSel option')].some(o => o.textContent === 'Abuelita · from another device'));
     await until(B.page, (t) => new Promise(ok => { const q = indexedDB.open('loteria.voices'); q.onsuccess = () => { const r = q.result.transaction(['voices']).objectStore('voices').getAll(); r.onsuccess = () => { q.result.close(); ok(r.result[0] && r.result[0].takes.n01.t === t); }; }; }), newGallo);
+    // A sync bringing a new name can land while El Cantor is reading its voices, before it has renamed the voice here:
+    // the read leaves the list's name alone, rather than put the old one back for the next sync to send everywhere.
+    // The list is written here as a sync writes it, without the page being told.
+    const listName = n => B.page.evaluate(n => { const o = JSON.parse(localStorage.getItem('loteria.voices')); if (n) { o.voices[0].name = n; localStorage.setItem('loteria.voices', JSON.stringify(o)); } return o.voices[0].name; }, n);
+    await listName('Abuela Rosa');
+    await B.page.click('#stx'); await B.page.click('#setBtn'); // Settings reads the voices again
+    await until(B.page, () => [...document.querySelectorAll('#vSel option')].some(o => o.textContent === 'Abuelita · from another device'));
+    await B.page.waitForTimeout(1000);
+    assert.equal(await listName(), 'Abuela Rosa', 'reading the voices put the old name back on the list');
+    await listName('Abuelita');
 
     // A take of hers Drive has in a kind of sound the laptop can't play (from a browser that records one): it's kept,
     // this device's voice reads that line, and Settings says so.

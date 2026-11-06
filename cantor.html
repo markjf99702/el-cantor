@@ -1388,7 +1388,7 @@ a.chip{text-decoration:none}
           return r;
         });
         RECS = all.filter(function (r) { return !r.coming; }); COMING = all.filter(function (r) { return r.coming; });
-        RECS.forEach(mirrorPut);
+        RECS.forEach(function (r) { mirrorPut(r, true); }); // only those it lacks: a name on it can be a newer one a sync just brought
         if (UI.onVoices) UI.onVoices();
         renderBar();
       });
@@ -1710,9 +1710,11 @@ a.chip{text-decoration:none}
     return o;
   }
   function setMirror(o) { try { localStorage.setItem(KV, JSON.stringify(o)); } catch (e) { return; } if (window.LoteriaSync) LoteriaSync.changed(); }
-  function mirrorPut(v) { // on the list, by its name now; not one deleted on another device that's on its way out here
+  // On the list, by its name now; not one deleted on another device that's on its way out here. add: only if it isn't
+  // on the list yet, leaving the name there alone.
+  function mirrorPut(v, add) {
     var o = mirror(), m = o.voices.filter(function (x) { return x.id === v.id; })[0];
-    if (o.dropped.indexOf(v.id) >= 0 || m && m.name === v.name) return;
+    if (o.dropped.indexOf(v.id) >= 0 || m && (add || m.name === v.name)) return;
     if (m) m.name = v.name; else o.voices.push({ id: v.id, name: v.name, made: v.made });
     setMirror(o);
   }
