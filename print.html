@@ -78,6 +78,7 @@ a{color:var(--teal);font-weight:700}
 .work{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,min(36%,420px))}
 .tablas{overflow:auto;-webkit-overflow-scrolling:touch;padding:12px 14px calc(24px + var(--sab));min-height:0;overscroll-behavior:contain}
 .hint{margin:0 0 12px;color:var(--ink2);font-size:13.5px;max-width:70ch}
+.keep{margin:0 0 12px;max-width:70ch} /* in a Safari tab: how to keep the tablas (sync.js) */
 .hint b{color:var(--ink)}
 .tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px;align-items:start}
 .tb{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:10px;box-shadow:var(--shadow);min-width:0}
@@ -208,6 +209,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   </div>
   <div class="work">
     <div class="tablas" id="tablas">
+      <div class="keep" id="keepNote" hidden></div>
       <p class="hint" data-t-html="print.hint_html"><b>Drag</b> cards from the deck onto a square (on a phone or iPad, press and hold a card first). Drag a square to move it around the tabla, onto another tabla to copy it there, or back to the deck to take it off. Or <b>tap</b> a square, then tap cards to fill in order.</p>
       <div class="tgrid" id="tg"></div>
       <div class="foot">
@@ -683,7 +685,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 
   // ---------- Google Drive ----------
   if (window.LoteriaSync) {
-    LoteriaSync.chip($('syncBtn')); LoteriaSync.card($('syncCard'));
+    LoteriaSync.keep($('keepNote')); LoteriaSync.chip($('syncBtn')); LoteriaSync.card($('syncCard'));
     LoteriaSync.onNote(function (m) { toast(m, 6000); }); // what went wrong after a tap on ☁ or Sync now, long enough to read
     LoteriaSync.onUpdate(function (keys) { // tablas made on another device have landed here
       if (keys.indexOf(LSP) < 0) return;

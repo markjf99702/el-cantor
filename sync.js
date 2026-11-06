@@ -468,6 +468,43 @@
     }
     watch(draw);
   }
+  // ---------- keeping tablas in a Safari tab ----------
+  // Safari deletes everything a website saved after seven days of Safari use without a visit, while a web app on the
+  // Home Screen keeps its own count (WebKit blog, "Full Third-Party Cookie Blocking and More", 24 March 2020). So in a
+  // Safari tab on an iPhone or iPad, with Drive saving off, My tablas and Make tablas say how to keep the tablas, in a
+  // line that goes once it's dismissed (remembered on the device). Every page also asks the browser to keep its saves,
+  // which Safari 17 grants on signs like being opened from the Home Screen (WebKit blog, "Updates to Storage Policy",
+  // 10 August 2023). Firefox would ask the person with a prompt, so it isn't asked there.
+  var KK = 'loteria.keepNote', persisting = false;
+  function safariTab() {
+    var ua = navigator.userAgent || '', ios = /iPhone|iPad|iPod/.test(ua) || /Macintosh/.test(ua) && navigator.maxTouchPoints > 1; // an iPad asks for the computer site
+    var app = navigator.standalone === true || !!(window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+    return ios && !app && /Safari\//.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|GSA\//.test(ua); // Safari itself, not another browser
+  }
+  function persist() {
+    var s = navigator.storage;
+    if (persisting || !s || !s.persist || /Firefox\//.test(navigator.userAgent)) return;
+    persisting = true;
+    (s.persisted ? s.persisted() : Promise.resolve(false)).then(function (yes) { return yes || s.persist(); }).catch(function () { });
+  }
+  // host: an empty element for the line. moved(): the line came or went, for a page that fits itself to the room left.
+  function keep(host, moved) {
+    if (!host) return;
+    if (!safariTab()) { host.hidden = true; return; }
+    host.classList.add('lkeep'); keepCss();
+    host.innerHTML = '<span>' + esc(T(CLIENT_ID ? 'keep.drive' : 'keep.home')) + '</span><button type="button" aria-label="' + esc(T('keep.dismiss')) + '" title="' + esc(T('keep.dismiss')) + '">×</button>';
+    function draw() { var was = host.hidden; host.hidden = !!get(KK) || !!(CLIENT_ID && st.on); if (was !== host.hidden && moved) moved(); }
+    host.querySelector('button').addEventListener('click', function () { put(KK, Date.now()); draw(); });
+    host.hidden = true; watch(draw);
+  }
+  function keepCss() {
+    if (document.getElementById('lkeep-css')) return;
+    var s = document.createElement('style'); s.id = 'lkeep-css';
+    s.textContent = '.lkeep{display:flex;gap:6px;align-items:flex-start;background:var(--gold-soft,#F6E3B4);border:1px solid var(--line2,#C4AE84);border-radius:12px;padding:7px 4px 7px 12px;font-size:12.5px;line-height:1.35;color:var(--ink,#2B221C)}' +
+      '.lkeep span{flex:1;min-width:0}.lkeep button{flex:none;background:none;border:0;width:30px;height:30px;margin:-5px 0;border-radius:999px;font-size:18px;line-height:1;color:var(--ink2,#6A5A4C)}';
+    document.head.appendChild(s);
+  }
+
   function watch(f) { watchers.push(f); f(); }
   function now() { if (!st.on) { start(); return; } asked = true; if (!live()) signIn(); else sync(); } // inside a tap
   function changed() { // a page saved something
@@ -492,13 +529,14 @@
   window.LoteriaSync = {
     ready: !!CLIENT_ID,
     isOn: function () { return !!CLIENT_ID && st.on; },
-    connect: start, now: now, changed: changed, chip: chip, card: card,
+    connect: start, now: now, changed: changed, chip: chip, card: card, keep: keep,
     onUpdate: function (f) { ups.push(f); }, // f(keys): synced data landed in these localStorage keys
     onNote: function (f) { says.push(f); }, // f(text): what went wrong after a tap, to show for a few seconds
     onWait: function (f) { waits.push(f); }, // f(): something was saved here after the hour, and waits for a tap to go to Drive
     _merge: mergeCol, _cols: COLS, _read: readDrive // for tests
   };
 
+  persist();
   if (!CLIENT_ID) return;
   if (st.on) {
     loadGis(); // ready before the first tap

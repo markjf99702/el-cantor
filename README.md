@@ -12,7 +12,11 @@
   <img src="docs/phone-print.png" alt="Make tablas on a phone: Tabla 1 full, with Las Jaras on it twice, Tabla 2 nine cards in with its tenth square picked, and the deck of cards below to tap or drag from" width="250">
 </p>
 
-Install it from the browser (on an iPhone, Share → Add to Home Screen) and it runs as its own app, named El Cantor whichever page it was added from. It works offline too: installing keeps the card pictures, and the recorded voices are kept as they play. The home screen has three choices:
+Install it from the browser (on an iPhone, Share → Add to Home Screen) and it runs as its own app, named El Cantor whichever page it was added from. It works offline too: installing keeps the card pictures, and the recorded voices are kept as they play.
+
+**Keeping tablas in Safari.** Safari deletes what a website saved after seven days of Safari use without a visit, while a web app on the Home Screen keeps its own count (WebKit blog, "Full Third-Party Cookie Blocking and More", 24 March 2020). So in a Safari tab on an iPhone or iPad, with Google Drive saving off, My tablas and Make tablas say so in a line, with the two ways to keep the tablas: the Home Screen, or Google Drive. Its × puts it away for good on that device. Every page also asks the browser to keep what it saves (`navigator.storage.persist()`, which Safari 17 grants on signs like being opened from the Home Screen), except in Firefox, which would ask the person first.
+
+The home screen has three choices:
 
 - **El Cantor** (`cantor.html`) calls the game: the phone, tablet or laptop at the head of the table that replaces the deck and the person reading it.
 - **My tablas** (`board.html`) is the play-along board: each player marks their own tablas on their phone as cards are called.

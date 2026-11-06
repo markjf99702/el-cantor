@@ -485,6 +485,10 @@
       'sync.full': 'Your Google Drive is full, so nothing new was saved there. Free some space and tap Sync now.',
       'sync.busy': 'Google Drive is busy — trying again in a minute.',
       'sync.stillBusy': 'Google Drive is still busy — try again in a few minutes.',
+      // in a Safari tab on an iPhone or iPad, with Drive saving off (sync.js); keep.home where Drive saving isn't offered
+      'keep.drive': 'Safari clears what a website saves after a week without a visit. Add El Cantor to your Home Screen (Share → Add to Home Screen), or save to Google Drive, to keep these tablas.',
+      'keep.home': 'Safari clears what a website saves after a week without a visit. Add El Cantor to your Home Screen (Share → Add to Home Screen) to keep these tablas.',
+      'keep.dismiss': 'Dismiss this note',
       'sync.newer': 'Google Drive has tablas from a newer El Cantor. Close it and open it again to update, and it’ll sync.'
     },
     es: {
@@ -941,6 +945,10 @@
       'sync.full': 'Tu Google Drive está lleno, así que no se guardó nada nuevo ahí. Libera espacio y toca Sincronizar ahora.',
       'sync.busy': 'Google Drive está ocupado — se vuelve a intentar en un minuto.',
       'sync.stillBusy': 'Google Drive sigue ocupado — inténtalo otra vez en unos minutos.',
+      // Apple's Spanish (Mexico) iPhone guide names the Share sheet's item "Agregar a Inicio"
+      'keep.drive': 'Safari borra lo que guarda un sitio web después de una semana sin visitarlo. Agrega El Cantor a tu pantalla de inicio (Compartir → Agregar a Inicio), o guarda en Google Drive, para no perder estas tablas.',
+      'keep.home': 'Safari borra lo que guarda un sitio web después de una semana sin visitarlo. Agrega El Cantor a tu pantalla de inicio (Compartir → Agregar a Inicio) para no perder estas tablas.',
+      'keep.dismiss': 'Cerrar este aviso',
       'sync.newer': 'Google Drive tiene tablas de una versión más nueva de El Cantor. Ciérralo y vuelve a abrirlo para actualizarlo, y se sincroniza.'
     }
   };

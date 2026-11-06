@@ -2000,6 +2000,70 @@ check('board: a tabla’s label stays on one line above its grid, and its win al
   }
 });
 
+// Safari on an iPhone, and Chrome on one (CriOS), as their user agents read in iOS 18.
+const SAFARI = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
+const CHROME_IOS = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/130.0.6723.90 Mobile/15E148 Safari/604.1';
+check('safari: in a Safari tab, My tablas and Make tablas say how to keep the tablas, until it’s dismissed, and every page asks to keep its saves', async () => {
+  const LINE = {
+    en: 'Safari clears what a website saves after a week without a visit. Add El Cantor to your Home Screen (Share → Add to Home Screen) to keep these tablas.',
+    es: 'Safari borra lo que guarda un sitio web después de una semana sin visitarlo. Agrega El Cantor a tu pantalla de inicio (Compartir → Agregar a Inicio) para no perder estas tablas.',
+    drive: 'Safari clears what a website saves after a week without a visit. Add El Cantor to your Home Screen (Share → Add to Home Screen), or save to Google Drive, to keep these tablas.'
+  };
+  const line = page => page.evaluate(() => { const e = document.getElementById('keepNote'); return e.checkVisibility() ? e.querySelector('span').textContent : null; });
+  for (const lang of ['en', 'es']) {
+    const ctx = await context(PHONE, { userAgent: SAFARI });
+    try {
+      const page = await ctx.newPage(), problems = watch(page);
+      await seed(page, { 'loteria.v1': ANA, 'loteria.lang': lang });
+      await page.goto(base + 'board.html');
+      assert.equal(await line(page), LINE[lang], lang + ': My tablas in a Safari tab');
+      if (lang === 'es') assert.deepEqual(await english(page), [], 'English in the line');
+      const bw = () => page.evaluate(() => parseFloat(getComputedStyle(document.getElementById('boards')).getPropertyValue('--bw')));
+      const before = await bw();
+      await page.goto(base + 'print.html');
+      assert.equal(await line(page), LINE[lang], lang + ': Make tablas in a Safari tab');
+      if (lang === 'en') {
+        await page.goto(base + 'board.html');
+        await page.click('#keepNote button');
+        assert.equal(await line(page), null, 'the line stayed after ×');
+        assert.ok(await bw() > before, 'the tablas didn’t take the room the line left');
+        await noSideways(page, 'My tablas');
+        await page.reload();
+        assert.equal(await line(page), null, 'the line came back after it was dismissed');
+        await page.goto(base + 'print.html');
+        assert.equal(await line(page), null, 'Make tablas has the line after My tablas’ was dismissed');
+      }
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
+  // Not in the Home Screen app, another browser on an iPhone, or a computer.
+  for (const [what, extra, init] of [['the Home Screen app', { userAgent: SAFARI }, () => { Object.defineProperty(navigator, 'standalone', { value: true }); }], ['Chrome on an iPhone', { userAgent: CHROME_IOS }], ['a computer', {}]]) {
+    const ctx = await context(PHONE, extra);
+    try {
+      if (init) await ctx.addInitScript(init);
+      const page = await ctx.newPage();
+      await ctx.addInitScript(() => { const s = navigator.storage; if (!s) return; s.persisted = () => Promise.resolve(false); s.persist = () => { window.__persist = (window.__persist || 0) + 1; return Promise.resolve(true); }; });
+      await seed(page, { 'loteria.v1': ANA });
+      for (const p of ['board.html', 'print.html', 'cantor.html', '']) {
+        await page.goto(base + p);
+        if (/board|print/.test(p)) assert.equal(await line(page), null, 'the line shows in ' + what + ' on ' + p);
+        await until(page, () => window.__persist === 1); // and each page asks the browser to keep what it saves
+      }
+    } finally { await ctx.close(); }
+  }
+  // With Google Drive saving on there's no line; with it off, the line names Drive too.
+  const A = await driveDevice(fakeGoogle(), { 'loteria.v1': ANA }, { userAgent: SAFARI });
+  try {
+    await A.page.goto(base + 'board.html'); await synced(A.page);
+    assert.equal(await line(A.page), null, 'the line shows with Drive saving on');
+    await A.page.click('#setBtn');
+    await A.page.click('#syncCard [data-a="off"]'); await A.page.click('#syncCard [data-a="off"]');
+    await A.page.click('#stx');
+    assert.equal(await line(A.page), LINE.drive);
+    assert.deepEqual(A.problems, []);
+  } finally { await A.ctx.close(); }
+});
+
 check('board: Settings keeps each On/Off beside its words on a phone', async () => {
   const ctx = await context(PHONE);
   try {
