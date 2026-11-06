@@ -1489,7 +1489,7 @@ a.chip{text-decoration:none}
         return new Promise(function (ok, bad) { var q = a.decodeAudioData(b.slice(0), ok, bad); if (q && q.then) q.then(ok, bad); }).catch(function () { throw { quiet: true }; }); // nothing in it to play
       }).then(function (dec) {
         if (dec && (dec.duration < 0.25 || heard(dec)[2] < 0.01)) throw { quiet: true };
-        var nv = S.v || { id: 'r' + Date.now().toString(36), name: S.who, made: Date.now(), rec: true, have: {} };
+        var box = UI.rec === S && $('rcName'), nv = S.v || { id: 'r' + Date.now().toString(36), name: (box && box.value.trim()) || S.who, made: Date.now(), rec: true, have: {} }; // the name as it is now, typed on during the take too
         return vtx(['voices', 'clips'], 'readwrite', function (t) {
           t.objectStore('voices').put(recRow(nv));
           t.objectStore('clips').put({ k: nv.id + '/' + s.key, buf: buf, type: blob.type, t: Date.now() });

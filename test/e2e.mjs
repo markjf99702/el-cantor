@@ -1184,11 +1184,13 @@ check('cantor: Record a voice, one card at a time: kept on this device, El Canto
     await page.click('#rcGo');
     assert.equal(await page.textContent('#toast'), 'First, type whose voice it is.');
     assert.equal(await page.evaluate(() => document.activeElement.id), 'rcName');
-    await page.fill('#rcName', 'Abuela');
+    await page.fill('#rcName', 'Abu');
     // The opening line: recorded in play-and-record, which an iPhone records in, and played back in playback, out loud.
+    // The name finished while it records is the one kept.
     await page.click('#rcGo'); await recording();
     assert.equal(await page.evaluate(() => navigator.audioSession.type), 'play-and-record');
     assert.match(await state(), /^Recording · \d s$/);
+    await page.fill('#rcName', 'Abuela');
     await page.waitForTimeout(1500);
     await page.click('#rcGo');
     await until(page, () => document.querySelector('#rcState .t').textContent === 'Recorded');
