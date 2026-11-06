@@ -2832,6 +2832,41 @@ check('espanol: the day Drive last synced is written in the language shown, not 
   }
 });
 
+check('drive: El Cantor, with no ☁ button, says a winner saved after Google’s hour waits for Sync now, and its card speaks of winners', async () => {
+  for (const lang of ['en', 'es']) {
+    const SAYS = {
+      en: { saved: 'El Cantor’s winners and the last juego it printed or checked are saved to mark@gmail.com, with your tablas, and show up on every device where you turn this on.', tap: 'Tap Sync now to get the winners from your other devices.', wait: 'Saved here — tap Sync now to send it to Google Drive.', toast: 'Saved here — tap Sync now in Settings (⋯) to send it to Google Drive.', off: /^Keep El Cantor’s winners and the last juego/ },
+      es: { saved: 'Los ganadores de El Cantor y el último juego que imprimió o revisó se guardan en mark@gmail.com, junto con tus tablas, y aparecen en cada dispositivo donde actives esto.', tap: 'Toca Sincronizar ahora para traer los ganadores de tus otros dispositivos.', wait: 'Guardado aquí — toca Sincronizar ahora para mandarlo a Google Drive.', toast: 'Guardado aquí — toca Sincronizar ahora en Ajustes (⋯) para mandarlo a Google Drive.', off: /^Guarda los ganadores de El Cantor y el último juego/ }
+    }[lang];
+    // The sign-in has a little over a minute left as the page opens; sync.js stops trusting it a minute early.
+    const g = fakeGoogle();
+    const A = await driveDevice(g, { 'loteria.lang': lang, 'junkdrawer.google': { token: 'tok-mark', exp: Date.now() + 68e3, scope: 'https://www.googleapis.com/auth/drive.file', email: 'mark@gmail.com' } });
+    const { page } = A, note = () => page.textContent('#syncCard .note'), wins = () => JSON.parse(g.files().filter(f => (f.appProperties || {}).loteria === 'sync')[0].body).cols.wins.items;
+    try {
+      await page.goto(base + 'cantor.html'); await synced(page);
+      await page.click('#setBtn');
+      assert.match(await note(), new RegExp('^' + SAYS.saved.replace(/[.()?]/g, '\\$&') + ' '), lang + ': the card speaks of tablas El Cantor doesn’t save');
+      await until(page, t => document.querySelector('#syncCard .note').textContent.endsWith(t), SAYS.tap, 15000); // the hour is out
+      await page.click('#stx');
+      await page.click('#nextBtn'); await page.click('#nextBtn');
+      await page.click('#lotBtn');
+      await page.fill('#clWho', 'Abuela');
+      await page.click('#clNew');
+      await until(page, t => { const e = document.getElementById('toast'); return e.textContent === t && e.classList.contains('show'); }, SAYS.toast, 5000);
+      await page.click('#ptx');
+      await page.click('#setBtn');
+      assert.ok((await note()).endsWith(SAYS.wait), lang + ': the card says “' + await note() + '”');
+      assert.deepEqual(Object.keys(wins()), [], 'the win went to Drive after the hour');
+      await page.click('#syncCard [data-a="now"]'); // signs in again (here with no Google window) and syncs
+      await until(page, () => Object.keys(JSON.parse(localStorage.getItem('loteria.sync.base')).cols.wins.items).length === 1, null, 15000);
+      assert.deepEqual(Object.values(wins()).map(w => w.v.who), ['Abuela']);
+      await page.click('#syncCard [data-a="off"]'); await page.click('#syncCard [data-a="off"]');
+      assert.match(await note(), SAYS.off, lang + ': the card that turns it on speaks of tablas El Cantor doesn’t save');
+      assert.deepEqual(A.problems, []);
+    } finally { await A.ctx.close(); }
+  }
+});
+
 check('drive: on a phone, a tap on ☁ or Sync now says what went wrong, in English and in Spanish, and “try again” only once', async () => {
   // Drive's answer when the account's storage is full, as Google's guide "Resolve errors" gives it (403 errors,
   // storageQuotaExceeded); a busy Drive answers 503, and Google says to try those again a little later.

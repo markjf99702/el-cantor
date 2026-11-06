@@ -210,7 +210,7 @@
 
   // ---------- Google Drive ----------
   var st = Object.assign({ on: false, email: '', name: '', last: 0 }, get(KS) || {}), tok = get(KT);
-  var status = 'off', note = '', busy = null, again = false, client = null, gisLoading = false, gisFailed = false, pushT = null, ups = [], watchers = [], says = [];
+  var status = 'off', note = '', busy = null, again = false, client = null, gisLoading = false, gisFailed = false, pushT = null, ups = [], watchers = [], says = [], waits = [];
   var asked = false, busyT = null, busyTried = false, era = 0; // era: one more each Stop, so a sync begun before it writes nothing
   function saveSt() { put(KS, st); }
   function live() { return !!(tok && tok.token && tok.exp - 60000 > Date.now() && String(tok.scope || '').indexOf(SCOPE) >= 0); }
@@ -405,8 +405,14 @@
     if (s < 86400) return T('sync.hAgo', { n: Math.round(s / 3600) });
     return T('sync.onDate', { date: new Date(t).toLocaleDateString(T.locale, { month: 'short', day: 'numeric' }) });
   }
-  function line() {
-    return status === 'busy' ? esc(T('sync.syncing')) : status === 'tap' ? (note ? esc(T(note)) + ' ' : '') + T.html('sync.tapNow_html') : status === 'error' ? esc(T(note)) + (WHOLE[note] ? '' : ' ' + esc(T('sync.tryNow'))) : st.last ? esc(T('sync.last', { ago: ago(st.last) })) : '';
+  // Something saved on this device since the last sync, still to go to Drive.
+  function waiting() {
+    var base = get(KB), loc = readLocal();
+    return !base || NAMES.some(function (n) { var b = colOf(base, n).items, v = {}; Object.keys(b).forEach(function (id) { v[id] = b[id].v; }); return !eq(v, loc[n].items); });
+  }
+  // El Cantor (cantor) has no ☁ button and no tablas of its own: after the hour, its card says whether what it saved waits here.
+  function line(cantor) {
+    return status === 'busy' ? esc(T('sync.syncing')) : status === 'tap' ? (note ? esc(T(note)) + ' ' : '') + (cantor ? T.html(waiting() ? 'sync.c.wait_html' : 'sync.c.tapNow_html') : T.html('sync.tapNow_html')) : status === 'error' ? esc(T(note)) + (WHOLE[note] ? '' : ' ' + esc(T('sync.tryNow'))) : st.last ? esc(T('sync.last', { ago: ago(st.last) })) : '';
   }
   var CLOUD = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 18.5h10.5a4 4 0 0 0 .7-7.94A6 6 0 0 0 6.7 9.1 4.7 4.7 0 0 0 7 18.5z"/></svg>';
   function css() {
@@ -436,8 +442,8 @@
     btn.addEventListener('click', now);
     watch(function () { btn.hidden = !st.on; btn.dataset.s = status; btn.title = title(); btn.setAttribute('aria-label', title()); });
   }
-  // A settings card: turn it on, see where it's saving, sync now, or stop.
-  function card(host) {
+  // A settings card: turn it on, see where it's saving, sync now, or stop. El Cantor's (cantor) says what it saves.
+  function card(host, cantor) {
     if (!host) return;
     if (!CLIENT_ID) { host.hidden = true; return; }
     css(); loadGis(); host.hidden = false; host.classList.add('lsync-card');
@@ -446,9 +452,9 @@
       if (!host.isConnected) return false; // the sheet it was in has closed
       var wrong = status === 'error'; // then it doesn't say "Saved to"
       host.innerHTML = st.on
-        ? '<div class="eyebrow">' + T(wrong ? 'sync.errH' : 'sync.savedH') + '</div><p class="note">' + T.html('sync.savedTo_html', { email: st.email || T('sync.yourDrive') }) + ' ' + line() + '</p>' +
+        ? '<div class="eyebrow">' + T(wrong ? 'sync.errH' : 'sync.savedH') + '</div><p class="note">' + T.html(cantor ? 'sync.c.savedTo_html' : 'sync.savedTo_html', { email: st.email || T('sync.yourDrive') }) + ' ' + line(cantor) + '</p>' +
           '<div class="row"><button class="btn sm" type="button" data-a="now"' + (status === 'busy' ? ' disabled' : '') + '>' + T('sync.now') + '</button><button class="btn sec sm" type="button" data-a="off">' + T(armed ? 'sync.stopAgain' : 'sync.stop') + '</button></div>'
-        : '<div class="eyebrow">' + T('sync.offH') + '</div><p class="note">' + esc(T('sync.offNote')) + (note ? ' ' + esc(T(note)) : '') + '</p>' +
+        : '<div class="eyebrow">' + T('sync.offH') + '</div><p class="note">' + esc(T(cantor ? 'sync.c.offNote' : 'sync.offNote')) + (note ? ' ' + esc(T(note)) : '') + '</p>' +
           '<div class="row"><button class="btn red sm" type="button" data-a="on">' + T('sync.on') + '</button></div>';
       host.querySelectorAll('button[data-a]').forEach(function (b) {
         b.addEventListener('click', function () {
@@ -467,7 +473,8 @@
   function changed() { // a page saved something
     if (!CLIENT_ID || !st.on || !track()) return;
     clearTimeout(pushT);
-    if (live()) pushT = setTimeout(function () { pushT = null; sync(); }, 1500); else setStatus('tap');
+    if (live()) pushT = setTimeout(function () { pushT = null; sync(); }, 1500);
+    else { setStatus('tap'); waits.forEach(function (f) { try { f(); } catch (e) { } }); }
   }
   // Leaving the page (another app, the phone locked, the tab closed) sends a change still waiting to go now: a phone
   // stops a page's timers once it's out of sight, and the change would wait until El Cantor was opened again.
@@ -488,6 +495,7 @@
     connect: start, now: now, changed: changed, chip: chip, card: card,
     onUpdate: function (f) { ups.push(f); }, // f(keys): synced data landed in these localStorage keys
     onNote: function (f) { says.push(f); }, // f(text): what went wrong after a tap, to show for a few seconds
+    onWait: function (f) { waits.push(f); }, // f(): something was saved here after the hour, and waits for a tap to go to Drive
     _merge: mergeCol, _cols: COLS, _read: readDrive // for tests
   };
 

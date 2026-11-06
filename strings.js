@@ -142,6 +142,7 @@
       'cantor.roundWhat': 'Round {r} — what are we playing?',
       'cantor.patsNote_html': 'Tell the table what wins this round. <b>Clásico</b> is the regular game — 4 in a row, 4 corners, or 4 in a square. Hold a shape for a second to add it on top of what’s picked; a tabla wins on any one of them. El Cantor checks winning tablas against this.',
       'cantor.otherWindow': 'Paused — another window turned a card',
+      'cantor.syncWait': 'Saved here — tap Sync now in Settings (⋯) to send it to Google Drive.', // after Google's hour
       'cantor.tapToKeep': 'Paused — tap the card to keep calling',
       'cantor.noCardsYet': 'No cards called yet — ▶ starts the round',
 
@@ -457,6 +458,11 @@
       'sync.stopAgain': 'Tap again to stop',
       'sync.syncing': 'Syncing…',
       'sync.tapNow_html': 'Tap <b>Sync now</b> to get your latest tablas.',
+      // El Cantor's card, which has winners and a juego to save rather than tablas
+      'sync.c.offNote': 'Keep El Cantor’s winners and the last juego it printed or checked in your own Google Drive, with your tablas, and they’ll be on every phone, tablet and computer where you turn this on. They go in a “Lotería” folder that only the junkdrawer.works apps can open.',
+      'sync.c.savedTo_html': 'El Cantor’s winners and the last juego it printed or checked are saved to <b>{email}</b>, with your tablas, and show up on every device where you turn this on.',
+      'sync.c.wait_html': 'Saved here — tap <b>Sync now</b> to send it to Google Drive.',
+      'sync.c.tapNow_html': 'Tap <b>Sync now</b> to get the winners from your other devices.',
       'sync.last': 'Last synced {ago}.',
       'sync.justNow': 'just now',
       'sync.minAgo': '{n} min ago',
@@ -593,6 +599,7 @@
       'cantor.roundWhat': 'Ronda {r} — ¿a qué jugamos?',
       'cantor.patsNote_html': 'Dile a la mesa qué gana esta ronda. <b>Clásico</b> es lo de siempre — línea, esquinas o cuadrito. Mantén presionada una figura un segundo para sumarla a lo elegido; una tabla gana con cualquiera de ellas. El Cantor revisa las tablas ganadoras con esto.',
       'cantor.otherWindow': 'En pausa — otra ventana volteó una carta',
+      'cantor.syncWait': 'Guardado aquí — toca Sincronizar ahora en Ajustes (⋯) para mandarlo a Google Drive.',
       'cantor.tapToKeep': 'En pausa — toca la carta para seguir cantando',
       'cantor.noCardsYet': 'Todavía no sale ninguna carta — ▶ empieza la ronda',
 
@@ -908,6 +915,10 @@
       'sync.stopAgain': 'Toca otra vez para dejar de guardar',
       'sync.syncing': 'Sincronizando…',
       'sync.tapNow_html': 'Toca <b>Sincronizar ahora</b> para traer tus tablas más recientes.',
+      'sync.c.offNote': 'Guarda los ganadores de El Cantor y el último juego que imprimió o revisó en tu propio Google Drive, junto con tus tablas, y van a estar en cada teléfono, tableta y computadora donde actives esto. Van en una carpeta “Lotería” que solo pueden abrir las apps de junkdrawer.works.',
+      'sync.c.savedTo_html': 'Los ganadores de El Cantor y el último juego que imprimió o revisó se guardan en <b>{email}</b>, junto con tus tablas, y aparecen en cada dispositivo donde actives esto.',
+      'sync.c.wait_html': 'Guardado aquí — toca <b>Sincronizar ahora</b> para mandarlo a Google Drive.',
+      'sync.c.tapNow_html': 'Toca <b>Sincronizar ahora</b> para traer los ganadores de tus otros dispositivos.',
       'sync.last': 'Última sincronización: {ago}.',
       'sync.justNow': 'hace un momento',
       'sync.minAgo': 'hace {n} min',

@@ -812,7 +812,7 @@ a.chip{text-decoration:none}
     $('awBtn').addEventListener('click', function () { st.awake = !st.awake; save(); wake(st.awake && C.pos > 0 && C.pos < 54); draw(); });
     $('stx').addEventListener('click', closeSheet);
     UI.onVoices = draw; loadVoices(); draw();
-    if (window.LoteriaSync) LoteriaSync.card($('syncCard'));
+    if (window.LoteriaSync) LoteriaSync.card($('syncCard'), true);
   }
   function setPace(v) { C.settings.pace = v; save(); if (R.phase === 'waiting' && R.playing) wait(); else renderBar(); }
 
@@ -1228,6 +1228,8 @@ a.chip{text-decoration:none}
 
   // ---------- Google Drive ----------
   if (window.LoteriaSync) LoteriaSync.onNote(function (m) { toast(m, 6000); }); // what went wrong after a tap on Sync now, long enough to read
+  // El Cantor has no ☁ button: a winner or a juego saved after Google's hour says it waits here for Sync now.
+  if (window.LoteriaSync) LoteriaSync.onWait(function () { toast(T('cantor.syncWait'), 6000); });
   if (window.LoteriaSync) LoteriaSync.onUpdate(function (keys) { // winners and the juego from another device
     if (keys.indexOf(LS) < 0) return;
     try { var o = JSON.parse(localStorage.getItem(LS)); if (o) { if (Array.isArray(o.wins)) C.wins = goodWins(o.wins); if (typeof o.juego === 'string') C.juego = o.juego; } } catch (e) { }
