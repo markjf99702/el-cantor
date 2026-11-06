@@ -157,6 +157,22 @@ check('shapes: Loteria.check and closest agree with the rules on every shape and
   assert.ok(cases > 100000, cases + ' cases');
 });
 
+check('shapes: the fewest squares each game wins with, which card by card goes by', () => {
+  // Every set of squares on a tabla of 16 different cards, the smallest that wins by the rules written out above.
+  // Card by card says a tabla with fewer cards than half of these can't have won yet, a card covering two at most.
+  const L = loadDeck(), t = DECK.slice(0, 16), SINGLE = Object.keys(SHAPES).concat('siete');
+  const games = [plain(L.CLASICO), ...SINGLE.map(id => [id]), ['ele', 'llena'], ['marco', 'rieles'], ['siete', 'equis'], plain(L.CLASICO).concat('siete')];
+  for (const ids of games) {
+    let least = 99;
+    for (let m = 1; m < 1 << 16; m++) {
+      let k = 0; for (let b = m; b; b &= b - 1) k++;
+      if (k < least && wins(t, n => m >> (n - 1) & 1, ids).size) least = k;
+    }
+    assert.equal(L.squaresNeeded(ids), least, JSON.stringify(ids));
+  }
+  assert.equal(L.squaresNeeded(['llena']), 16);
+});
+
 // ---------------------------------------------------------------- when a printed tabla first won
 check('cantor: when a tabla first won is the card that finished its earliest shape, call by call', () => {
   const html = read('cantor.html'), L = loadDeck(), C = { order: [], pos: 0 };

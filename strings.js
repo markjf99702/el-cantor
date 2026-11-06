@@ -249,6 +249,8 @@
       'cantor.notCalled': { one: '{list} hasn’t been called.', other: '{list} haven’t been called.' },
       'cantor.allOut': { one: 'It’s out', other: 'All {n} are out' },
       'cantor.ifShape': 'If they make the shape — {game} — it’s good. {when}',
+      'cantor.ifShapeDoubles': 'If they make the shape — {game} — with doubles on their tabla, it’s good. {when}',
+      'cantor.fewCards': { one: '{game} needs {need} squares — they’ve read out 1 card so far. Keep tapping.', other: '{game} needs {need} squares — they’ve read out {n} cards so far. Keep tapping.' },
       'cantor.won_html': { one: '<b>{who}</b> wins round {r} after 1 card.', other: '<b>{who}</b> wins round {r} after {n} cards.' },
       'cantor.wonNobody': { one: 'Round {r} is won after 1 card.', other: 'Round {r} is won after {n} cards.' },
       // two ¡Lotería!s on the same card, as the house rule has them
@@ -777,6 +779,8 @@
       'cantor.notCalled': { one: '{list} todavía no sale.', other: '{list} todavía no salen.' },
       'cantor.allOut': { one: 'Ya salió', other: 'Ya salieron las {n}' },
       'cantor.ifShape': 'Si forman la figura — {game} — es buena. {when}',
+      'cantor.ifShapeDoubles': 'Si forman la figura — {game} — con dobles en su tabla, es buena. {when}',
+      'cantor.fewCards': { one: '{game} necesita {need} casillas — hasta ahora te leyó 1 carta. Sigue tocando.', other: '{game} necesita {need} casillas — hasta ahora te leyó {n} cartas. Sigue tocando.' },
       'cantor.won_html': { one: '<b>{who}</b> gana la ronda {r} con 1 carta cantada.', other: '<b>{who}</b> gana la ronda {r} con {n} cartas cantadas.' }, // not "with 6 cards", as if on the tabla
       'cantor.wonNobody': { one: 'Se ganó la ronda {r} con 1 carta cantada.', other: 'Se ganó la ronda {r} con {n} cartas cantadas.' },
       'cantor.another': '+ Otro ganador con esta carta',

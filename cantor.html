@@ -1180,11 +1180,14 @@ a.chip{text-decoration:none}
       $('vfChips').querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () { var i = V.picked.indexOf(+b.dataset.n); if (i >= 0) V.picked.splice(i, 1); pickGrid(); cardsVerdict(); }); });
       if (!V.picked.length) { v.className = 'verdict'; v.innerHTML = '<p class="note" style="margin:0">' + T('cantor.readOut') + '</p>'; return; }
       if (not.length) { v.className = 'verdict no'; v.innerHTML = '<h3>' + T('cantor.notYet') + '</h3><p>' + esc(T('cantor.notCalled', { n: not.length, list: T.list(not.map(function (n) { return card(n).name; })) })) + '</p>'; return; }
-      var last = Math.max.apply(null, out.map(orderOf));
-      V.how = L.gameName(C.patterns);
+      var last = Math.max.apply(null, out.map(orderOf)), game = L.gameName(C.patterns), need = L.squaresNeeded(C.patterns);
+      // A card covers two squares at most (a double), so fewer cards than half the game's squares can't be a win yet,
+      // and fewer than all of them only with doubles: Tabla Llena takes 8 cards at the least.
+      if (out.length * 2 < need) { winRow(true); v.className = 'verdict'; v.innerHTML = '<p class="note" style="margin:0">' + esc(T('cantor.fewCards', { game: game, need: need, n: out.length })) + '</p>'; return; }
+      V.how = game;
       // Card by card goes by the last of the cards read out.
       if (tooLate(last)) { winRow(true); v.className = 'verdict no'; v.innerHTML = '<h3>' + T('cantor.tooLate') + '</h3><p>' + esc(T('cantor.lateCards', { card: card(C.order[last - 1]).name, n: C.pos - last })) + '</p>'; return; }
-      v.className = 'verdict ok'; v.innerHTML = '<h3>' + T('cantor.allOut', { n: out.length }) + '</h3><p>' + esc(T('cantor.ifShape', { game: L.gameName(C.patterns), when: whenText(last) })) + '</p>';
+      v.className = 'verdict ok'; v.innerHTML = '<h3>' + T('cantor.allOut', { n: out.length }) + '</h3><p>' + esc(T(out.length < need ? 'cantor.ifShapeDoubles' : 'cantor.ifShape', { game: game, when: whenText(last) })) + '</p>';
     }
     document.querySelectorAll('#vfSeg button').forEach(function (b) { b.addEventListener('click', function () { V.mode = b.dataset.v; body(); }); });
     $('vfx').addEventListener('click', closeSheet);

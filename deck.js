@@ -124,6 +124,13 @@
     ids.push(id); return T ? T('shapeAdded', { shape: p.name }) : p.name + ' added';
   }
 
+  // The fewest squares a tabla can win the game `ids` with: 4 for Clásico, 7 for Siete Loco, 16 for Tabla Llena; for
+  // several shapes, the smallest. A card covers two squares at most (a double), so a win takes at least half as many cards.
+  function squaresNeeded(ids) {
+    var best = 16;
+    ids.forEach(function (pid) { var p = pat(pid); if (!p) return; var k = p.min || Math.min.apply(null, p.sets.map(function (s) { return s.length; })); if (k < best) best = k; });
+    return best;
+  }
   // Which patterns a tabla has completed. `called(n)` says whether card n is out.
   function check(cards, called, ids) {
     var m = []; cards.forEach(function (n, i) { if (called(n)) m.push(i); });
@@ -221,7 +228,7 @@
 
   window.Loteria = {
     CARDS: CARDS, BYFILE: BYFILE, card: card, src: src, fold: fold, originals: originals,
-    PATS: PATS, CLASICO: CLASICO, ALL: ALL, pat: pat, isClasico: isClasico, hasClasico: hasClasico, gameName: gameName, holdShape: holdShape, check: check, closest: closest,
+    PATS: PATS, CLASICO: CLASICO, ALL: ALL, pat: pat, isClasico: isClasico, hasClasico: hasClasico, gameName: gameName, holdShape: holdShape, squaresNeeded: squaresNeeded, check: check, closest: closest,
     juegoName: juegoName, juego: juego, juegoTabla: juegoTabla, randomJuego: randomJuego
   };
 })();

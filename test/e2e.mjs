@@ -373,7 +373,9 @@ check('espanol: El Cantor in Spanish, every sheet and the ¡Lotería! box, and t
       assert.deepEqual(await page.$$eval('#vfChips .chip', bs => bs.map(b => b.textContent)), ['El Gallo · 1.ª ✕', 'La Luna · todavía no ✕']);
       assert.deepEqual(await page.$$eval('#vfPick .pk .st', ss => ss.map(s => s.textContent)), ['1.ª', '✕']);
       await page.locator('#vfChips .chip', { hasText: 'La Luna' }).click();
-      assert.deepEqual([await page.textContent('#vfV h3'), await page.textContent('#vfV p')], ['Ya salió', 'Si forman la figura — Clásico — es buena. Ya estaba completa desde hace 4 cartas: El Gallo, la 1.ª en salir.']);
+      assert.equal(await page.textContent('#vfV'), 'Clásico necesita 4 casillas — hasta ahora te leyó 1 carta. Sigue tocando.'); // one card can't make four squares
+      await pick('El Diablito');
+      assert.deepEqual([await page.textContent('#vfV h3'), await page.textContent('#vfV p')], ['Ya salieron las 2', 'Si forman la figura — Clásico — con dobles en su tabla, es buena. Ya estaba completa desde hace 3 cartas: El Diablito, la 2.ª en salir.']);
       assert.equal(await page.textContent('#vfWin'), '¡Buena! Nueva ronda');
       assert.deepEqual(await english(page), [], where + 'English on ¡Buena!');
       await page.fill('#vfWho', 'Tía Lupe');
@@ -1791,7 +1793,7 @@ check('cantor: checking card by card keeps a card read out twice, and a chip tak
     // The winner row stays on the phone's screen below the 54 cards, with nothing over it.
     const inView = sel => page.$eval(sel, b => { const r = b.getBoundingClientRect(); return r.top >= 0 && r.bottom <= innerHeight && b.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)); });
     await checkAfter(['El Cazo', 'El Negrito', 'La Corona']);
-    assert.deepEqual(await verdict(), ['All 3 are out', 'If they make the shape — Clásico — it’s good. It finished on the card just called, La Corona.']);
+    assert.deepEqual(await verdict(), ['All 3 are out', 'If they make the shape — Clásico — with doubles on their tabla, it’s good. It finished on the card just called, La Corona.']); // 3 cards for 4 squares
     assert.deepEqual(await chips(), ['El Cazo · #1 ✕', 'La Corona · #3 ✕', 'El Negrito · #2 ✕']);
     assert.ok(await inView('#vfWin'), '¡Buena! New round is off the screen after four cards are picked');
     await checkAfter(['El Cazo', 'El Negrito', 'El Gallo']); // La Corona not called yet: the second tap took it off, and the tabla passed
@@ -1804,6 +1806,28 @@ check('cantor: checking card by card keeps a card read out twice, and a chip tak
     assert.equal(await page.locator('#vfPick .pk.no').count(), 0, 'La Corona is still picked in the deck');
     assert.deepEqual(problems, []);
   } finally { await ctx.close(); }
+});
+
+check('cantor: card by card, too few cards for the game aren’t “already good”, and fewer than its squares are good with doubles', async () => {
+  // Tabla Llena covers 16 squares, and a card two at most (a double): 2 cards can't have won it, and 8 only with doubles.
+  for (const locale of ['en-US', 'es-MX']) {
+    const ctx = await context(PHONE, { locale });
+    try {
+      const page = await ctx.newPage(), problems = watch(page), es = locale === 'es-MX';
+      await seed(page, { 'loteria.cantor': { order: run(1, 54), pos: 9, round: 1, patterns: ['llena'], juego: '', wins: [], settings: { speak: false, sound: false, check: true } } });
+      await page.goto(base + 'cantor.html');
+      await page.click('#lotBtn');
+      const tap = async n => page.click(`#vfPick .pk:nth-child(${n})`);
+      await tap(3); await tap(7);
+      assert.equal(await page.textContent('#vfV'), es ? 'Tabla Llena necesita 16 casillas — hasta ahora te leyó 2 cartas. Sigue tocando.' : 'Tabla Llena needs 16 squares — they’ve read out 2 cards so far. Keep tapping.');
+      assert.equal(await page.getAttribute('#vfV', 'class'), 'verdict', 'two cards of Tabla Llena show as good');
+      assert.equal(await page.textContent('#vfWin'), es ? 'Darla por buena' : 'Count it anyway');
+      for (const n of [1, 2, 4, 5, 6, 8]) await tap(n);
+      assert.equal(await page.getAttribute('#vfV', 'class'), 'verdict ok');
+      assert.match(await page.textContent('#vfV p'), es ? /con dobles en su tabla, es buena/ : /with doubles on their tabla, it’s good/);
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
 });
 
 check('cantor: Print tablas starts on Letter for a phone in plain or Latin American Spanish, and A4 for Spain', async () => {
@@ -2050,7 +2074,7 @@ check('cantor: one card called reads as one, in ↺ and when checking card by ca
     await page.click('#lotBtn');
     await page.click('#vfSeg [data-v="cards"]');
     await page.locator('#vfPick .pk', { has: page.locator('.n', { hasText: /^El Gallo$/ }) }).click();
-    assert.equal(await page.textContent('#vfV h3'), 'It’s out');
+    assert.equal(await page.textContent('#vfV'), 'Clásico needs 4 squares — they’ve read out 1 card so far. Keep tapping.');
     assert.deepEqual(problems, []);
   } finally { await ctx.close(); }
 });
