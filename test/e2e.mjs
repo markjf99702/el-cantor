@@ -1208,12 +1208,13 @@ check('cantor: Record a voice, one card at a time: kept on this device, El Canto
     await page.click('#rcPart [data-v="verses"]');
     await page.click('#rcPart [data-v="names"]');
     assert.deepEqual([await page.textContent('#rcStage .eyebrow'), await page.textContent('#rcStage h3')], ['Card 3 of 54 · its name', 'La Dama']);
-    // Kept in this browser's IndexedDB as recorded: audio/mp4 where the browser makes it, as Safari on an iPhone does.
+    // Kept in this browser's IndexedDB as recorded: WebM with Opus in Chromium, whose own audio/mp4 holds Opus too,
+    // which an iPhone plays only from iOS 18.4, where WebM's Opus plays from iOS 17.5.
     let kept = await idb();
     assert.deepEqual(kept.voices.map(v => v.name), ['Abuela']);
     const id = kept.voices[0].id;
     assert.deepEqual(kept.clips.map(c => c[0]).sort(), [id + '/n01', id + '/n02', id + '/open']);
-    for (const c of kept.clips) { assert.match(c[1], /^audio\/mp4/, c[0]); assert.ok(c[2] > 1000, c[0] + ' is ' + c[2] + ' bytes'); }
+    for (const c of kept.clips) { assert.equal(c[1], 'audio/webm;codecs=opus', c[0]); assert.ok(c[2] > 1000, c[0] + ' is ' + c[2] + ' bytes'); }
     // Back in Settings, Abuela is the voice, recorded here, and it says what this device's voice still reads.
     await page.click('#rcx');
     assert.equal(await sheetTitle(page), 'Settings');

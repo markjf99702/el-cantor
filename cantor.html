@@ -1360,8 +1360,11 @@ a.chip{text-decoration:none}
     }, function () { });
   }
   function canRecord() { return !!(window.MediaRecorder && navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.indexedDB && !MIC.noDb); }
-  // audio/mp4 first, which Safari on an iPhone records, then what the browser has.
-  function recType() { var all = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus']; for (var i = 0; i < all.length; i++) try { if (MediaRecorder.isTypeSupported(all[i])) return all[i]; } catch (e) { } return ''; }
+  // In a format the family's other browsers play too. AAC in MP4 first, which Safari records and every browser plays.
+  // Then WebM with Opus, which Chrome and Firefox record and an iPhone plays from iOS 17.5 (caniuse, "Opus audio
+  // format": in a WebM container from Safari 17.5 on iOS, with a regression in 17.4). Chrome's own audio/mp4 holds
+  // Opus, which an iPhone plays only from iOS 18.4 (the same table), so it comes after.
+  function recType() { var all = ['audio/mp4;codecs=mp4a.40.2', 'audio/webm;codecs=opus', 'audio/mp4', 'audio/webm', 'audio/ogg;codecs=opus']; for (var i = 0; i < all.length; i++) try { if (MediaRecorder.isTypeSupported(all[i])) return all[i]; } catch (e) { } return ''; }
   function recSteps(part) {
     if (part === 'verses') return CARDS.map(function (c) { return { key: 'v' + pad2(c.n), n: c.n, part: 'verse', text: c.verse }; });
     return [{ key: 'open', clip: 'open', text: OPENING }].concat(CARDS.map(function (c) { return { key: 'n' + pad2(c.n), n: c.n, part: 'name', text: c.name }; }), [{ key: 'loteria', clip: 'loteria', text: '¡Lotería!' }]);
