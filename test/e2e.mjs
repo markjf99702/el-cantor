@@ -1238,6 +1238,14 @@ check('cantor: a second check closed with no winner brings back the first, and T
     await until(page, () => !document.getElementById('winbox').hidden);
     assert.equal(await box(), 'Ana and Beto share round 1 after 54 cards. No card left on their tablas can break the tie, so they share it.');
     assert.deepEqual(await wins(), ['Ana (shared)', 'Beto (shared)']);
+    // Clear in Settings starts the rounds again at 1, and a tie-break under way in round 3 goes on in round 1.
+    await page.evaluate(s => localStorage.setItem('loteria.cantor', JSON.stringify(s)), cantorSave({ round: 3, wins: [{ round: 1, who: 'Ana', how: 'Clásico', tabla: '', at: 9, t: Date.now() - 3600e3 }], tie: { round: 3, at: 8, upTo: 8, who: [{ who: 'Ana' }, { who: 'Beto' }] } }));
+    await page.reload();
+    await page.click('#setBtn'); await page.click('#wClr'); await page.click('#wClr'); await page.click('#stx');
+    assert.equal(await page.textContent('#sub'), 'Round 1 · 8 of 54');
+    await page.click('#nextBtn');
+    await until(page, () => !!document.querySelector('#winbox:not([hidden]) #askOk'), null, 10000);
+    assert.equal((await saved(page, 'loteria.cantor')).tie.round, 1, 'Clear ended the tie-break');
     // Putting cards back past the tied card calls the tie off.
     await page.evaluate(s => localStorage.setItem('loteria.cantor', JSON.stringify(s)), cantorSave({ pos: 9, wins: [], tie: { round: 1, at: 8, upTo: 9, who: [{ who: 'Ana' }, { who: 'Beto' }] } }));
     await page.reload();

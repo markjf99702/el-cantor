@@ -879,7 +879,7 @@ a.chip{text-decoration:none}
         '<p class="note" style="margin-top:10px">' + T('cantor.nightsNote') + '</p>';
       var armed = false;
       // Clear empties the winners and starts the round numbers again at 1.
-      $('wClr').addEventListener('click', function () { if (!armed) { armed = true; this.textContent = T('cantor.clearAgain'); return; } C.wins = []; C.round = 1; R.stale = false; save(); winsCard(); renderCaption(); renderAll(); });
+      $('wClr').addEventListener('click', function () { if (!armed) { armed = true; this.textContent = T('cantor.clearAgain'); return; } C.wins = []; C.round = 1; R.stale = false; if (C.tie) C.tie.round = 1; save(); winsCard(); renderCaption(); renderAll(); }); // a tie-break under way goes on, in round 1
     }
     $('spBtn').addEventListener('click', function () {
       st.speak = !st.speak; save();
