@@ -1548,6 +1548,19 @@ check('cantor: a ¡Buena! is the moment of the night: the winner’s name large,
     assert.ok(await page.$eval('#clWho', i => parseFloat(getComputedStyle(i).fontSize)) >= 22, 'the winner’s name box is small on a laptop');
     assert.deepEqual(problems, []);
   } finally { await ctx.close(); }
+  // A phone on its side is wide but short: it keeps the smaller box, so the box that takes their word fits on screen.
+  for (const viewport of [{ width: 844, height: 390 }, { width: 915, height: 412 }]) {
+    const side = await context({ ...PHONE, viewport }, { reducedMotion: 'reduce' }); // the box as it lands, without its pop
+    try {
+      const page = await side.newPage();
+      await seed(page, { 'loteria.cantor': { order: run(1, 54), pos: 6, round: 2, patterns: ['linea', 'esquinas', 'cuadro', 'siete'], juego: '', wins: [{ who: 'Abuela', how: 'Línea', t: Date.now() - 6e5 }, { who: 'Mark', how: 'Línea', t: Date.now() - 3e5 }], settings: { speak: false, sound: false, awake: false, check: false } } });
+      await page.goto(base + 'cantor.html');
+      await page.click('#lotBtn');
+      await page.waitForSelector('#winbox #clWho');
+      const b = await page.$eval('#winbox .winc', c => { const r = c.getBoundingClientRect(); return { top: Math.round(r.top), bottom: Math.round(r.bottom), h: innerHeight }; });
+      assert.ok(b.top >= 0 && b.bottom <= b.h, viewport.width + '×' + viewport.height + ': the box runs off the screen: ' + JSON.stringify(b));
+    } finally { await side.close(); }
+  }
 });
 
 check('board: a win in My tablas throws the cut paper too, and none with less motion', async () => {

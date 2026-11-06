@@ -318,8 +318,9 @@ a.chip{text-decoration:none}
 .winc p.won b{display:block;margin:0 0 3px;font:400 clamp(26px,4vw,40px)/1.1 var(--disp);color:var(--ink);text-wrap:balance} /* the winner's name, on a line of its own */
 .winc .wt{width:120px;margin:14px auto 0} /* the printed tabla checked, its winning line in gold */
 .winc .wt+p.tonight{margin-top:10px}
-/* At the head of the table, a laptop or a TV: the box and its words to read from across the room */
-@media (min-width:700px){
+/* At the head of the table, a laptop or a TV: the box and its words to read from across the room. Not a phone on its
+   side, wide but too short for the bigger box: the box that takes their word would run off the top and bottom. */
+@media (min-width:700px) and (min-height:560px){
   .winc{max-width:min(640px,90vw);padding:34px 40px 28px}
   .winc h2{font-size:clamp(44px,7vw,88px)}
   .winc p{font-size:17px}
