@@ -449,10 +449,18 @@ a.chip{text-decoration:none}
 
   // ---------- sound ----------
   var AC = null;
-  function ctx() { try { if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)(); if (AC.state === 'suspended') AC.resume(); return AC; } catch (e) { return null; } }
+  // Every sound starts here, and most of them from a tap: it sets an iPhone to play through the ring switch on silent,
+  // and lets the sound start, or start again after the screen was off, which leaves an iPhone's audio 'interrupted'.
+  function ctx() {
+    try { if (navigator.audioSession && navigator.audioSession.type !== 'playback') navigator.audioSession.type = 'playback'; } catch (e) { }
+    try {
+      if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+      if (AC.state !== 'running' && AC.state !== 'closed') { var q = AC.resume(); if (q && q.catch) q.catch(function () { }); }
+      return AC;
+    } catch (e) { return null; }
+  }
   function ac() { return C.settings.sound ? ctx() : null; }
-  // Called from a tap: lets audio start, and on iPhone plays it even with the ring switch on silent.
-  function unlock() { ctx(); try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) { } }
+  function unlock() { ctx(); } // from a tap that is about to make a sound
   function snap() {
     var a = ac(); if (!a) return;
     var n = Math.floor(a.sampleRate * 0.09), buf = a.createBuffer(1, n, a.sampleRate), d = buf.getChannelData(0);
@@ -543,6 +551,7 @@ a.chip{text-decoration:none}
   }
   function say(lines, done) {
     var token = ++R.token, i = 0;
+    ctx();
     (function step() {
       if (token !== R.token) return;
       if (i >= lines.length) { if (done) done(); return; }
@@ -585,10 +594,16 @@ a.chip{text-decoration:none}
       navigator.wakeLock.request('screen').then(function (l) { WL = l; l.addEventListener('release', function () { if (WL === l) WL = null; }); }).catch(function () { WL = null; });
     } else if (!on && WL && WL !== 'asking') { WL.release().catch(function () { }); WL = null; }
   }
+  // The screen off or another app mid-round: calling pauses, rather than go on unseen, unheard, or both. Back on, it
+  // says so, and the tap on the card that keeps calling brings an iPhone's sound back too.
   document.addEventListener('visibilitychange', function () {
-    if (document.visibilityState !== 'visible') return;
+    if (document.visibilityState !== 'visible') {
+      if (R.playing || R.opening) { stopCalling(); R.hid = true; } else if (R.phase === 'speaking') stopCalling();
+      return;
+    }
     if (!R.playing && C.last && Date.now() - C.last >= NIGHT) { newNight(); renderTie(); renderCaption(); renderAll(); } // left open since the last night
     if (C.pos > 0 && C.pos < 54) wake(true);
+    if (R.hid) { R.hid = false; toast(T('cantor.hidPaused'), 6000); }
   });
 
   // ---------- the call ----------

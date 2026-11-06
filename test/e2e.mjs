@@ -894,6 +894,50 @@ check('cantor: calling with a recorded voice brings the rest of it down for a ga
   }
 });
 
+// The page's screen off (or another app) and back on.
+const seen = (page, on) => page.evaluate(v => { Object.defineProperty(document, 'hidden', { value: !v, configurable: true }); Object.defineProperty(document, 'visibilityState', { value: v ? 'visible' : 'hidden', configurable: true }); document.dispatchEvent(new Event('visibilitychange')); }, on);
+
+check('cantor: the screen off mid-round pauses calling and says so when it’s back, and every sound sets an iPhone to play on silent', async () => {
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await page.addInitScript(() => { navigator.audioSession = { type: 'auto' }; }); // an iPhone's, as Safari 17 has it
+    await page.addInitScript(DEALS);
+    await seed(page, { 'loteria.cantor': { order: run(1, 54), pos: 3, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], wins: [], settings: { speak: false, style: 'name', voice: '', rate: 1, pace: 'fast', sound: true, awake: false, check: false } } });
+    await page.goto(base + 'cantor.html');
+    // ¡Lotería! is the first tap: its cheer plays on silent too, as ▶ and Next card do.
+    await page.click('#lotBtn');
+    await until(page, () => !document.getElementById('winbox').hidden);
+    assert.equal(await page.evaluate(() => navigator.audioSession.type), 'playback', 'the cheer would be silent with an iPhone’s ring switch on silent');
+    await page.click('#clBack');
+    await page.evaluate(() => { navigator.audioSession.type = 'auto'; });
+    await page.click('#setBtn');
+    await page.click('#sndBtn'); await page.click('#sndBtn'); // Sounds off and on again: a snap
+    assert.equal(await page.evaluate(() => navigator.audioSession.type), 'playback', 'Sounds On’s snap');
+    await page.click('#stx');
+    // Calling, then the screen goes off.
+    await page.click('#playBtn');
+    await until(page, () => JSON.parse(localStorage.getItem('loteria.cantor')).pos >= 4);
+    await seen(page, false);
+    const pos = (await saved(page, 'loteria.cantor')).pos;
+    await page.waitForTimeout(3500); // past the fast pace's 2 seconds
+    assert.equal((await saved(page, 'loteria.cantor')).pos, pos, 'it kept calling with the screen off');
+    await seen(page, true);
+    await until(page, () => document.getElementById('toast').classList.contains('show'));
+    assert.equal(await page.textContent('#toast'), 'Paused while the screen was off — tap the card to keep calling');
+    assert.equal(await page.getAttribute('#playBtn', 'aria-label'), 'Keep calling');
+    await page.click('#flip');
+    await until(page, p => JSON.parse(localStorage.getItem('loteria.cantor')).pos > p, pos);
+    // Paused by hand, the screen off and on says nothing.
+    await page.click('#playBtn');
+    await page.evaluate(() => { window.__toasts = []; });
+    await seen(page, false); await seen(page, true);
+    await page.waitForTimeout(300);
+    assert.deepEqual(await page.evaluate(() => window.__toasts.filter(t => /screen was off/.test(t))), []);
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('cantor: the card called is the card itself, edge to edge on its own cream paper, with no white mat round it', async () => {
   // The cards are drawn on cream (#FBF4E4) with their own rounded frame; a white mat round them made a second frame,
   // and the brightest thing on a dark screen.

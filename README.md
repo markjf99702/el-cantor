@@ -30,7 +30,7 @@ Every page has a ⌂ button back to the home screen. They all load the same `dec
 
 ### El Cantor — calling the game
 
-- **Calls the cards.** Shuffles the 54 cards and turns them over one at a time, calling each one aloud in Spanish. It says just the name by default, or the verse and then the name. Tap ▶, or the card itself, to call on its own and to pause; **Next card** turns them by hand. On a phone, the timer button beside it switches between slow, normal and fast (7, 4 or 2 seconds between cards).
+- **Calls the cards.** Shuffles the 54 cards and turns them over one at a time, calling each one aloud in Spanish. It says just the name by default, or the verse and then the name. Tap ▶, or the card itself, to call on its own and to pause; **Next card** turns them by hand. On a phone, the timer button beside it switches between slow, normal and fast (7, 4 or 2 seconds between cards). If the screen turns off or another app comes up mid-round, calling pauses rather than go on unseen, and when El Cantor is back it says *Paused while the screen was off — tap the card to keep calling*; that tap brings an iPhone's sound back too.
 - **Recorded voices.** Dora, Alex or Santa read the cards, so every phone and tablet sounds the same. The device's own Spanish voice is the fallback: a card whose clip hasn't arrived in 3 seconds is read by it, the cards after it that round don't wait for theirs, and one note says *The recorded voice isn't loading — using this device's voice*. On an iPhone it plays even with the silent switch on.
 - **Adivinanza** mode reads the verse with the card face down, so the table can guess before it turns over.
 - **The sábana** shows all 54 cards, lit in the order they were called.
