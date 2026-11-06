@@ -24,7 +24,7 @@ The home screen has three choices:
 
 Every page has a ⌂ button back to the home screen. They all load the same `deck.js` and card images.
 
-**English or Español.** The home screen has an **English | Español** switch, and so do the top of Settings in El Cantor and My tablas and the foot of Make tablas. A device's first visit to My tablas has it too, at the foot of who's playing and of a shared link's offer: the offer comes back in the new language with the same tablas, and a name already typed stays. The choice is kept on each device (it doesn't go to Google Drive), and a phone or computer set to Spanish starts in Español. All three tools follow it, and so do the tablas El Cantor prints and what Google Drive saving says, dates included. The card names, the verses and the recorded voices are Spanish either way.
+**English or Español.** The home screen has an **English | Español** switch, and so do the top of Settings in El Cantor and My tablas and the foot of Make tablas. A device's first visit to My tablas has it too, at the foot of who's playing and of a shared link's offer: the offer comes back in the new language with the same tablas, and a name already typed stays. The choice is kept on each device (it doesn't go to Google Drive), and a phone or computer set to Spanish starts in Español. All three tools follow it, and so do the tablas El Cantor prints and what Google Drive saving says, dates included. The card names, the verses and the recorded voices are Spanish either way. A link texted to someone shows its preview in Spanish first, with "In English too.", since a chat app can't know which language the phone is set to.
 
 ## How it plays
 
@@ -99,7 +99,7 @@ It's a static site: plain HTML, CSS and JavaScript, with no build step. It runs 
 npx serve .                   # or any static file server, then open the printed address
 npm test                      # checks the game's logic, then uses the three tools in Chromium through the real pages (needs Playwright)
 npm install                   # once, for the screenshots
-node tools/screenshots.mjs    # redraws the pictures in docs/
+node tools/screenshots.mjs    # redraws the pictures in docs/ and og.png, the link preview
 node tools/make-icons.mjs     # redraws the PNG icons from icon.svg
 ```
 
@@ -127,7 +127,7 @@ To put it online with GitHub Pages: **Settings → Pages → Build and deploymen
   - One clip per card: the verse, a breath, the name. Plus the opening line and ¡Lotería!
   - `voices.json` lists the voices and where each verse ends, so Adivinanza can stop before the name.
 - `tools/make_voices.py` — renders `audio/` with [Kokoro-82M](https://github.com/hexgrad/kokoro) (Apache-2.0), using espeak-ng's Latin American Spanish for pronunciation. Rerun it after changing a verse in `deck.js`; the usage is at the top of the script.
-- `tools/screenshots.mjs` — draws the pictures in `docs/`, with each tool opened on the same saved tablas every time. It saves them with 256 colours using upng-js, from `npm install`.
+- `tools/screenshots.mjs` — draws the pictures in `docs/`, with each tool opened on the same saved tablas every time, and `og.png`, the link preview, from the home screen's banderitas, the line in `index.html`'s `og:description` and four of the cards. Run it again when the cards, that line or the look change. It saves them with 256 colours using upng-js, from `npm install`.
 - `test/logic.mjs` — what `npm test` runs first, in a few seconds and with no browser: the juegos' rules across many names (16 different cards, no two tablas alike, the deck dealt out evenly, no Clásico four printed twice), every winning shape checked against the rules with doubles, when a printed tabla first won, the random tablas' rules, and the shuffle's fairness.
 - `test/e2e.mjs` — what `npm test` runs next: El Cantor, My tablas and Make tablas used through the real pages in Chromium, El Cantor's PDFs read back card by card, a recorded voice calling a round, two devices saving to a stand-in Google Drive (`test/fake-google.mjs`), the first visit bringing tablas from the old address, every page offline, and the words: each one in English and Spanish, and the screens in Spanish swept for English left behind. It runs Chromium in US English, whatever the computer's language, and so does `tools/screenshots.mjs`.
 

@@ -1,6 +1,8 @@
-// Renders the README screenshots (docs/phone-*.png):  node tools/screenshots.mjs
+// Renders the README screenshots (docs/phone-*.png) and the link preview (og.png):  node tools/screenshots.mjs
 // Each tool opens with saved tablas and a round under way, and Math.random is seeded, so the same pictures come
-// out every time. Needs Playwright, and upng-js from `npm install`. og.png, the link preview, isn't drawn here.
+// out every time. og.png is drawn from the app's own pieces: the home screen's banderitas, its fonts, the line in
+// index.html's og:description, and four of the cards, so it follows them when they change. Needs Playwright, and
+// upng-js from `npm install`.
 import { createRequire } from 'node:module';
 import { execSync } from 'node:child_process';
 import { createServer } from 'node:http';
@@ -55,9 +57,12 @@ async function open(path, saves) {
 async function shoot(page, name) {
   await page.waitForFunction(() => [...document.images].filter(i => i.getClientRects().length && i.getBoundingClientRect().top < innerHeight).every(i => i.complete), null, { timeout: 20000 }); // the ones on screen
   await page.waitForTimeout(700); // the card turning over, the beans dropping
-  const img = UPNG.decode(await page.screenshot()); // saved with 256 colours, a quarter of the size
-  await writeFile(join(root, 'docs', name), Buffer.from(UPNG.encode(UPNG.toRGBA8(img), img.width, img.height, 256)));
+  await save(await page.screenshot(), join(root, 'docs', name));
   await page.context().close();
+}
+async function save(png, file) { // with 256 colours, a quarter of the size
+  const img = UPNG.decode(png);
+  await writeFile(file, Buffer.from(UPNG.encode(UPNG.toRGBA8(img), img.width, img.height, 256)));
 }
 
 // El Cantor, five cards into round 2: El Gallo showing, the four before it in a row underneath.
@@ -89,6 +94,37 @@ async function shoot(page, name) {
   await shoot(page, 'phone-print.png');
 }
 
+// og.png, the link preview, 1200 x 630: the home screen's banderitas across the top, the name and the preview's line
+// on the left, and La Luna, El Gallo, La Sirena and El Corazón fanned on the right.
+{
+  const ctx = await browser.newContext({ viewport: { width: 1200, height: 630 }, locale: 'en-US', reducedMotion: 'reduce', serviceWorkers: 'block' });
+  await ctx.route(url => !url.href.startsWith(base), route => route.abort());
+  const page = await ctx.newPage();
+  await page.goto(base + 'index.html');
+  const picado = await page.innerHTML('#picado'); // drawn for 1200 wide, still (no sway with reduced motion)
+  const line = readFileSync(join(root, 'index.html'), 'utf8').match(/<meta property="og:description" content="([^"]*)">/)[1];
+  const [first, ...rest] = line.split(/(?<=\.) (?=[A-Z])/); // the Spanish, then "In English too." on a line of its own
+  const fan = [['La Luna', 676, 352, -14], ['El Gallo', 802, 292, -5], ['La Sirena', 934, 298, 5], ['El Corazón', 1060, 366, 14]];
+  const card = name => 'cards/' + L.CARDS.filter(c => c.name === name)[0].f + '.jpg';
+  await page.setContent(`<!doctype html><meta charset="utf-8"><link rel="stylesheet" href="fonts/fonts.css"><style>
+    html,body{margin:0;width:1200px;height:630px;overflow:hidden;background:#F3E7CF;color:#2B221C}
+    .picado{height:34px}.picado svg{display:block}.str{fill:none;stroke:#746453;stroke-width:1;opacity:.7}.fl{opacity:.94}
+    .fa{fill:#B7332F}.fb{fill:#1F6F6D}.fc{fill:#D99A2B}.fd{fill:#3E7D4A}.fe{fill:#C2477A}
+    .words{position:absolute;left:76px;top:150px;width:418px}
+    h1{margin:0;font:400 128px/1 "Bree Serif",serif;color:#B7332F;letter-spacing:-1px}
+    .eyebrow{margin:18px 0 0 4px;font:800 21px/1 "Nunito Sans",sans-serif;letter-spacing:.14em;color:#6A5A4C}
+    p{margin:22px 0 0 2px;font:400 25px/1.45 "Nunito Sans",sans-serif}
+    p span{display:block;margin-top:6px;color:#6A5A4C;font-style:italic}
+    img{position:absolute;width:196px;height:321px;border-radius:9px;box-shadow:0 2px 3px rgba(43,34,28,.18),0 18px 34px -10px rgba(43,34,28,.45)}
+  </style><div class="picado">${picado}</div><div class="words"><h1>Lotería</h1><div class="eyebrow">EL CANTOR</div>
+    <p>${first}${rest.map(r => `<span>${r}</span>`).join('')}</p></div>
+    ${fan.map(([name, x, y, turn]) => `<img src="${card(name)}" alt="" style="left:${x - 98}px;top:${y - 160}px;transform:rotate(${turn}deg)">`).join('')}`);
+  await page.evaluate(() => document.fonts.ready);
+  await page.waitForFunction(() => [...document.images].every(i => i.complete && i.naturalWidth > 0));
+  await save(await page.screenshot(), join(root, 'og.png'));
+  await ctx.close();
+}
+
 await browser.close();
 server.close();
-console.log('screenshots written to docs/');
+console.log('screenshots written to docs/, and og.png');
