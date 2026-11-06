@@ -31,7 +31,7 @@
   --fa:#B7332F;--fb:#1F6F6D;--fc:#D99A2B;--fd:#3E7D4A;--fe:#C2477A;
   --disp:"Bree Serif",Georgia,serif;--body:"Nunito Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --shadow:0 1px 0 rgba(43,34,28,.05),0 12px 28px -16px rgba(43,34,28,.45);
-  --sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);
+  --sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);--sal:env(safe-area-inset-left,0px);--sar:env(safe-area-inset-right,0px); /* a phone's notch and rounded corners, turned sideways */
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   color-scheme:dark;
@@ -57,7 +57,7 @@ a:focus-visible{outline:2px solid var(--teal);outline-offset:3px}
 .picado .fl{transform-box:fill-box;transform-origin:50% 0;animation:sway 4.5s ease-in-out infinite alternate;opacity:.94}
 .fa{fill:var(--fa)}.fb{fill:var(--fb)}.fc{fill:var(--fc)}.fd{fill:var(--fd)}.fe{fill:var(--fe)}
 @keyframes sway{from{transform:rotate(-3deg)}to{transform:rotate(3deg)}}
-main{max-width:980px;margin:0 auto;padding:18px 16px 28px}
+main{max-width:980px;margin:0 auto;padding:18px max(16px,var(--sar)) 28px max(16px,var(--sal))}
 header{text-align:center;margin:6px 0 22px}
 h1{margin:0;font:400 clamp(42px,9vw,64px)/1 var(--disp);color:var(--red);letter-spacing:.01em}
 header p{margin:8px 0 0;color:var(--ink2);font-size:15.5px}

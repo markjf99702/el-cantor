@@ -3221,6 +3221,35 @@ check('board: Restore the original four, Remove and Random tabla ask for a secon
 });
 
 // ---------------------------------------------------------------- Make tablas
+check('safe areas: on a phone turned sideways, no page puts a button in the notch or the rounded corners', async () => {
+  // An iPhone 15 on its side: 59 px of notch and rounded corner at each side, and the home bar along the bottom.
+  const W = 852, IN = 59, ctx = await context({ ...PHONE, viewport: { width: W, height: 393 } });
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await (await ctx.newCDPSession(page)).send('Emulation.setSafeAreaInsetsOverride', { insets: { left: IN, right: IN, top: 0, bottom: 21 } });
+    // Each button, link and box on the screen and not covered, that reaches into either side's inset.
+    const inNotch = what => page.evaluate(([W, IN]) => [...document.querySelectorAll('button, a, input, [role=button]')].filter(el => {
+      const r = el.getBoundingClientRect(); if (!r.width || r.bottom <= 0 || r.top >= innerHeight) return false;
+      const h = document.elementFromPoint(r.left + r.width / 2, Math.min(innerHeight - 1, Math.max(0, r.top + r.height / 2)));
+      return !!h && (h === el || el.contains(h)) && (r.left < IN - 0.5 || r.right > W - IN + 0.5);
+    }).map(el => (el.id || el.getAttribute('aria-label') || el.textContent.trim().slice(0, 16)) + ' ' + Math.round(el.getBoundingClientRect().left) + '–' + Math.round(el.getBoundingClientRect().right)), [W, IN]).then(out => assert.deepEqual(out, [], what + ': in the notch or a corner'));
+    await seed(page, {
+      'loteria.cantor': { order: run(1, 54), pos: 6, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], juego: '', wins: [], settings: { speak: false, sound: false, awake: false, check: false } },
+      'loteria.v1': ANA, 'loteria.game': { called: [1, 2, 3], announced: {} },
+      'loteria.print': { tablas: [{ id: 't1', name: 'Tabla 1', cards: run(1) }], set: { doubles: true, per: 2, paper: 'letter', names: true, who: '' } }
+    });
+    await page.goto(base); await inNotch('the home screen');
+    await page.goto(base + 'cantor.html'); await inNotch('El Cantor');
+    await page.click('#setBtn'); await inNotch('El Cantor’s Settings'); await page.click('#stx');
+    await page.click('#lotBtn'); await inNotch('El Cantor’s ¡Lotería! box');
+    await page.goto(base + 'board.html'); await inNotch('My tablas');
+    await page.click('#callBtn'); await inNotch('Cantaron…');
+    await page.goto(base + 'print.html'); await inNotch('Make tablas');
+    await page.click('#printBtn'); await inNotch('Make tablas’ Print…');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('print: tap a square, then tap cards to fill it in order; a third copy is refused', async () => {
   const ctx = await context(DESKTOP);
   try {

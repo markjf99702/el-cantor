@@ -30,7 +30,7 @@
   --red:#B7332F;--red-ink:#FFF7EA;--red-soft:#F3D3CB;--teal:#1F6F6D;--teal-soft:#CFE4E0;--on-teal:#fff;--gold:#D99A2B;--gold-soft:#F6E3B4;--green:#3E7D4A;
   --disp:"Bree Serif",Georgia,serif;--body:"Nunito Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --shadow:0 1px 0 rgba(43,34,28,.05),0 10px 24px -14px rgba(43,34,28,.35);
-  --sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);
+  --sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);--sal:env(safe-area-inset-left,0px);--sar:env(safe-area-inset-right,0px); /* a phone's notch and rounded corners, turned sideways */
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   color-scheme:dark;
@@ -56,7 +56,7 @@ input[type=search]{-webkit-appearance:none;appearance:none}
 input[type=search]::-webkit-search-cancel-button{display:none} /* the box clears itself when a card is picked */
 .app{position:absolute;inset:0;display:flex;flex-direction:column;padding-top:var(--sat);padding-bottom:var(--sab)}
 /* header */
-.top{display:flex;align-items:center;gap:6px;padding:8px 10px 6px;flex:none}
+.top{display:flex;align-items:center;gap:6px;padding:8px max(10px,var(--sar)) 6px max(10px,var(--sal));flex:none}
 .top h1{margin:0;font:400 20px/1 var(--disp);letter-spacing:.01em;color:var(--red);flex:1;display:flex;align-items:baseline;gap:8px;min-width:0;container-type:inline-size}
 .top h1 small{font:600 11px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .top h1 .t{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} /* a long game name in the chip leaves less room */
@@ -79,8 +79,8 @@ input[type=search]::-webkit-search-cancel-button{display:none} /* the box clears
 .chip.teal{background:var(--teal);color:var(--on-teal);border-color:var(--teal)}
 .chip.ic{width:34px;height:34px;padding:0;justify-content:center;font-size:16px}
 /* called bar */
-.called{display:flex;gap:10px;align-items:stretch;padding:0 10px 8px;flex:none}
-.keep{margin:0 10px 8px;flex:none} /* in a Safari tab: how to keep the tablas (sync.js) */
+.called{display:flex;gap:10px;align-items:stretch;padding:0 max(10px,var(--sar)) 8px max(10px,var(--sal));flex:none}
+.keep{margin:0 max(10px,var(--sar)) 8px max(10px,var(--sal));flex:none} /* in a Safari tab: how to keep the tablas (sync.js) */
 .callbtn{flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:104px;background:var(--red);color:var(--red-ink);border:0;border-radius:14px;padding:8px 12px;box-shadow:var(--shadow)}
 .callbtn b{font:400 19px/1.05 var(--disp)}
 .callbtn span{font:600 10.5px var(--body);letter-spacing:.1em;text-transform:uppercase;opacity:.8}
@@ -96,7 +96,7 @@ input[type=search]::-webkit-search-cancel-button{display:none} /* the box clears
 .last button.undo{flex:none;background:none;border:1px solid var(--line2);border-radius:999px;width:34px;height:34px;color:var(--ink2);font-size:15px}
 /* boards */
 .stage{flex:1;min-height:0;position:relative;padding:2px 10px 6px}
-.boards{position:absolute;inset:2px 10px 6px;display:grid;justify-content:center;align-content:center;gap:var(--gap,10px)}
+.boards{position:absolute;inset:2px max(10px,var(--sar)) 6px max(10px,var(--sal));display:grid;justify-content:center;align-content:center;gap:var(--gap,10px)}
 .tabla{width:var(--bw);display:flex;flex-direction:column;gap:3px;min-width:0}
 .tabla .lbl{display:flex;justify-content:space-between;align-items:center;gap:6px;font:600 11px var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);padding:0 2px;height:16px}
 .tabla .lbl button{background:none;border:0;padding:0;color:inherit;font:inherit;letter-spacing:inherit;text-transform:inherit;display:flex;align-items:center;gap:4px}
@@ -121,7 +121,7 @@ input[type=search]::-webkit-search-cancel-button{display:none} /* the box clears
 @keyframes pulse{0%,100%{box-shadow:inset 0 0 0 3px var(--gold)}50%{box-shadow:inset 0 0 0 6px var(--gold)}}
 .cell.hit::after{content:"";position:absolute;inset:0;z-index:5;animation:pulse 1.2s ease-in-out infinite}
 /* history */
-.hist{flex:none;display:flex;gap:6px;overflow-x:auto;padding:4px 10px 8px;scrollbar-width:none;min-height:38px;align-items:center}
+.hist{flex:none;display:flex;gap:6px;overflow-x:auto;padding:4px max(10px,var(--sar)) 8px max(10px,var(--sal));scrollbar-width:none;min-height:38px;align-items:center}
 .hist::-webkit-scrollbar{display:none}
 .hist .h{flex:none;display:flex;align-items:center;gap:5px;background:var(--paper);border:1px solid var(--line);border-radius:999px;padding:3px 9px 3px 4px;font:600 12px var(--body);color:var(--ink2)}
 .hist .h img{width:16px;aspect-ratio:2/3.26;object-fit:cover;border-radius:2px}
@@ -129,7 +129,7 @@ input[type=search]::-webkit-search-cancel-button{display:none} /* the box clears
 .hist .cnt{flex:none;font:600 11px var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);padding-right:4px}
 /* sheets */
 /* --vvh and --vvt: the part of the screen a phone's keyboard leaves, so a sheet and its box sit above the keyboard */
-.sheetbg{position:fixed;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100%);background:rgba(30,20,14,.5);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+.sheetbg{position:fixed;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100%);padding:0 var(--sar) 0 var(--sal);background:rgba(30,20,14,.5);z-index:40;display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:var(--bg);width:min(760px,100%);max-height:calc(100% - 20px - var(--sat));display:flex;flex-direction:column;border-radius:18px 18px 0 0;border-top:3px solid var(--red);padding-bottom:var(--sab)}
 .sheet[data-tall]{height:calc(100% - 20px - var(--sat))} /* a sheet of cards to search keeps its height, so the box stays put as matches go */
 .sheet:focus{outline:none} /* it takes the focus when it opens, for the keyboard and screen readers */
@@ -194,7 +194,7 @@ a{color:var(--teal);font-weight:700}
 .seg button{background:none;border:0;padding:6px 12px;font:600 13px var(--body);color:var(--ink2)}
 .seg button.on{background:var(--ink);color:var(--bg)}
 /* win overlay */
-.winbg{position:fixed;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100%);z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(30,20,14,.55);padding:20px}
+.winbg{position:fixed;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100%);z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(30,20,14,.55);padding:20px max(20px,var(--sar)) 20px max(20px,var(--sal))}
 .winc{background:var(--paper);border:3px solid var(--gold);border-radius:22px;padding:26px 28px 22px;text-align:center;max-width:420px;width:100%;box-shadow:0 30px 60px -20px rgba(0,0,0,.6);animation:pop .35s cubic-bezier(.2,.9,.3,1.2)}
 @keyframes pop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
 .winc h2{margin:0;font:400 46px/1 var(--disp);color:var(--red);letter-spacing:.01em}

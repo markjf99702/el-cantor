@@ -32,7 +32,7 @@
   --disp:"Bree Serif",Georgia,serif;--body:"Nunito Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
   --shadow:0 1px 0 rgba(43,34,28,.05),0 10px 24px -14px rgba(43,34,28,.35);
   --lift:0 2px 0 rgba(43,34,28,.08),0 28px 44px -20px rgba(43,34,28,.6);
-  --sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);
+  --sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);--sal:env(safe-area-inset-left,0px);--sar:env(safe-area-inset-right,0px); /* a phone's notch and rounded corners, turned sideways */
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   color-scheme:dark;
@@ -73,7 +73,7 @@ a{color:var(--teal);font-weight:700}
 .fa{fill:var(--fa)}.fb{fill:var(--fb)}.fc{fill:var(--fc)}.fd{fill:var(--fd)}.fe{fill:var(--fe)}
 @keyframes sway{from{transform:rotate(-3deg)}to{transform:rotate(3deg)}}
 /* header */
-.top{display:flex;align-items:center;gap:6px;padding:0 16px 6px;flex:none}
+.top{display:flex;align-items:center;gap:6px;padding:0 max(16px,var(--sar)) 6px max(16px,var(--sal));flex:none}
 .top h1{margin:0;font:400 23px/1 var(--disp);letter-spacing:.01em;color:var(--red);flex:1;display:flex;align-items:baseline;gap:10px;min-width:0;white-space:nowrap}
 .top h1 small{font:700 11px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chip{background:var(--paper);border:1px solid var(--line2);border-radius:999px;padding:6px 11px;font:700 12.5px var(--body);color:var(--ink2);white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
@@ -84,7 +84,7 @@ a{color:var(--teal);font-weight:700}
 a.chip{text-decoration:none}
 .chip.home svg{width:17px;height:17px}
 /* stage */
-.stage{flex:1;min-height:0;display:flex;gap:22px;padding:2px 16px 10px}
+.stage{flex:1;min-height:0;display:flex;gap:22px;padding:2px max(16px,var(--sar)) 10px max(16px,var(--sal))}
 .app.tall .stage{flex-direction:column;gap:12px}
 .deal{flex:1 1 0;min-width:0;min-height:0;display:flex;flex-direction:column;align-items:center;gap:10px}
 .cardarea{flex:1 1 0;min-height:0;width:100%;display:flex;align-items:center;justify-content:center}
@@ -129,7 +129,7 @@ a.chip{text-decoration:none}
 .sb.cur{outline:3px solid var(--gold);outline-offset:1px}
 .sb.cur .o{background:var(--gold);color:#2B221C}
 /* control bar */
-.bar{flex:none;display:flex;align-items:center;gap:10px;padding:10px 16px 12px;border-top:1px solid var(--line);background:var(--paper2)}
+.bar{flex:none;display:flex;align-items:center;gap:10px;padding:10px max(16px,var(--sar)) 12px max(16px,var(--sal));border-top:1px solid var(--line);background:var(--paper2)}
 .cbtn{flex:none;width:46px;height:46px;border-radius:50%;background:var(--paper);border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;color:var(--ink2);padding:0}
 .cbtn svg,.nextb svg{width:20px;height:20px;display:block}
 .playb{flex:none;position:relative;width:60px;height:60px;border-radius:50%;background:var(--ink);color:var(--bg);border:0;display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);padding:0;margin:0 4px}
@@ -169,7 +169,7 @@ a.chip{text-decoration:none}
 .stepper input{border:0;border-radius:0;width:3.4em;text-align:center;padding:6px 0;background:none;font-weight:800;font-variant-numeric:tabular-nums}
 /* sheets */
 /* --vvh and --vvt: the part of the screen a phone's keyboard leaves, so a sheet and its box sit above the keyboard */
-.sheetbg{position:fixed;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100%);background:rgba(30,20,14,.5);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+.sheetbg{position:fixed;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100%);padding:0 var(--sar) 0 var(--sal);background:rgba(30,20,14,.5);z-index:40;display:flex;align-items:flex-end;justify-content:center}
 .sheet{background:var(--bg);width:min(780px,100%);max-height:calc(100% - 20px - var(--sat));display:flex;flex-direction:column;border-radius:18px 18px 0 0;border-top:3px solid var(--red);padding-bottom:var(--sab)}
 .sheet[data-tall]{height:calc(100% - 20px - var(--sat))} /* a sheet of cards to search keeps its height, so the box stays put as matches go */
 .sheet:focus{outline:none} /* it takes the focus when it opens, for the keyboard and screen readers */
@@ -260,7 +260,7 @@ a.chip{text-decoration:none}
 .wins.nights div{flex-wrap:wrap;column-gap:10px;row-gap:0}
 .wins.nights div span{min-width:7.5em}
 /* overlays */
-.winbg{position:fixed;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100%);z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(30,20,14,.55);padding:20px}
+.winbg{position:fixed;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100%);z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(30,20,14,.55);padding:20px max(20px,var(--sar)) 20px max(20px,var(--sal))}
 .winc{background:var(--paper);border:3px solid var(--gold);border-radius:22px;padding:26px 28px 22px;text-align:center;max-width:420px;width:100%;box-shadow:0 30px 60px -20px rgba(0,0,0,.6);animation:pop .35s cubic-bezier(.2,.9,.3,1.2)}
 @keyframes pop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
 .winc h2{margin:0;font:400 44px/1 var(--disp);color:var(--red)}
