@@ -488,7 +488,8 @@
   // which Safari 17 grants on signs like being opened from the Home Screen (WebKit blog, "Updates to Storage Policy",
   // 10 August 2023). Firefox would ask the person with a prompt, so it isn't asked there.
   var KK = 'loteria.keepNote', persisting = false;
-  function ios() { var ua = navigator.userAgent || ''; return /iPhone|iPad|iPod/.test(ua) || /Macintosh/.test(ua) && navigator.maxTouchPoints > 1; } // an iPad asks for the computer site
+  function ipad() { var ua = navigator.userAgent || ''; return /iPad/.test(ua) || /Macintosh/.test(ua) && navigator.maxTouchPoints > 1; } // an iPad asks for the computer site
+  function ios() { return /iPhone|iPod/.test(navigator.userAgent || '') || ipad(); }
   function homeScreen() { return navigator.standalone === true || !!(window.matchMedia && matchMedia('(display-mode: standalone)').matches); }
   function safariTab() {
     var ua = navigator.userAgent || '';
@@ -535,7 +536,7 @@
   // device won't keep it on, why() says what to do instead (empty when it will), and cant() hears it the first time.
   function screenOn(want, cant) {
     var lock = null, refused = false, told = false;
-    function why() { return canWake() && !refused ? '' : T(ios() ? 'awake.cantIos' : 'awake.cant'); }
+    function why() { return canWake() && !refused ? '' : T(ipad() ? 'awake.cantIpad' : ios() ? 'awake.cantIos' : 'awake.cant'); }
     function no() { if (!told) { told = true; if (cant) cant(why()); } }
     function hold() {
       var on = !!want() && document.visibilityState === 'visible';

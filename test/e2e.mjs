@@ -1027,12 +1027,16 @@ check('awake: El Cantor keeps the screen on from the first card, between rounds 
     assert.deepEqual(problems, []);
   } finally { await ctx.close(); }
   // An iPhone app on the Home Screen before iOS 18.4 can't, though its request succeeds: El Cantor says so once, and so
-  // does Settings. From iOS 18.4 it can. A browser that refuses says it in its own words.
-  for (const [v, says] of [['17_5', 'This phone won’t stay awake on its own — set Auto-Lock longer for game night, in Settings › Display and Brightness'], ['18_4', ''], [null, 'This device won’t stay awake on its own — set its screen to stay on longer for game night']]) {
-    ctx = await context(PHONE, v ? IPHONE_APP(v) : {});
+  // does Settings. From iOS 18.4 it can. An iPad says it's a Mac, with no iOS version: window.cookieStore, which came in
+  // the same iOS 18.4, says which, and the line names the iPad. A browser that refuses says it in its own words.
+  const IPAD_APP = { userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko)' };
+  for (const [v, says] of [['17_5', 'This phone won’t stay awake on its own — set Auto-Lock longer for game night, in Settings › Display and Brightness'], ['18_4', ''], ['iPad 17', 'This iPad won’t stay awake on its own — set Auto-Lock longer for game night, in Settings › Display and Brightness'], ['iPad 18.4', ''], [null, 'This device won’t stay awake on its own — set its screen to stay on longer for game night']]) {
+    const ipad = /^iPad/.test(v || '');
+    ctx = await context(PHONE, ipad ? IPAD_APP : v ? IPHONE_APP(v) : {});
     try {
       const page = await ctx.newPage(), problems = watch(page);
       await page.addInitScript(FAKE_WAKE, !v);
+      if (ipad) await page.addInitScript(old => { Object.defineProperty(Navigator.prototype, 'maxTouchPoints', { get: () => 5, configurable: true }); if (old) { delete window.cookieStore; delete Window.prototype.cookieStore; } }, v === 'iPad 17');
       await page.addInitScript(() => { Object.defineProperty(navigator, 'standalone', { value: true, configurable: true }); window.__toasts = []; addEventListener('DOMContentLoaded', () => { const t = document.getElementById('toast'); if (t) new MutationObserver(() => window.__toasts.push(t.textContent)).observe(t, { childList: true, characterData: true, subtree: true }); }); });
       await seed(page, { 'loteria.cantor': CANTOR });
       await page.goto(base + 'cantor.html');
