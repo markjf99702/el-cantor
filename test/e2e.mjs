@@ -668,20 +668,28 @@ check('fonts: the card drawing tool writes the names in the repo’s own Bree Se
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
-check('colours: the light palette’s muted text reads at 4.5:1 on every page', async () => {
-  // --ink3 is the eyebrows, BEFORE, the sábana counts, the tabla labels, “Nothing called yet” and the footer.
+check('colours: the muted text reads at 4.5:1 on every page, light and dark', async () => {
+  // --ink3 is the eyebrows, BEFORE, the sábana counts, the tabla labels, “Nothing called yet” and the footer: 4.5:1 is
+  // WCAG 2.2 success criterion 1.4.3 (Contrast, Minimum) for text this size. Make tablas' “No card matches” sits on
+  // the deck's darker paper.
   const lum = hex => { const c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255).map(v => v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
   const ratio = (a, b) => { const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x); return (hi + 0.05) / (lo + 0.05); };
-  const ctx = await context(PHONE, { colorScheme: 'light' });
-  try {
-    const page = await ctx.newPage(), problems = watch(page);
-    for (const p of ['', 'cantor.html', 'board.html', 'print.html']) {
-      await page.goto(base + p);
-      const [ink3, ...under] = await page.evaluate(() => { const s = getComputedStyle(document.documentElement); return ['--ink3', '--bg', '--paper'].map(k => s.getPropertyValue(k).trim()); });
-      for (const bg of under) assert.ok(ratio(ink3, bg) >= 4.5, `${p || 'index.html'}: ${ink3} on ${bg} is ${ratio(ink3, bg).toFixed(2)}:1`);
-    }
-    assert.deepEqual(problems, []);
-  } finally { await ctx.close(); }
+  const hex = rgb => '#' + rgb.match(/\d+/g).slice(0, 3).map(n => (+n).toString(16).padStart(2, '0')).join('');
+  for (const colorScheme of ['light', 'dark']) {
+    const ctx = await context(PHONE, { colorScheme });
+    try {
+      const page = await ctx.newPage(), problems = watch(page);
+      for (const p of ['', 'cantor.html', 'board.html', 'print.html']) {
+        await page.goto(base + p);
+        const [ink3, ...under] = await page.evaluate(() => { const s = getComputedStyle(document.documentElement); return ['--ink3', '--bg', '--paper'].map(k => s.getPropertyValue(k).trim()); });
+        for (const bg of under) assert.ok(ratio(ink3, bg) >= 4.5, `${colorScheme}, ${p || 'index.html'}: ${ink3} on ${bg} is ${ratio(ink3, bg).toFixed(2)}:1`);
+      }
+      await page.fill('#q', 'zz');
+      const [fg, bg] = await page.evaluate(() => [getComputedStyle(document.querySelector('#dg .dempty')).color, getComputedStyle(document.getElementById('deck')).backgroundColor]);
+      assert.ok(ratio(hex(fg), hex(bg)) >= 4.5, `${colorScheme}, Make tablas’ “No card matches”: ${fg} on ${bg} is ${ratio(hex(fg), hex(bg)).toFixed(2)}:1`);
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
 });
 
 check('colours: in dark, the words on teal, green and red read at 4.5:1, and every page’s scrollbars are dark', async () => {
