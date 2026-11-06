@@ -622,7 +622,7 @@ a.chip{text-decoration:none}
   function newRoundAsk() {
     if (!C.pos) { patternSheet(T('whatPlaying')); return; }
     var was = R.playing; pause();
-    openSheet('<div class="hd"><h2>' + T('cantor.startRoundQ', { n: C.round + 1 }) + '</h2></div><div class="bd stack"><p class="note">' + T('cantor.startRoundNote', { n: C.pos }) + '</p><div class="row"><button class="btn red" type="button" id="nrOk">' + T('cantor.shuffleNew') + '</button><button class="btn sec" type="button" id="nrNo">' + T('cantor.keepRound') + '</button></div></div>');
+    openSheet('<div class="hd"><h2>' + T('cantor.startRoundQ', { n: R.stale ? 1 : C.round + 1 }) + '</h2></div><div class="bd stack"><p class="note">' + T('cantor.startRoundNote', { n: C.pos }) + '</p><div class="row"><button class="btn red" type="button" id="nrOk">' + T('cantor.shuffleNew') + '</button><button class="btn sec" type="button" id="nrNo">' + T('cantor.keepRound') + '</button></div></div>');
     $('nrOk').addEventListener('click', function () { closeSheet(); newRound(); patternSheet(T('cantor.roundWhat', { r: C.round })); });
     $('nrNo').addEventListener('click', function () { closeSheet(); if (was) play(); });
   }
@@ -1133,7 +1133,8 @@ a.chip{text-decoration:none}
   function rule2() { var v = C.settings.two; return v === 'share' || v === 'first' ? v : 'next'; }
   function co() { if (!R.co || R.co.pos !== C.pos || R.co.round !== C.round) R.co = { pos: C.pos, round: C.round, list: [] }; return R.co.list; }
   function names(list) { return T.list(list.map(function (w) { return w.who || T('cantor.unnamed'); })); }
-  function record(w, extra) { var x = Object.assign({ round: C.round, who: w.who || '', how: w.how || L.gameName(C.patterns), tabla: w.tabla || '', at: C.pos, t: stamp() }, extra || {}); C.wins.push(x); return x; }
+  // A win on a round left from the last night makes it tonight's round 1, so the next one is round 2.
+  function record(w, extra) { var x = Object.assign({ round: C.round, who: w.who || '', how: w.how || L.gameName(C.patterns), tabla: w.tabla || '', at: C.pos, t: stamp() }, extra || {}); C.wins.push(x); R.stale = false; return x; }
   // No card still to come can be on a tied tabla: Tabla Llena, the deck's end, or every card of the tablas El Cantor knows is out.
   function undecidable(list) { return C.pos >= 54 || (C.patterns.length === 1 && C.patterns[0] === 'llena') || list.every(function (w) { return w.cards && w.cards.every(isOut); }); }
   function mode(list) { return list.length < 2 ? 'one' : rule2() === 'share' ? 'share' : rule2() === 'next' && !undecidable(list) ? 'tie' : 'nocard'; }

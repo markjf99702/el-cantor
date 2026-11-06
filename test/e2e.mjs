@@ -1417,11 +1417,22 @@ check('cantor: tonight’s standings under the winner in both ¡Lotería! boxes,
     await page.reload();
     assert.equal(await page.textContent('#sub'), 'Round 1 · 10 of 54', 'a new night kept last night’s round');
     assert.ok(!(await page.isVisible('#tieBar')), 'a tie-break left from last night is still on');
-    await page.click('#newBtn'); await page.click('#nrOk'); await page.click('#ptx');
+    await page.click('#newBtn');
+    assert.equal(await sheetTitle(page), 'Start round 1?', 'the first shuffle of the night asked for round 2');
+    await page.click('#nrOk'); await page.click('#ptx');
     assert.equal(await page.textContent('#sub'), 'Round 1 · 0 of 54', 'the first shuffle of the night made round 2');
     await page.click('#nextBtn');
     await page.click('#newBtn'); await page.click('#nrOk'); await page.click('#ptx');
     assert.equal(await page.textContent('#sub'), 'Round 2 · 0 of 54');
+    // A ¡Lotería! on the round left from last night makes it tonight's round 1: the next is round 2, as its button says.
+    await page.evaluate(() => { const c = JSON.parse(localStorage.getItem('loteria.cantor')); c.round = 14; c.pos = 10; c.wins = []; c.settings.check = false; c.last = Date.now() - 7 * 3600e3; localStorage.setItem('loteria.cantor', JSON.stringify(c)); });
+    await page.reload();
+    await page.click('#lotBtn'); await page.fill('#clWho', 'Ana');
+    assert.equal(await page.textContent('#clNew'), 'Shuffle for round 2');
+    await page.click('#clNew');
+    assert.equal(await sheetTitle(page), 'Round 2 — what are we playing?', 'a win on last night’s round left the next one round 1');
+    await page.click('#ptx');
+    assert.deepEqual((await saved(page, 'loteria.cantor')).wins.map(w => [w.round, w.who]), [[1, 'Ana']]);
     assert.deepEqual(problems, []);
   } finally { await ctx.close(); }
   // In Spanish, with the date in Spanish.
