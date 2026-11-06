@@ -70,7 +70,7 @@ Someone calls the cards; you tap **Cantaron…**, pick the card, and it marks it
 
 ### Make tablas — by hand, to print
 
-- Drag cards from the deck onto a tabla. On a phone or iPad, press and hold a card before you drag it. Drag a square to move it, onto another tabla to copy it, or back to the deck to take it off. You can also tap a square and then tap cards.
+- Drag cards from the deck onto a tabla. On a phone or iPad, press and hold a card before you drag it. Drag a square to move it, onto another tabla to copy it, or back to the deck to take it off. You can also tap a square and then tap cards. A card tapped with no square picked goes on the tabla in view, and on to the next tabla with room once that one is full.
 - **Doubles ✓** is the family rule: a card can go on a tabla twice, but not three times. **Random** makes a tabla like Mark's four, with 15 cards and one of them twice, side by side in the middle. Turn it off to allow each card only once.
 - A double covers two squares, so a tabla with one needs a card fewer for some shapes and wins a little more often than a tabla without, most at Centro, where the double sits. Among Mark's four, which all have one, it evens out.
 - **Print…** fits 1, 2 or 4 tablas on a Letter or A4 page. With 2 per page the tablas print sideways.

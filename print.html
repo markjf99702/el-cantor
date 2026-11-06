@@ -274,7 +274,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   } catch (e) { }
   P.set.per = +P.set.per; if ([1, 2, 4].indexOf(P.set.per) < 0) P.set.per = 2; // a damaged save falls back to the defaults
   if (P.set.paper !== 'letter' && P.set.paper !== 'a4') P.set.paper = 'letter';
-  var UI = { active: P.tablas.length ? P.tablas[0].id : null, sel: null, q: '', flash: null, skip: {}, appSkip: {} };
+  var UI = { active: (P.tablas.filter(function (t) { return t.cards.indexOf(0) >= 0; })[0] || P.tablas[0] || {}).id || null, sel: null, q: '', flash: null, skip: {}, appSkip: {} }; // the first tabla with a square to fill
   var H = []; // undo snapshots of P.tablas
   function save() { try { localStorage.setItem(LSP, JSON.stringify(P)); } catch (e) { } if (window.LoteriaSync) LoteriaSync.changed(); }
   function tab(id) { return P.tablas.filter(function (t) { return t.id === id; })[0]; }
@@ -370,7 +370,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     var e = document.querySelector('#dg .dempty'); e.hidden = shown > 0; e.textContent = T('noMatch', { q: UI.q });
   }
   function paintDeck() {
-    var tb = active(), c = tb ? counts(tb) : {}, lim = limit();
+    var to = tapTarget(), tb = to && to.tb, c = tb ? counts(tb) : {}, lim = limit();
     document.querySelectorAll('#dg .dk').forEach(function (d) {
       var k = c[d.dataset.n] || 0, x = d.querySelector('.x');
       d.classList.toggle('has', k === 1); d.classList.toggle('two', k > 1); d.classList.toggle('full', k >= lim && P.set.doubles);
@@ -378,8 +378,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     });
     var n = $('dnote');
     if (!tb) { n.textContent = T('print.addToStart'); return; }
-    var i = UI.sel != null ? UI.sel : tb.cards.indexOf(0);
-    n.innerHTML = i < 0 ? T.html('print.isFull_html', { tabla: tb.name }) : T.html('print.tapToPut_html', { tabla: tb.name, n: i + 1 });
+    n.innerHTML = to.i < 0 ? T.html('print.isFull_html', { tabla: tb.name }) : T.html('print.tapToPut_html', { tabla: tb.name, n: to.i + 1 });
   }
 
   // ---------- taps ----------
@@ -388,15 +387,25 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     paintSel();
   }
   function nextEmpty(tb, from) { for (var k = 1; k <= 16; k++) { var j = (from + k) % 16; if (!tb.cards[j]) return j; } return null; }
+  // Where a tapped card goes: the square picked, or the first empty square of the tabla being made. When that one is
+  // full, the next tabla with an empty square, so on a phone, which shows a tabla or two at a time, cards keep going
+  // where there's room instead of stopping at a full Tabla 1.
+  function tapTarget() {
+    var tb = active(); if (!tb) return null;
+    if (UI.sel != null) return { tb: tb, i: UI.sel };
+    for (var k = P.tablas.indexOf(tb), j = 0; j < P.tablas.length; j++) { var t = P.tablas[(k + j) % P.tablas.length], i = t.cards.indexOf(0); if (i >= 0) return { tb: t, i: i }; }
+    return { tb: tb, i: -1 };
+  }
   function tapCard(n) {
-    var tb = active();
-    if (!tb) { tb = blank(nextName()); P.tablas.push(tb); UI.active = tb.id; }
-    var i = UI.sel != null ? UI.sel : tb.cards.indexOf(0);
+    if (!active()) { var nb = blank(nextName()); P.tablas.push(nb); UI.active = nb.id; }
+    var to = tapTarget(), tb = to.tb, i = to.i, moved = tb.id !== UI.active;
     if (i < 0) { toast(T('print.fullToast', { tabla: tb.name })); return; }
     var r = rule(tb, n, i);
     if (!r.ok) { toast(r.msg); return; }
+    if (moved) UI.active = tb.id;
     if (r.same) { UI.sel = nextEmpty(tb, i); paintSel(); return; }
     edit(function () { place(tb, n, i, r); if (UI.sel != null) UI.sel = nextEmpty(tb, i); UI.flash = { t: tb.id, i: i }; });
+    if (moved) scrollToTabla(tb.id); // on to the next tabla, into view
   }
   function presetList() {
     var out = [{ label: T('print.marks'), boards: MARK }];
@@ -433,6 +442,22 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     var sq = e.target.closest('.sq'); if (sq) { tapSquare(sq.dataset.t, +sq.dataset.i); return; }
     var w2 = e.target.closest('.tb'); if (w2 && w2.dataset.t !== UI.active) { UI.active = w2.dataset.t; UI.sel = null; paintSel(); }
   });
+  // The tabla in view is the one being made: when the tablas stop scrolling with the one being made mostly out of view,
+  // and no square of it picked, the tabla most in view takes its place, so a tapped card lands where you're looking.
+  var scrollT = 0;
+  $('tablas').addEventListener('scroll', function () {
+    clearTimeout(scrollT);
+    scrollT = setTimeout(function () {
+      if (D || UI.sel != null) return;
+      var pane = $('tablas').getBoundingClientRect(), best = null, most = 0, cur = 0;
+      document.querySelectorAll('#tg .tb').forEach(function (w) {
+        var r = w.getBoundingClientRect(), v = Math.max(0, Math.min(r.bottom, pane.bottom) - Math.max(r.top, pane.top)) / (r.height || 1);
+        if (w.dataset.t === UI.active) cur = v;
+        if (v > most + 0.01) { most = v; best = w; }
+      });
+      if (best && cur < 0.5 && best.dataset.t !== UI.active) { UI.active = best.dataset.t; paintSel(); }
+    }, 150);
+  }, { passive: true });
   function scrollToTabla(id) { var el = document.querySelector('#tg .tb[data-t="' + id + '"]'); if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
   $('dg').addEventListener('click', function (e) { var d = e.target.closest('.dk'); if (d) tapCard(+d.dataset.n); });
   $('q').addEventListener('input', function () { UI.q = $('q').value; filterDeck(); });

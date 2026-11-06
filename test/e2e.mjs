@@ -525,7 +525,7 @@ check('espanol: Make tablas in Spanish, with Print… and Play these in My tabla
       assert.equal(await page.getAttribute('html', 'lang'), 'es-MX');
       assert.equal(await page.title(), 'Lotería · Hacer tablas');
       assert.deepEqual([await page.textContent('#dblBtn'), await page.textContent('.tb .tbn')], ['Dobles ✓', 'Dos veces: El Gallo']);
-      assert.equal(await page.textContent('#dnote'), 'Tabla 1 ya está llena — toca una casilla para cambiarla, o arrastra.');
+      assert.equal(await page.textContent('#dnote'), 'Toca una carta para ponerla en Tabla 2, casilla 10 — o arrástrala a donde quieras.'); // Tabla 1 is full
       await clean('Make tablas');
       await page.locator('.addt .chip', { hasText: 'Tablas de Ana (2)' }).click();
       await toast('Se agregaron 2 tablas');
@@ -3080,6 +3080,39 @@ check('print: tap a square, then tap cards to fill it in order; a third copy is 
     const p = await saved(page, 'loteria.print');
     assert.deepEqual(p.tablas[0].cards.slice(0, 4), [23, 23, 1, 0]);
     await noSideways(page, 'Make tablas');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
+check('print: on a phone a tapped card goes to the tabla in view, and on past a full one', async () => {
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    const full = run(1), part = (n, from) => run(from, n).concat(Array(16 - n).fill(0));
+    const tablas = list => ({ 'loteria.print': { tablas: list.map((cards, i) => ({ id: 't' + (i + 1), name: 'Tabla ' + (i + 1), cards })), set: { doubles: true, per: 2, paper: 'letter', names: true, who: '' } } });
+    const cards = async i => (await saved(page, 'loteria.print')).tablas[i].cards;
+    // Tabla 1 full and the one being made: the card goes on to Tabla 2, with no “Tabla 1 is full”.
+    await seed(page, tablas([full, part(2, 30)]));
+    await page.goto(base + 'print.html');
+    await page.click('.tb[data-t="t1"] .cnt'); // Tabla 1 is the one being made
+    assert.match(await page.textContent('#dnote'), /Tabla 2.*square 3/, 'the deck doesn’t say a tap goes to Tabla 2: ' + await page.textContent('#dnote'));
+    await page.locator('#dg .dk[data-n="40"]').tap();
+    assert.deepEqual((await cards(1)).slice(0, 3), [30, 31, 40], 'the card didn’t go on to Tabla 2');
+    assert.equal(await page.evaluate(() => document.getElementById('toast').classList.contains('show')), false, 'a toast said Tabla 1 is full');
+    // Tabla 1 has a square to fill, but Tabla 3 is the one on the screen: the card goes on Tabla 3.
+    await seed(page, tablas([part(15, 1), run(17), part(2, 30)]));
+    await page.goto(base + 'print.html');
+    assert.match(await page.textContent('#dnote'), /Tabla 1.*square 16/);
+    await page.evaluate(() => document.querySelector('.tb[data-t="t3"]').scrollIntoView({ block: 'end' }));
+    await until(page, () => /Tabla 3/.test(document.getElementById('dnote').textContent), null, 3000);
+    await page.locator('#dg .dk[data-n="40"]').tap();
+    assert.deepEqual((await cards(2)).slice(0, 3), [30, 31, 40], 'the card didn’t go on Tabla 3, the one on the screen');
+    assert.equal((await cards(0))[15], 0, 'the card went on Tabla 1, off the screen');
+    // Opened again with Tabla 1 and 2 full, a tap fills Tabla 3, the first with a square to fill.
+    await seed(page, tablas([full, run(17), part(2, 30)]));
+    await page.goto(base + 'print.html');
+    await page.locator('#dg .dk[data-n="40"]').tap();
+    assert.equal((await cards(2))[2], 40);
     assert.deepEqual(problems, []);
   } finally { await ctx.close(); }
 });
