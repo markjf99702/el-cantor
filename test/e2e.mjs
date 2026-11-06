@@ -1114,7 +1114,7 @@ check('cantor: a tap on the card’s name, or R, says it again and then waits it
     assert.deepEqual(await said(), ['El que le cantó a San Pedro no le volverá a cantar.', 'El Gallo', 'El que le cantó a San Pedro no le volverá a cantar.', 'El Gallo']);
     // The keyboard line in Settings says so, in both languages.
     await page.click('#setBtn');
-    assert.match(await page.textContent('#sheet'), /R says the card again \(or tap its name\)/);
+    assert.match(await page.textContent('#sheet'), /R\u00a0says the card again \(or tap its name\)/);
     assert.deepEqual(problems, []);
   } finally { await ctx.close(); }
 });
