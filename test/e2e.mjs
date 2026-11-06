@@ -5213,6 +5213,25 @@ check('drive: a damaged Drive copy is put right with no device losing a tabla, a
   } finally { await A.ctx.close(); await B.ctx.close(); }
 });
 
+check('drive: a Drive copy saved by an El Cantor from before a part came takes nothing out of that part', async () => {
+  // How many tablas El Cantor printed of each juego came after the Drive file's first shape. An El Cantor from before it
+  // (one not updated yet on another phone) saves the file without it; that used to read as every count removed.
+  const g = fakeGoogle();
+  const A = await driveDevice(g, { 'loteria.v1': ANA, 'loteria.cantor': { printed: { CANELA: 12, NOPAL: 4 } } });
+  const file = () => g.files().filter(f => (f.appProperties || {}).loteria === 'sync')[0];
+  const sync = async () => { const t = (await saved(A.page, 'loteria.sync')).last; await A.page.evaluate(() => LoteriaSync.now()); await synced(A.page, t); };
+  try {
+    await A.page.goto(base + 'board.html'); await synced(A.page);
+    assert.deepEqual(Object.keys(JSON.parse(file().body).cols.printed.items).sort(), ['j:CANELA', 'j:NOPAL']);
+    const f = g.drive.files[file().id], o = JSON.parse(f.body); delete o.cols.printed; f.body = JSON.stringify(o); f.version++;
+    await sync();
+    assert.deepEqual((await saved(A.page, 'loteria.cantor')).printed, { CANELA: 12, NOPAL: 4 }, 'the counts came off this device');
+    assert.deepEqual(Object.values(JSON.parse(file().body).cols.printed.items).map(i => i.v.name + ' ' + i.v.count).sort(), ['CANELA 12', 'NOPAL 4'], 'the counts aren’t back in Drive');
+    assert.equal(JSON.parse(file().body).gen, o.gen, 'the copy was taken as damaged');
+    assert.deepEqual(A.problems, []);
+  } finally { await A.ctx.close(); }
+});
+
 check('drive: the dot turns red when the hour runs out with a page open, and a change made just before leaving goes as the page is left', async () => {
   // The sign-in has a little over a minute left as the page opens; sync.js stops trusting it a minute early.
   const g = fakeGoogle();

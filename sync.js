@@ -120,7 +120,7 @@
       },
       write: function (o, c) { o = o || {}; o.printed = {}; c.order.forEach(function (id) { o.printed[c.items[id].name] = c.items[id].count; }); return o; },
       ok: function (v) { return !!v && typeof v.name === 'string' && v.count === (v.count | 0) && v.count > 0; },
-      later: true // came after the Drive file's first shape: a copy saved without it isn't damaged
+      later: true // came after the Drive file's first shape: a copy saved without it isn't damaged, and changed nothing in it
     }
   };
   var NAMES = Object.keys(COLS), KEYS = NAMES.map(function (n) { return COLS[n].key; }).filter(function (k, i, a) { return a.indexOf(k) === i; });
@@ -202,21 +202,23 @@
   function colOf(file, n) { var c = file && file.cols && file.cols[n] || {}; return { items: c.items || {}, order: c.order || [], gone: c.gone || {} }; }
   // The Drive copy as this version reads it. A damaged one (empty, cut short, a part missing or not what it should be)
   // gives what can be kept of it and says it was damaged, so a missing part is never read as everything in it removed.
-  // One saved by a newer El Cantor, which this version can't read, is left alone.
+  // One saved by a newer El Cantor, which this version can't read, is left alone. A part that came later (printed)
+  // missing from a whole copy means an El Cantor from before it saved the copy: unknown says which, and the merge
+  // takes that part as unchanged since this device's last sync, rather than as everything in it removed.
   function readDrive(text) {
     var o = null; try { o = JSON.parse(text); } catch (e) { }
-    var whole = !!o && typeof o === 'object' && !Array.isArray(o), damaged = !whole || o.v !== VERSION, out = { v: VERSION, gen: whole && typeof o.gen === 'string' ? o.gen : undefined, cols: {} };
+    var whole = !!o && typeof o === 'object' && !Array.isArray(o), damaged = !whole || o.v !== VERSION, out = { v: VERSION, gen: whole && typeof o.gen === 'string' ? o.gen : undefined, cols: {} }, unknown = {};
     if (whole && typeof o.v === 'number' && o.v > VERSION) return { newer: true };
     var cols = whole && o.cols && typeof o.cols === 'object' ? o.cols : {};
     NAMES.forEach(function (n) {
       var c = cols[n], col = out.cols[n] = { items: {}, order: [], gone: {} };
-      if (!c && COLS[n].later) return;
+      if (!c && COLS[n].later) { unknown[n] = true; return; }
       if (!c || typeof c !== 'object' || !c.items || typeof c.items !== 'object' || !Array.isArray(c.order) || !c.gone || typeof c.gone !== 'object') { damaged = true; return; }
       Object.keys(c.items).forEach(function (id) { var it = c.items[id]; if (it && typeof it.t === 'number' && COLS[n].ok(it.v)) col.items[id] = it; else damaged = true; });
       c.order.forEach(function (id) { if (col.items[id] && col.order.indexOf(id) < 0) col.order.push(id); });
       Object.keys(c.gone).forEach(function (id) { if (typeof c.gone[id] === 'number') col.gone[id] = c.gone[id]; });
     });
-    return { file: out, damaged: damaged };
+    return { file: out, damaged: damaged, unknown: unknown };
   }
   function newGen() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
 
@@ -302,7 +304,7 @@
     return findFile().then(still).then(function (f) {
       file = f; return f ? api('GET', 'drive/v3/files/' + f.id + '?alt=media', null, null, true) : null;
     }).then(still).then(function (text) {
-      var got = file ? readDrive(text) : { file: null, damaged: false }, remote = got.file;
+      var got = file ? readDrive(text) : { file: null, damaged: false, unknown: {} }, remote = got.file;
       if (got.newer) throw NEWER; // nothing read, nothing written over: the newer El Cantor saved it
       // The first sync on this device — or the Drive file is new, was deleted or was damaged — merges without a
       // shared history, so nothing on either side counts as removed. A damaged file is put right from this device
@@ -311,7 +313,7 @@
       var first = !base || !file || base.fileId !== file.id || got.damaged || (base.gen || '') !== (remote.gen || '');
       var M = { v: VERSION, gen: !file || got.damaged ? newGen() : remote.gen, at: Date.now(), cols: {} };
       if (first) samePeople(L, colOf(remote, 'people'));
-      NAMES.forEach(function (n) { M.cols[n] = mergeCol(COLS[n], L[n], colOf(remote, n), first ? null : colOf(base, n), seen[n] && seen[n].t || {}, first); });
+      NAMES.forEach(function (n) { M.cols[n] = mergeCol(COLS[n], L[n], colOf(got.unknown[n] && !first ? base : remote, n), first ? null : colOf(base, n), seen[n] && seen[n].t || {}, first); });
       var up = file && !got.damaged && eq(M.cols, remote.cols) ? Promise.resolve(file) : upload(file, M).then(still);
       return up.then(still).then(function (f2) {
         if (canon(readLocal()) !== Lc) throw RETRY; // changed here meanwhile: merge again
