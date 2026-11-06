@@ -1665,6 +1665,22 @@ check('cantor: I’m playing too: the caller’s tablas mark themselves, and a w
     assert.deepEqual(await english(page), [], 'English in I’m playing too');
     assert.deepEqual(problems, []);
   } finally { await ctx4.close(); }
+  // A small phone on its side, in Spanish, with a long game: the tabla button fits because the game shortens, not by
+  // running the game over El Cantor's name.
+  const ctx6 = await context({ ...PHONE, viewport: { width: 667, height: 375 } }, { locale: 'es-MX' });
+  try {
+    const page = await ctx6.newPage(), problems = watch(page);
+    const r = ROUND(3, { me: 'ana', meName: 'Ana' }); r['loteria.cantor'].patterns = ['linea', 'esquinas', 'cuadro', 'siete'];
+    await seed(page, r);
+    await page.goto(base + 'cantor.html');
+    await page.evaluate(() => document.fonts.ready);
+    const top = await page.evaluate(() => { const r = id => document.querySelector(id).getBoundingClientRect(); return { name: r('.top h1 .t').right, game: r('#patBtn').left, me: r('#meBtn').width, last: r('#setBtn').right, short: document.querySelector('#patBtn .gn').scrollWidth > document.querySelector('#patBtn .gn').clientWidth }; });
+    assert.ok(top.me > 0, 'no tabla button sideways');
+    assert.ok(top.name <= top.game + 1, `El Cantor runs to ${top.name}, under the game at ${top.game}`);
+    assert.ok(top.last <= 667, `the top bar runs to ${top.last}`);
+    assert.ok(top.short, 'the game didn’t shorten');
+    assert.deepEqual(problems, []);
+  } finally { await ctx6.close(); }
 });
 
 check('cantor: a ¡Buena! is the moment of the night: the winner’s name large, the tabla with its gold line, and cut paper falling, but none with less motion', async () => {

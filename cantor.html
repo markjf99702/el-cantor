@@ -85,6 +85,7 @@ a.chip{text-decoration:none}
 .chip.home svg{width:17px;height:17px}
 #patBtn{min-width:0;flex-shrink:1;gap:0} /* a long game shrinks, so the top bar keeps its buttons on a narrow phone */
 #patBtn .gn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;margin-right:.27em} /* the space before ▾ */
+.top h1{min-width:4.3em} /* El Cantor keeps its room, so the game shrinks rather than run over it (a phone on its side) */
 /* stage */
 .stage{flex:1;min-height:0;display:flex;gap:22px;padding:2px max(16px,var(--sar)) 10px max(16px,var(--sal))}
 .app.tall .stage{flex-direction:column;gap:12px}
@@ -390,7 +391,7 @@ a.chip{text-decoration:none}
   .cap .icons{display:flex}
 }
 @media (max-width:560px) and (max-height:780px){.vf .grid{max-width:170px}} /* a short phone keeps the verdict and the winner row on screen with the tabla */
-@media (max-width:440px){.stat{display:none}.top h1 .t{display:none}}
+@media (max-width:440px){.stat{display:none}.top h1 .t{display:none}.top h1{min-width:0}}
 @media (max-width:400px){.bar{padding:10px 10px 12px;gap:6px}.cbtn{width:42px;height:42px}.nextb{height:42px;padding:0 11px}.pacec{height:42px;padding:0 9px 0 7px;gap:3px}.playb{margin:0 3px}.lotb{font-size:18px;padding:0 11px;height:48px}}
 @media (max-width:340px){.pacec svg{display:none}.pacec{padding:0 10px}}
 /* On a touchscreen a small button takes a tap 44 px tall, past what it shows (WCAG 2.2 success criterion 2.5.5,
