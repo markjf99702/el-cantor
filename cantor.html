@@ -83,6 +83,8 @@ a{color:var(--teal);font-weight:700}
 .chip svg{width:15px;height:15px;flex:none}
 a.chip{text-decoration:none}
 .chip.home svg{width:17px;height:17px}
+#patBtn{min-width:0;flex-shrink:1;gap:0} /* a long game shrinks, so the top bar keeps its buttons on a narrow phone */
+#patBtn .gn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;margin-right:.27em} /* the space before ▾ */
 /* stage */
 .stage{flex:1;min-height:0;display:flex;gap:22px;padding:2px max(16px,var(--sar)) 10px max(16px,var(--sal))}
 .app.tall .stage{flex-direction:column;gap:12px}
@@ -174,6 +176,20 @@ a.chip{text-decoration:none}
 .sb .o{position:absolute;right:3%;top:2.5%;min-width:calc(var(--tw,48px)*.36);height:calc(var(--tw,48px)*.36);padding:0 3px;border-radius:999px;background:var(--ink);color:var(--bg);font:800 calc(var(--tw,48px)*.22)/calc(var(--tw,48px)*.36) var(--body);text-align:center;font-variant-numeric:tabular-nums}
 .sb.cur{outline:3px solid var(--gold);outline-offset:1px}
 .sb.cur .o{background:var(--gold);color:#2B221C}
+/* I'm playing too: the caller's own tablas from My tablas, marking themselves. On a laptop or tablet a strip under
+   the sábana; on a phone a sheet off the top bar. */
+.mine{flex:none;display:flex;flex-direction:column;gap:6px;padding-top:4px}
+.mine .sabhd>b{font:400 18px var(--disp)}
+.minerow{display:flex;gap:10px;justify-content:center;flex-wrap:nowrap}
+.mt{width:var(--mw,100px);flex:none;display:flex;flex-direction:column;gap:3px;min-width:0}
+.mt .mtl{font:800 10.5px var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+.mt.won .mtl{color:var(--ink)}
+.mt .grid{border-radius:6px}
+.mt .cell.hit::after{box-shadow:inset 0 0 0 2px var(--gold)}
+.minegrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px 12px}
+.minegrid .mt{width:auto}
+.minegrid .mt .mtl{font-size:11.5px}
+.app.compact .mine,.app.side .mine{display:none}
 /* control bar */
 .bar{flex:none;display:flex;align-items:center;gap:10px;padding:10px max(16px,var(--sar)) 12px max(16px,var(--sal));border-top:1px solid var(--line);background:var(--paper2)}
 .cbtn{flex:none;width:46px;height:46px;border-radius:50%;background:var(--paper);border:1px solid var(--line2);display:flex;align-items:center;justify-content:center;color:var(--ink2);padding:0}
@@ -394,6 +410,7 @@ a.chip{text-decoration:none}
     <button class="chip" id="patBtn" type="button">Clásico</button>
     <button class="chip lb" id="sabBtn" type="button" aria-label="Sábana" title="Sábana — every card, called or not" data-t-title="cantor.sabanaTitle"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 4h4v6H4zM10 4h4v6h-4zM16 4h4v6h-4zM4 14h4v6H4zM10 14h4v6h-4zM16 14h4v6h-4z"/></svg><span>Sábana</span></button>
     <button class="chip lb" id="printBtn" type="button" aria-label="Print tablas" title="Print tablas" data-t-aria="printTablas" data-t-title="printTablas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3h10v6M7 17H4v-7a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v7h-3"/><path d="M7 14h10v7H7z"/></svg><span data-t="printTablas">Print tablas</span></button>
+    <button class="chip ic" id="meBtn" type="button" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="4.5" y="3" width="15" height="18" rx="2"/><path d="M12 3v18M4.5 12h15"/><circle cx="8.25" cy="7.5" r="2" fill="currentColor" stroke="none"/></svg></button>
     <button class="chip ic" id="newBtn" type="button" aria-label="New round" title="New round" data-t-aria="newRound" data-t-title="newRound">↺</button>
     <button class="chip ic" id="setBtn" type="button" aria-label="Settings" title="Settings" data-t-aria="settings" data-t-title="settings">⋯</button>
   </div>
@@ -414,6 +431,7 @@ a.chip{text-decoration:none}
     <div class="sab" id="sab">
       <div class="sabhd"><b>Sábana</b><span class="gm" id="sabGame"></span><span id="sabCount"></span></div>
       <div class="sbgrid" id="sbgrid"></div>
+      <div class="mine" id="mine" hidden><div class="sabhd"><b id="mineH"></b></div><div class="minerow" id="mineRow"></div></div>
     </div>
   </div>
   <div class="bar">
@@ -451,7 +469,8 @@ a.chip{text-decoration:none}
   // The house rules: two, for two or more ¡Lotería!s on the same card, 'next' (the next card decides), 'share' or
   // 'first' (first to shout wins); late, for a ¡Lotería! called late, 'counts' or 'strict' (too late after the next card).
   // checkWith: the checker's way of the last check ('printed', 'cards' or 'ours'), so the next one opens on it.
-  function freshSettings() { return { speak: true, style: 'name', voice: '', rate: 1, pace: 'normal', sound: true, awake: true, check: false, two: 'next', late: 'counts', checkWith: '' }; }
+  // me: the person from My tablas on this device who calls and plays too ('' for nobody), meName their name then.
+  function freshSettings() { return { speak: true, style: 'name', voice: '', rate: 1, pace: 'normal', sound: true, awake: true, check: false, two: 'next', late: 'counts', checkWith: '', me: '', meName: '' }; }
   function freshPrint() { return { name: '', count: 12, per: 1, deck: false, paper: L.defaultPaper() }; }
   function fresh() { return { order: shuffled(), pos: 0, round: 1, patterns: L.CLASICO.slice(), juego: '', printed: {}, wins: [], tie: null, print: freshPrint(), settings: freshSettings() }; }
   var C = fresh();
@@ -718,7 +737,7 @@ a.chip{text-decoration:none}
     sayCard(card(cur()));
     renderBar();
   }
-  function afterCall() { R.phase = 'idle'; if (C.tie && tieCheck()) return; if (C.pos >= 54) { finish(); return; } if (R.playing) wait(); else renderBar(); }
+  function afterCall() { R.phase = 'idle'; if (C.tie && tieCheck()) return; if (!C.tie && mineCheck()) return; if (C.pos >= 54) { finish(); return; } if (R.playing) wait(); else renderBar(); }
   function wait() {
     clearTimeout(R.timer);
     R.phase = 'waiting'; R.waitMs = PACE[C.settings.pace] || 4000; R.waitStart = performance.now();
@@ -755,7 +774,7 @@ a.chip{text-decoration:none}
   function finish() { R.playing = false; R.phase = 'idle'; clearTimeout(R.timer); renderAll(); }
   function newRound() {
     hush(); pause(); R.phase = 'idle'; R.opening = false;
-    C.order = shuffled(); C.pos = 0; C.round = R.stale ? 1 : C.round + 1; R.stale = false; C.tie = null; R.co = null; R.slow = null; save(); renderTie();
+    C.order = shuffled(); C.pos = 0; C.round = R.stale ? 1 : C.round + 1; R.stale = false; C.tie = null; C.mine = null; R.co = null; R.slow = null; save(); renderTie();
     showCard(false, true); renderAll();
   }
   function newRoundAsk() {
@@ -777,7 +796,7 @@ a.chip{text-decoration:none}
     if (!R.down && !still && !reduced) { void inner.offsetWidth; inner.className = 'inner turn'; }
     renderCaption();
   }
-  function reveal() { R.down = false; var inner = $('inner'); inner.className = 'inner'; if (!reduced) { void inner.offsetWidth; inner.className = 'inner turn'; } renderCaption(); renderSabana(); }
+  function reveal() { R.down = false; var inner = $('inner'); inner.className = 'inner'; if (!reduced) { void inner.offsetWidth; inner.className = 'inner turn'; } renderCaption(); renderSabana(); renderMine(); }
   // A shape's little 4×4 diagram, as in the game picker: teal for its one way to win, gold for one of several ways.
   function miniHtml(p) { var show = p.show || p.sets[0]; return '<span class="mini" aria-hidden="true">' + ALL.map(function (i) { return '<i class="' + (show.indexOf(i) >= 0 ? (p.combo || p.min || (p.sets && p.sets.length > 1) ? 'q' : 'f') : '') + '"></i>'; }).join('') + '</span>'; }
   // The game being played, for the whole table to see: each shape's diagram (Clásico as one), and its name.
@@ -840,7 +859,7 @@ a.chip{text-decoration:none}
   function counts() { return T('cantor.calledN', { n: C.pos }) + ' · ' + T('cantor.leftN', { n: 54 - C.pos }); }
   function renderTop() {
     $('sub').textContent = T('cantor.sub', { r: C.round, n: C.pos });
-    $('patBtn').textContent = L.gameName(C.patterns) + ' ▾';
+    $('patBtn').innerHTML = '<span class="gn">' + esc(L.gameName(C.patterns)) + '</span> ▾';
     $('patBtn').classList.toggle('teal', C.patterns.length > 0);
     $('sabGame').innerHTML = gameHtml(T('cantor.playing'), false);
   }
@@ -880,7 +899,7 @@ a.chip{text-decoration:none}
       R.raf = requestAnimationFrame(step);
     })();
   }
-  function renderAll() { renderTop(); renderAntes(); renderSabana(); renderBar(); }
+  function renderAll() { renderTop(); renderAntes(); renderSabana(); renderBar(); renderMine(); }
 
   // ---------- full screen ----------
   // For a laptop or a TV at the head of the table: the browser's tabs and address bar go, Esc brings them back. Only
@@ -904,10 +923,12 @@ a.chip{text-decoration:none}
     var mode = W > H && H < 600 && W < 1000 ? 'side' : W >= 860 && W >= H * 1.1 ? 'wide' : (H >= 860 && W >= 600 ? 'tall' : 'compact');
     app.className = 'app ' + mode + (R.opening ? ' opening' : '');
     $('sabBtn').hidden = mode !== 'compact' && mode !== 'side';
+    var mine = !!me(); $('meBtn').hidden = !mine || (mode !== 'compact' && mode !== 'side'); $('mine').hidden = !mine || mode === 'compact' || mode === 'side'; // the caller's tablas: a sheet on a phone, a strip under the sábana
     if (mode === 'side') { var deal = document.querySelector('.deal'); deal.style.setProperty('--colw', Math.floor(Math.min(deal.clientHeight / 1.635, deal.clientWidth * 0.5, 440)) + 'px'); }
     if (mode === 'wide') app.style.setProperty('--sabw', Math.round(($('app').clientWidth - 32) * 0.5) + 'px');
-    if (mode === 'tall') app.style.setProperty('--sabh', Math.round(H * 0.34) + 'px');
-    if (mode !== 'compact') fitSabana($('sbgrid'), mode === 'wide' ? [6, 9] : [9, 11, 14, 18]);
+    if (mine) fitMine(mode);
+    if (mode === 'tall') app.style.setProperty('--sabh', Math.round(mine ? H * 0.28 + $('mine').offsetHeight + 8 : H * 0.34) + 'px'); // the caller's strip under a sábana a little shorter
+    if (mode !== 'compact') fitSabana($('sbgrid'), mode === 'wide' ? (mine ? [6, 9, 11] : [6, 9]) : [9, 11, 14, 18]);
     fitCard(); fitSheetSabana(); fitCap();
   }
   // A phone on its side short of room for Ready when you are, Start calling and the link: the line under Ready gives way.
@@ -978,13 +999,88 @@ a.chip{text-decoration:none}
     else old();
   }
 
+  // ---------- the caller plays too ----------
+  // I'm playing too (Settings): a person from My tablas on this device, whose tablas mark themselves as El Cantor
+  // calls. On a laptop or tablet they're a strip under the sábana; on a phone a sheet off the top bar. When one of
+  // them wins, once the card has been called, calling pauses and the checker opens on it (or the plain ¡Lotería! box,
+  // when ¡Lotería! is taken on their word), with their name in Who won?. A win already there when they joined, or
+  // looked at once, doesn't stop it again; during a tie-break only the tied can win.
+  function people() { try { var o = JSON.parse(localStorage.getItem('loteria.v1') || 'null'); return o && Array.isArray(o.players) ? o.players.filter(function (p) { return p && typeof p === 'object' && p.id; }) : []; } catch (e) { return []; } }
+  function me() {
+    var id = C.settings.me; if (!id) return null;
+    var all = people(), p = all.filter(function (x) { return x.id === id; })[0] || all.filter(function (x) { return nameKey(x.name) === nameKey(C.settings.meName) && nameKey(x.name); })[0]; // the same person, merged on another device
+    if (!p) return null;
+    var boards = (Array.isArray(p.boards) ? p.boards : []).filter(function (b) { return b && Array.isArray(b.cards) && b.cards.length === 16 && b.cards.every(realCard); }).map(function (b, i) { return { id: String(b.id || i), name: String(b.name || 'Tabla'), cards: b.cards.slice() }; });
+    return boards.length ? { id: p.id, name: String(p.name || '').trim() || T('cantor.unnamed'), boards: boards } : null;
+  }
+  // The cards called, but not one still face down in Adivinanza.
+  function shown(n) { return isOut(n) && !(R.down && n === cur()); }
+  function mineHtml(m) {
+    return m.boards.map(function (b) {
+      var hits = L.check(b.cards, shown, C.patterns), cells = {}; hits.forEach(function (h) { h.cells.forEach(function (c) { cells[c] = 1; }); });
+      return '<div class="mt' + (hits.length ? ' won' : '') + '"><div class="mtl">' + esc(b.name) + '</div>' + tablaHtml(b.cards, cells, {}, shown) + '</div>';
+    }).join('');
+  }
+  function renderMine() {
+    var m = me(), strip = !$('mine').hidden;
+    if (m && strip) { $('mineH').textContent = T('cantor.me.h', { who: m.name }); $('mineRow').innerHTML = mineHtml(m); }
+    if (m) { var b = $('meBtn'); b.setAttribute('aria-label', T('cantor.me.h', { who: m.name })); b.title = T('cantor.me.h', { who: m.name }); }
+    if (UI.mine && UI.mine.isConnected) { if (m) UI.mine.innerHTML = mineHtml(m); else closeSheet(); }
+  }
+  // The strip's tablas as big as its row allows, up to six side by side: a little under a sábana card's width each.
+  function fitMine(mode) {
+    var m = me(), n = m ? m.boards.length : 1, W = $('sab').clientWidth || $('app').clientWidth * 0.5;
+    $('mine').style.setProperty('--mw', Math.floor(Math.max(56, Math.min(mode === 'tall' ? 84 : 104, (W - (n - 1) * 10) / n))) + 'px');
+    renderMine();
+  }
+  function mineSheet() {
+    var m = me(); if (!m) return;
+    openSheet('<div class="hd"><h2>' + esc(T('cantor.me.h', { who: m.name })) + '</h2><span class="eyebrow">' + esc(L.gameName(C.patterns)) + '</span><button class="btn sec sm" type="button" id="msx">' + T('done') + '</button></div><div class="bd"><div class="minegrid" id="msGrid"></div></div>');
+    UI.mine = $('msGrid'); renderMine();
+    $('msx').addEventListener('click', closeSheet);
+  }
+  // The wins on the caller's tablas now: tabla:shape, each with its tabla.
+  function mineWins() {
+    var m = me(), out = {}; if (!m || !C.pos) return out;
+    m.boards.forEach(function (b) { L.check(b.cards, isOut, C.patterns).forEach(function (h) { out[b.id + ':' + h.pat.id] = b; }); });
+    return out;
+  }
+  // The round the wins looked at belong to: a win is seen once a round, and forgotten if its card is put back.
+  function mineRound() { return C.round + ':' + C.order.slice(0, 4).join('.'); }
+  function mineSeen(wins) { C.mine = { round: mineRound(), seen: Object.keys(wins) }; }
+  function mineCheck() {
+    var m = me(); if (!m) return false;
+    var wins = mineWins(), was = C.mine && C.mine.round === mineRound() && Array.isArray(C.mine.seen) ? C.mine.seen : [], fresh = null;
+    Object.keys(wins).forEach(function (k) { if (was.indexOf(k) < 0 && !fresh) fresh = wins[k]; });
+    mineSeen(wins); save();
+    if (!fresh) return false;
+    if (C.settings.check) verifySheet(R.playing, m.name, 'me:' + fresh.id); else claim(m.name);
+    return true;
+  }
+  // Settings' I'm playing too: nobody, or one of the people in My tablas on this device.
+  function meCard() {
+    var el = $('meCard'), all = people(), on = me();
+    el.innerHTML = '<div class="eyebrow">' + T('cantor.me.title') + '</div><p class="note" style="margin-top:6px">' + T('cantor.me.note') + '</p>' +
+      (all.length ? '<div class="chips" style="margin-top:8px"><button type="button" class="chip' + (on ? '' : ' on') + '" data-id="" aria-pressed="' + !on + '">' + T('off') + '</button>' + all.map(function (p) { var mine = !!on && on.id === p.id; return '<button type="button" class="chip' + (mine ? ' on' : '') + '" data-id="' + esc(p.id) + '" aria-pressed="' + mine + '">' + esc(String(p.name || '').trim() || T('cantor.unnamed')) + '</button>'; }).join('') + '</div>'
+        : '<p class="note" style="margin-top:6px">' + T.html('cantor.me.none_html') + '</p>');
+    el.querySelectorAll('.chip').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var p = all.filter(function (x) { return x.id === b.dataset.id; })[0];
+        C.settings.me = p ? p.id : ''; C.settings.meName = p ? String(p.name || '') : '';
+        mineSeen(mineWins()); // a win already on their tablas isn't news
+        save(); meCard(); layout();
+        if (p && !me()) toast(T('cantor.me.noTablas', { who: String(p.name || '') }), 5000);
+      });
+    });
+  }
+
   // ---------- sheets ----------
   // A sheet takes the focus when it opens: the sheet itself, not its first box, which would put a phone's keyboard up.
   // It gives the focus back to the button the keyboard opened it from when it closes. Not to one the mouse clicked:
   // Space there would press that button again instead of starting or pausing.
   function keyed(el) { try { return el.matches(':focus-visible'); } catch (x) { return false; } }
   function openSheet(html) { var s = $('sheet'); if (s.hidden) UI.opener = keyed(document.activeElement) ? document.activeElement : null; s.innerHTML = '<div class="sheetbg"><div class="sheet" role="dialog" aria-modal="true" tabindex="-1">' + html + '</div></div>'; s.hidden = false; s.querySelector('.sheetbg').addEventListener('click', function (e) { if (e.target === e.currentTarget) closeSheet(); }); UI.sheet = s.querySelector('.sheet'); UI.sheet.focus({ preventScroll: true }); return UI.sheet; }
-  function closeSheet() { var s = $('sheet'); if (s.hidden) return; s.hidden = true; s.innerHTML = ''; UI.sheet = null; UI.onVoices = null; UI.onFull = null; UI.onOurs = null; var o = UI.opener; UI.opener = null; if (o && o !== document.body && o.isConnected) o.focus({ preventScroll: true }); if (UI.onClose) { var f = UI.onClose; UI.onClose = null; f(); } }
+  function closeSheet() { var s = $('sheet'); if (s.hidden) return; s.hidden = true; s.innerHTML = ''; UI.sheet = null; UI.onVoices = null; UI.onFull = null; UI.onOurs = null; UI.mine = null; var o = UI.opener; UI.opener = null; if (o && o !== document.body && o.isConnected) o.focus({ preventScroll: true }); if (UI.onClose) { var f = UI.onClose; UI.onClose = null; f(); } }
 
   function patternSheet(title) {
     openSheet('<div class="hd"><h2>' + esc(title || T('whatPlaying')) + '</h2><button class="btn sec sm" type="button" id="ptx">' + T('done') + '</button></div><div class="bd stack"><p class="note">' + T.html('cantor.patsNote_html') + '</p><div class="pats" id="pats"></div></div>');
@@ -1000,7 +1096,7 @@ a.chip{text-decoration:none}
         function pick(add) {
           if (add) toast(L.holdShape(C.patterns, p.id)); // on top of the game, saying what it did
           else C.patterns = p.combo ? L.CLASICO.slice() : [p.id];
-          save(); draw(); renderTop(); if (!C.pos) renderCaption();
+          save(); draw(); renderTop(); renderMine(); if (!C.pos) renderCaption();
         }
         b.addEventListener('pointerdown', function () { clearTimeout(press.t); press.held = false; press.t = setTimeout(function () { press.held = true; pick(true); }, 550); });
         b.addEventListener('pointerup', function () { clearTimeout(press.t); if (press.held) press.held = false; else pick(false); });
@@ -1041,6 +1137,7 @@ a.chip{text-decoration:none}
       '<div class="card"><div class="eyebrow">' + T('cantor.styleH') + '</div><div class="styles" id="styles"></div></div>' +
       '<div class="card"><div class="eyebrow">' + T('cantor.paceGroup') + '</div><div class="row" style="margin-top:8px"><div class="seg" id="paceSeg">' + ['slow', 'normal', 'fast'].map(paceOpt).join('') + '</div></div><p class="note" style="margin-top:8px">' + T('cantor.paceNote') + '</p></div>' +
       '<div class="card"><div class="eyebrow">' + T('cantor.shoutH') + '</div><div class="row" style="margin-top:8px"><div class="seg" id="chkSeg"><button type="button" data-v="trust">' + T('cantor.trust') + '</button><button type="button" data-v="check">' + T('cantor.check') + '</button></div></div><p class="note" style="margin-top:8px" id="chkNote"></p></div>' +
+      '<div class="card" id="meCard"></div>' +
       '<div class="card" id="rulesCard"><div class="eyebrow">' + T('cantor.rulesH') + '</div><div class="rule"><b>' + T('cantor.twoH') + '</b><div class="styles" id="twoOpts"></div></div><div class="rule"><b>' + T('cantor.lateH') + '</b><div class="styles" id="lateOpts"></div></div></div>' +
       '<div class="card"><div class="row sp"><div><b>' + T('sounds') + '</b><p class="note">' + T('cantor.soundsNote') + '</p></div><button class="chip" type="button" id="sndBtn"></button></div></div>' +
       (fsOk() ? '<div class="card"><div class="row sp"><div><b>' + T('cantor.full') + '</b><p class="note">' + T('cantor.fullNote') + '</p></div><button class="chip" type="button" id="fsBtn"></button></div></div>' : '') +
@@ -1086,7 +1183,7 @@ a.chip{text-decoration:none}
       onOff($('awBtn'), st.awake);
       $('alongWhat').textContent = C.juego ? T('cantor.alongWhat', { game: L.gameName(C.patterns), juego: C.juego }) : T('cantor.alongWhatGame', { game: L.gameName(C.patterns) });
       if ($('fsBtn')) onOff($('fsBtn'), fsOn());
-      winsCard();
+      winsCard(); meCard();
     }
     function winsCard() {
       var el = $('winsCard'), w = C.wins;
@@ -1136,13 +1233,13 @@ a.chip{text-decoration:none}
     p.sets.forEach(function (s) { if (s.every(function (c) { return o[c]; })) { var w = Math.max.apply(null, s.map(function (c) { return o[c]; })); if (!best || w < best.when) best = { when: w, cells: s }; } });
     return best;
   }
-  function tablaHtml(t, hit, need) {
+  function tablaHtml(t, hit, need, called) {
     return '<div class="grid">' + t.map(function (n, i) {
-      var out = isOut(n);
+      var out = (called || isOut)(n);
       return '<div class="cell' + (out ? ' marked' : '') + (hit[i] ? ' hit' : '') + (need[i] ? ' need' : '') + '"><img src="' + src(n) + '" alt="' + esc(out ? T('calledAria', { card: card(n).name }) : card(n).name) + '" draggable="false">' + (out ? '<div class="mk" style="--rot:' + (((i * 53) % 70) - 35) + 'deg">' + BEAN + '</div>' : '') + '</div>';
     }).join('') + '</div>';
   }
-  // Our tablas, for the checker: Mark's four, and every full tabla in Make tablas on this device, those Google Drive
+  // Our tablas, for the checker: the caller's own when they play too, Mark's four, and every full tabla in Make tablas on this device, those Google Drive
   // brought from another device too; each once, the first time its cards come. key: where it's from and which it is;
   // name: under its picture; full: its name with whose it is, for the verdict and the tally.
   function realCard(n) { return n === (n | 0) && n >= 1 && n <= 54; }
@@ -1154,6 +1251,7 @@ a.chip{text-decoration:none}
         out.push({ key: group + ':' + t.id, group: group, head: head, name: t.name, full: whose ? T('cantor.ours.whose', { who: whose, tabla: t.name }) : t.name, cards: t.cards });
       });
     }
+    var m = me(); if (m) add('me', T('cantor.me.h', { who: m.name }), m.boards, m.name);
     add('m', T('print.marks'), L.originals().map(function (c, i) { return { id: i + 1, name: 'Tabla ' + (i + 1), cards: c }; }), 'Mark');
     var made = []; try { var o = JSON.parse(localStorage.getItem('loteria.print') || 'null'); if (o && Array.isArray(o.tablas)) made = o.tablas; } catch (e) { }
     add('p', T('tool.print'), made.filter(function (t, i) { return t && Array.isArray(t.cards) && t.cards.length === 16 && t.cards.every(realCard); }).map(function (t, i) { return { id: t.id || i, name: String(t.name || 'Tabla'), cards: t.cards.slice() }; }));
@@ -1210,7 +1308,7 @@ a.chip{text-decoration:none}
   function shuffleNext() { newRound(); patternSheet(T('cantor.roundWhat', { r: C.round })); }
 
   // Take their word: straight to the celebration, with the winner's name and the next round.
-  function claim() { var was = R.playing; stopCalling(); cheer(); claimBox(was, ''); throwConfetti(); }
+  function claim(who) { var was = R.playing; stopCalling(); cheer(); claimBox(was, typeof who === 'string' ? who : ''); throwConfetti(); }
   function throwConfetti() { var bg = document.querySelector('#winbox .winbg'); if (bg) L.confetti(bg); }
   function claimBox(was, typed) {
     var box = $('winbox'), r = C.round, list = co(), more = rule2() !== 'first';
@@ -1240,10 +1338,11 @@ a.chip{text-decoration:none}
     $('clNew').focus();
   }
   function cheer() { if (UI.cheered === C.round) return; UI.cheered = C.round; fanfare(); if (voiceOn()) say([{ clip: 'loteria', text: '¡Lotería!' }], null); }
-  function verifySheet(resume, who) {
+  // pick: one of Our tablas to open on (its key), the caller's own when it won as they played too.
+  function verifySheet(resume, who, pick) {
     var was = arguments.length ? resume : R.playing; stopCalling();
     // It opens the way the last check went, or on Printed tabla once a juego has been printed or checked.
-    var last = C.settings.checkWith, V = { mode: ['printed', 'cards', 'ours'].indexOf(last) >= 0 ? last : C.juego ? 'printed' : 'cards', picked: [], how: '', tabla: '', cards: null, q: '', oq: '', sel: '' };
+    var last = C.settings.checkWith, V = { mode: pick ? 'ours' : ['printed', 'cards', 'ours'].indexOf(last) >= 0 ? last : C.juego ? 'printed' : 'cards', picked: [], how: '', tabla: '', cards: null, q: '', oq: '', sel: pick || '' };
     openSheet('<div class="hd wrap"><h2>' + T('cantor.checkIt') + '</h2><button class="btn sec sm" type="button" id="vfx">' + T('cantor.keepCalling') + '</button></div><div class="bd stack">' +
       (co().length ? '<p class="note conote">' + esc(T('cantor.coCheck', { list: names(co()) })) + '</p>' : '') +
       '<div class="row sp vfhd"><div class="seg" id="vfSeg"><button type="button" data-v="printed">' + T('cantor.printedTabla') + '</button><button type="button" data-v="cards">' + T('cantor.cardByCard') + '</button><button type="button" data-v="ours">' + T('cantor.ours') + '</button></div><span class="note">' + esc(L.gameName(C.patterns)) + ' · ' + T('cantor.cardsCalled', { n: C.pos }) + '</span></div>' +
@@ -1273,6 +1372,7 @@ a.chip{text-decoration:none}
         $('vfOQ').addEventListener('input', function () { V.oq = this.value; oursList(); });
         $('vfOQ').addEventListener('keydown', function (e) { if (e.key !== 'Enter') return; e.preventDefault(); var all = $('vfOurs').querySelectorAll('.ot'); if (all.length === 1) all[0].click(); else this.blur(); });
         oursList(); ours();
+        if (V.sel) inView(true);
         UI.onOurs = function () { oursList(); ours(); }; // Make tablas' tablas from Google Drive, landing meanwhile
       } else {
         $('vfBody').innerHTML = '<div class="stack"><div class="verdict" id="vfV"></div><div class="chips" id="vfChips"></div><input id="vfQ" type="search" enterkeyhint="search" placeholder="' + T('cantor.findCard') + '" autocomplete="off"><div class="pick" id="vfPick"></div></div>';
@@ -1784,6 +1884,7 @@ a.chip{text-decoration:none}
   if (window.LoteriaSync) LoteriaSync.onWait(function () { toast(T('cantor.syncWait'), 6000); });
   if (window.LoteriaSync) LoteriaSync.onUpdate(function (keys) { // winners, the juego and what was printed, from another device
     if (keys.indexOf('loteria.print') >= 0 && UI.onOurs) UI.onOurs(); // and Make tablas' tablas, for Our tablas
+    if (keys.indexOf('loteria.v1') >= 0 && C.settings.me) layout(); // and the caller's own, when they play too
     if (keys.indexOf(LS) < 0) return;
     try { var o = JSON.parse(localStorage.getItem(LS)); if (o) { if (Array.isArray(o.wins)) C.wins = goodWins(o.wins); if (typeof o.juego === 'string') C.juego = o.juego; C.printed = goodPrinted(o.printed); } } catch (e) { }
   });
@@ -1803,7 +1904,7 @@ a.chip{text-decoration:none}
     }
     renderTie(); renderCaption(); renderAll();
   }
-  window.addEventListener('storage', function (e) { if (e.key === LS && e.newValue) follow(e.newValue); });
+  window.addEventListener('storage', function (e) { if (e.key === LS && e.newValue) follow(e.newValue); else if (e.key === 'loteria.v1' && C.settings.me) layout(); }); // the caller's tablas changed in My tablas
   window.addEventListener('pageshow', function (e) { if (e.persisted) try { follow(localStorage.getItem(LS)); } catch (x) { } }); // back from the browser's history, which missed the saves made meanwhile
 
   // ---------- wiring ----------
@@ -1820,6 +1921,7 @@ a.chip{text-decoration:none}
   $('lotBtn').addEventListener('click', shout);
   $('patBtn').addEventListener('click', function () { patternSheet(); });
   $('sabBtn').addEventListener('click', sabanaSheet);
+  $('meBtn').addEventListener('click', mineSheet);
   $('printBtn').addEventListener('click', printSheet);
   $('newBtn').addEventListener('click', newRoundAsk);
   $('setBtn').addEventListener('click', settingsSheet);

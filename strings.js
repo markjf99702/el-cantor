@@ -221,6 +221,11 @@
       'cantor.alongWhatGame': 'The link opens My tablas on each phone playing {game}.',
       'cantor.alongText': 'Play along on your phone: {game}, juego {juego}', // sent with the link from the share sheet
       'cantor.alongTextGame': 'Play along on your phone: {game}',
+      'cantor.me.title': 'I’m playing too', // Settings: whoever calls plays their own tablas from My tablas on this device
+      'cantor.me.note': 'Pick yourself from My tablas on this device: your tablas mark themselves as the cards are called, and El Cantor stops to check a ¡Lotería! on one.',
+      'cantor.me.none_html': 'Nobody has tablas in <a href="board.html">My tablas</a> on this device yet.',
+      'cantor.me.noTablas': '{who} has no tablas in My tablas yet.',
+      'cantor.me.h': '{who}’s tablas',
       'cantor.keyboardH': 'Keyboard',
       'cantor.keyboard': 'Space starts or pauses · →\u00a0next card · ←\u00a0puts the last card back · R\u00a0says the card again (or tap its name) · L\u00a0checks a ¡Lotería! · F\u00a0full\u00a0screen',
       'cantor.full': 'Full screen',
@@ -780,6 +785,11 @@
       'cantor.alongWhatGame': 'La liga abre Mis tablas en cada teléfono jugando a {game}.',
       'cantor.alongText': 'Juega desde tu teléfono: {game}, juego {juego}',
       'cantor.alongTextGame': 'Juega desde tu teléfono: {game}',
+      'cantor.me.title': 'Yo también juego',
+      'cantor.me.note': 'Escógete de Mis tablas en este dispositivo: tus tablas se marcan solas según salen las cartas, y El Cantor se detiene a revisar una ¡Lotería! en una de ellas.',
+      'cantor.me.none_html': 'Todavía nadie tiene tablas en <a href="board.html">Mis tablas</a> en este dispositivo.',
+      'cantor.me.noTablas': '{who} todavía no tiene tablas en Mis tablas.',
+      'cantor.me.h': 'Las tablas de {who}',
       'cantor.keyboardH': 'Teclado',
       'cantor.keyboard': 'Espacio empieza o pausa · →\u00a0siguiente carta · ←\u00a0regresa la última carta · R\u00a0la vuelve a cantar (o toca su nombre) · L\u00a0revisa una ¡Lotería! · F\u00a0pantalla\u00a0completa',
       'cantor.full': 'Pantalla completa',

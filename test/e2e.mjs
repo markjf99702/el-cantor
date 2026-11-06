@@ -1553,6 +1553,106 @@ check('cantor: Our tablas checks Mark’s four and Make tablas’ own in one tap
   } finally { await ctx.close(); }
 });
 
+check('cantor: I’m playing too: the caller’s tablas mark themselves, and a win stops calling for the checker on it, or the plain box', async () => {
+  // Ana's Tabla 1 has El Gallo, El Diablito, La Dama and El Catrín across its top row; the round is cards 1, 2, 3, …
+  const PEOPLE = { players: [{ id: 'ana', name: 'Ana', boards: [{ id: 't1', name: 'Tabla 1', cards: [1, 2, 3, 4, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41] }, { id: 't2', name: 'Tabla 2', cards: run(17) }] }, { id: 'beto', name: 'Beto', boards: [{ id: 'b1', name: 'Tabla 1', cards: run(20) }] }], current: 'ana', patterns: ['linea', 'esquinas', 'cuadro'], settings: {} };
+  const ROUND = (pos, settings) => ({ 'loteria.v1': PEOPLE, 'loteria.cantor': { order: run(1, 54), pos, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], juego: '', wins: [], settings: { speak: false, sound: false, ...settings } } });
+  const beans = (page, sel) => page.$$eval(sel + ' .mt', ts => ts.map(t => t.querySelectorAll('.mk').length));
+  // A laptop, checking: Settings picks Ana, and her tablas sit under the sábana, marked.
+  const ctx = await context(DESKTOP);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await seed(page, ROUND(3, { check: true }));
+    await page.goto(base + 'cantor.html');
+    assert.ok(await page.isHidden('#mine'), 'a strip with nobody playing');
+    await page.click('#setBtn');
+    assert.deepEqual(await page.$$eval('#meCard .chip', bs => bs.map(b => b.textContent + (b.classList.contains('on') ? ' (on)' : ''))), ['Off (on)', 'Ana', 'Beto']);
+    await page.locator('#meCard .chip', { hasText: 'Ana' }).click();
+    assert.equal(await page.getAttribute('#meCard .chip.on', 'aria-pressed'), 'true');
+    await page.click('#stx');
+    assert.ok(await page.isVisible('#mine'));
+    assert.equal(await page.textContent('#mineH'), 'Ana’s tablas');
+    assert.deepEqual(await beans(page, '#mineRow'), [3, 0]);
+    assert.ok(await page.isHidden('#meBtn'), 'a laptop has the strip, not the button');
+    // El Catrín finishes Tabla 1's top row: once it's called, calling stops and the checker opens on that tabla.
+    await page.click('#playBtn');
+    await until(page, () => !document.getElementById('sheet').hidden && !!document.querySelector('#vfV h3'));
+    assert.equal(await sheetTitle(page), '¡Lotería! — check it');
+    assert.deepEqual([await page.textContent('#vfSeg .on'), await page.getAttribute('#vfOurs .ot.on', 'aria-label'), await page.textContent('#vfV h3'), await page.inputValue('#vfWho')], ['Our tablas', 'Ana’s Tabla 1', '¡Buena! Línea', 'Ana']);
+    assert.equal(await page.evaluate(() => JSON.parse(localStorage.getItem('loteria.cantor')).pos), 4, 'calling went on past the win');
+    assert.deepEqual(await beans(page, '#mineRow'), [4, 0]);
+    assert.equal(await page.$$eval('#mineRow .mt:first-child .cell.hit', cs => cs.length), 4, 'the winning line isn’t gold in the strip');
+    // Keep calling: calling goes on, and the same win doesn't stop it again.
+    await page.click('#vfx');
+    await until(page, () => JSON.parse(localStorage.getItem('loteria.cantor')).pos >= 6, null, 30000);
+    assert.ok(await page.evaluate(() => document.getElementById('sheet').hidden), 'the win stopped calling a second time');
+    await page.click('#playBtn'); // pause
+    // Its name goes into the tally from the checker, when it's counted.
+    await page.click('#lotBtn');
+    await page.click('#vfSeg [data-v="ours"]');
+    await page.click('#vfOurs .ot[aria-label="Ana’s Tabla 1"]');
+    await page.fill('#vfWho', 'Ana');
+    await page.click('#vfWin');
+    await page.waitForSelector('#winbox .winc #celOk');
+    assert.deepEqual((await saved(page, 'loteria.cantor')).wins.map(w => [w.who, w.tabla]), [['Ana', 'Ana’s Tabla 1']]);
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+  // A phone, taking their word: a button at the top opens her tablas; a win brings up the plain box with her name.
+  const ctx2 = await context(PHONE);
+  try {
+    const page = await ctx2.newPage(), problems = watch(page);
+    await seed(page, ROUND(3, { check: false, me: 'ana', meName: 'Ana' }));
+    await page.goto(base + 'cantor.html');
+    assert.ok(await page.isVisible('#meBtn'));
+    assert.equal(await page.getAttribute('#meBtn', 'aria-label'), 'Ana’s tablas');
+    await page.click('#meBtn');
+    assert.equal(await sheetTitle(page), 'Ana’s tablas');
+    assert.deepEqual(await beans(page, '#msGrid'), [3, 0]);
+    await noSideways(page, 'the caller’s tablas');
+    await page.click('#msx');
+    await page.click('#nextBtn');
+    await page.waitForSelector('#winbox .winc #clWho');
+    assert.equal(await page.inputValue('#clWho'), 'Ana');
+    assert.deepEqual(problems, []);
+  } finally { await ctx2.close(); }
+  // A win already on her tablas when she joins isn't news; and in Adivinanza the card face down isn't marked until
+  // it turns over.
+  const ctx3 = await context(DESKTOP);
+  try {
+    const page = await ctx3.newPage(), problems = watch(page);
+    await seed(page, ROUND(4, { check: false }));
+    await page.goto(base + 'cantor.html');
+    await page.click('#setBtn');
+    await page.locator('#meCard .chip', { hasText: 'Ana' }).click();
+    await page.click('#stx');
+    await page.click('#nextBtn');
+    await until(page, () => document.getElementById('stat').textContent === 'Paused');
+    assert.ok(await page.evaluate(() => document.getElementById('winbox').hidden), 'a win from before she joined stopped calling');
+    await seed(page, ROUND(3, { check: false, me: 'ana', meName: 'Ana', style: 'riddle' }));
+    await page.goto(base + 'cantor.html');
+    await page.click('#nextBtn');
+    assert.deepEqual(await beans(page, '#mineRow'), [3, 0], 'the card face down is marked');
+    await page.waitForSelector('#winbox .winc #clWho', { timeout: 20000 });
+    assert.deepEqual(await beans(page, '#mineRow'), [4, 0]);
+    assert.deepEqual(problems, []);
+  } finally { await ctx3.close(); }
+  // In Spanish.
+  const ctx4 = await context(PHONE, { locale: 'es-MX' });
+  try {
+    const page = await ctx4.newPage(), problems = watch(page);
+    await seed(page, ROUND(3, { me: 'ana', meName: 'Ana' }));
+    await page.goto(base + 'cantor.html');
+    await page.click('#meBtn');
+    assert.equal(await sheetTitle(page), 'Las tablas de Ana');
+    assert.deepEqual(await english(page), [], 'English in the caller’s tablas');
+    await page.click('#msx');
+    await page.click('#setBtn');
+    assert.equal(await page.textContent('#meCard .eyebrow'), 'Yo también juego');
+    assert.deepEqual(await english(page), [], 'English in I’m playing too');
+    assert.deepEqual(problems, []);
+  } finally { await ctx4.close(); }
+});
+
 check('cantor: a ¡Buena! is the moment of the night: the winner’s name large, the tabla with its gold line, and cut paper falling, but none with less motion', async () => {
   const CANELA7 = [21, 51, 23, 6, 16, 33, 8, 4, 14, 20, 9, 40, 29, 41, 13, 25];
   const box = page => page.evaluate(() => {
