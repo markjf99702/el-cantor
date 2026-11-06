@@ -319,7 +319,7 @@
         return changed;
       });
     }).catch(function (e) {
-      if (e === RETRY && tries < 4) return run(tries + 1);
+      if (e === RETRY && tries < 4) { still(); return run(tries + 1); } // unless Stop was tapped meanwhile: a fresh try would sync after all
       throw e;
     });
   }

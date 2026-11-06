@@ -2871,6 +2871,36 @@ check('drive: Stop saving during a sync leaves nothing of it behind, and turning
   } finally { await ctx.close(); }
 });
 
+check('drive: Stop saving while another device’s save sends a sync back to start leaves nothing of it behind either', async () => {
+  const g = fakeGoogle();
+  const A = await driveDevice(g, { 'loteria.v1': ANA });
+  const { page, ctx } = A, file = () => g.files().filter(f => (f.appProperties || {}).loteria === 'sync')[0];
+  try {
+    await page.goto(base + 'board.html'); await synced(page);
+    // A rename goes to Drive. Drive holds its answer to the write's version check until Stop has been tapped twice,
+    // and meanwhile another device saves, so the sync would go back to the start and merge again.
+    let answer; const held = new Promise(r => { answer = r; });
+    await ctx.route('https://www.googleapis.com/drive/v3/files/*', async route => { if (route.request().url().includes('fields=version')) await held; await route.fallback(); });
+    const asked = page.waitForRequest(r => r.url().includes('fields=version'));
+    await page.click('#tablasBtn');
+    await page.locator('#edb input').first().fill('Renamed');
+    await page.locator('#edb input').first().dispatchEvent('change');
+    await page.click('#tbx');
+    await asked;
+    g.drive.files[file().id].version++;
+    await page.click('#setBtn');
+    await page.click('#syncCard [data-a="off"]'); await page.click('#syncCard [data-a="off"]');
+    const done = page.waitForResponse(r => r.url().includes('fields=version'));
+    answer(); await done;
+    await page.waitForTimeout(1500); // what that sync would have done next
+    assert.deepEqual(await saved(page, 'loteria.sync'), { on: false, email: '', name: '', last: 0, pick: true }, 'the sync went on after Stop');
+    assert.equal(await saved(page, 'loteria.sync.base'), null, 'the Drive copy as last synced came back');
+    assert.equal(await saved(page, 'loteria.sync.seen'), null, 'what this device last synced came back');
+    assert.ok(!Object.values(JSON.parse(file().body).cols.boards.items).some(i => i.v.name === 'Renamed'), 'the rename went to Drive after Stop');
+    assert.deepEqual(A.problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('drive: a shared link on a new phone that saves to Drive asks again once the Drive tablas land', async () => {
   const g = fakeGoogle();
   const A = await driveDevice(g, { 'loteria.v1': ANA });
