@@ -1,6 +1,6 @@
 /* Saving to Google Drive, so tablas follow a person from device to device.
    Every page keeps working from localStorage exactly as before. When someone turns this on,
-   the parts worth keeping — My tablas, Make tablas, El Cantor's winners and juego — are copied
+   the parts worth keeping — My tablas, Make tablas, El Cantor's winners and juegos — are copied
    into one small file in a "Lotería" folder in their own Google Drive, and what their other
    devices saved there is merged back in.
    Merging is three-way and item by item (a person, a tabla, a win): what this device changed
@@ -110,6 +110,17 @@
       write: function (o, c) { o = o || {}; o.juego = c.items.juego ? c.items.juego.name : ''; return o; },
       ok: function (v) { return !!v && typeof v.name === 'string'; },
       firstRemote: true // a device joining keeps the family's juego rather than its own
+    },
+    printed: { // how many tablas El Cantor printed of each juego, so its checker knows a number past them is misheard
+      key: 'loteria.cantor',
+      read: function (o) {
+        var items = {}, order = [], p = o && o.printed && typeof o.printed === 'object' ? o.printed : {};
+        Object.keys(p).forEach(function (name) { var n = p[name]; if (n === (n | 0) && n > 0) { items['j:' + name] = { name: name, count: n }; order.push('j:' + name); } });
+        return { items: items, order: order };
+      },
+      write: function (o, c) { o = o || {}; o.printed = {}; c.order.forEach(function (id) { o.printed[c.items[id].name] = c.items[id].count; }); return o; },
+      ok: function (v) { return !!v && typeof v.name === 'string' && v.count === (v.count | 0) && v.count > 0; },
+      later: true // came after the Drive file's first shape: a copy saved without it isn't damaged
     }
   };
   var NAMES = Object.keys(COLS), KEYS = NAMES.map(function (n) { return COLS[n].key; }).filter(function (k, i, a) { return a.indexOf(k) === i; });
@@ -199,6 +210,7 @@
     var cols = whole && o.cols && typeof o.cols === 'object' ? o.cols : {};
     NAMES.forEach(function (n) {
       var c = cols[n], col = out.cols[n] = { items: {}, order: [], gone: {} };
+      if (!c && COLS[n].later) return;
       if (!c || typeof c !== 'object' || !c.items || typeof c.items !== 'object' || !Array.isArray(c.order) || !c.gone || typeof c.gone !== 'object') { damaged = true; return; }
       Object.keys(c.items).forEach(function (id) { var it = c.items[id]; if (it && typeof it.t === 'number' && COLS[n].ok(it.v)) col.items[id] = it; else damaged = true; });
       c.order.forEach(function (id) { if (col.items[id] && col.order.indexOf(id) < 0) col.order.push(id); });

@@ -1057,6 +1057,29 @@ check('cantor: the juego of a tabla checked once is ready at the next ¡Lotería
   } finally { await ctx.close(); }
 });
 
+check('cantor: the checker says to check a number past the tablas printed of a juego, in English and in Spanish', async () => {
+  for (const [lang, says] of [['en', 'CANELA was printed with 12 tablas — check the number'], ['es', 'CANELA se imprimió con 12 tablas — revisa el número']]) {
+    const ctx = await context(PHONE);
+    try {
+      const page = await ctx.newPage(), problems = watch(page);
+      await seed(page, { 'loteria.lang': lang, 'loteria.cantor': { order: run(1, 54), pos: 6, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], juego: 'CANELA', printed: { CANELA: 12, DULCE: 'mucho' }, wins: [], settings: { speak: false, sound: false, check: true } } });
+      await page.goto(base + 'cantor.html');
+      await page.click('#lotBtn');
+      const warn = () => page.$$eval('#vfV .vfwarn', ps => ps.map(p => p.textContent));
+      await page.fill('#vfN', '12'); // dieciséis, heard right
+      assert.deepEqual(await warn(), [], lang + ': the last tabla printed got the line');
+      await page.fill('#vfN', '60'); // dieciséis, heard as sesenta
+      assert.deepEqual(await warn(), [says], lang + ': tabla 60 of 12');
+      assert.match(await page.textContent('#vfV h3'), lang === 'en' ? /^Not yet$/ : /^Todavía no$/);
+      assert.ok(await page.$eval('#vfV .vfwarn', el => { const r = el.getBoundingClientRect(); return r.bottom <= document.querySelector('.vfwin').getBoundingClientRect().top; }), lang + ': the winner row covers the line');
+      await page.fill('#vfJ', 'DULCE'); // a juego with no count to go by (here a damaged one) says nothing
+      assert.deepEqual(await warn(), [], lang + ': a juego with no count said how many');
+      await noSideways(page, 'the checker with the line');
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
+});
+
 check('cantor: a winner’s name goes from the ¡Lotería! box to the checker, and the tally counts a name once, whatever its capitals', async () => {
   const ctx = await context(PHONE);
   try {
@@ -1200,6 +1223,7 @@ check('cantor: Print tablas makes the PDF it says, with CANELA 7 square for squa
     await page.click('#prPer [data-v="2"]'); await page.click('#prPaper [data-v="a4"]');
     [dl] = await Promise.all([page.waitForEvent('download'), page.click('#prGo')]);
     assert.equal(dl.suggestedFilename(), 'loteria-canela-3.pdf');
+    assert.deepEqual((await saved(page, 'loteria.cantor')).printed, { CANELA: 12 }, 'three printed after twelve forgot the twelve');
     pdf = await readPdf(await dl.path());
     assert.deepEqual(pdf.sizes, ['841.89x595.28', '841.89x595.28']);
     assert.deepEqual(pdf.cards, [L.juego('CANELA', 3)[0].concat(L.juego('CANELA', 3)[1]), plain(L.juego('CANELA', 3)[2])].map(plain));
@@ -3203,6 +3227,21 @@ check('drive: El Cantor, with no ☁ button, says a winner saved after Google’
       await page.click('#syncCard [data-a="now"]'); // signs in again (here with no Google window) and syncs
       await until(page, () => Object.keys(JSON.parse(localStorage.getItem('loteria.sync.base')).cols.wins.items).length === 1, null, 15000);
       assert.deepEqual(Object.values(wins()).map(w => w.v.who), ['Abuela']);
+      if (lang === 'en') { // how many tablas a juego was printed with goes with the winners, and a copy saved before it had them is whole
+        await page.evaluate(() => { const o = JSON.parse(localStorage.getItem('loteria.cantor')); o.printed = { CANELA: 12 }; localStorage.setItem('loteria.cantor', JSON.stringify(o)); });
+        const t = (await saved(page, 'loteria.sync')).last;
+        await page.evaluate(() => LoteriaSync.now()); await synced(page, t);
+        const file = () => JSON.parse(g.files().filter(f => (f.appProperties || {}).loteria === 'sync')[0].body);
+        assert.deepEqual(Object.values(file().cols.printed.items).map(i => i.v), [{ name: 'CANELA', count: 12 }]);
+        const before = file(); delete before.cols.printed;
+        assert.equal(await page.evaluate(b => LoteriaSync._read(b).damaged, JSON.stringify(before)), false, 'a copy saved before the printed counts reads as damaged');
+        const B = await driveDevice(g, {});
+        try {
+          await B.page.goto(base + 'cantor.html'); await synced(B.page);
+          assert.deepEqual((await saved(B.page, 'loteria.cantor')).printed, { CANELA: 12 }, 'the count didn’t reach another device');
+          assert.deepEqual(B.problems, []);
+        } finally { await B.ctx.close(); }
+      }
       await page.click('#syncCard [data-a="off"]'); await page.click('#syncCard [data-a="off"]');
       assert.match(await note(), SAYS.off, lang + ': the card that turns it on speaks of tablas El Cantor doesn’t save');
       assert.deepEqual(A.problems, []);

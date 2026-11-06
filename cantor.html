@@ -206,6 +206,7 @@ a.chip{text-decoration:none}
 .verdict.ok h3{color:var(--green)}
 .verdict.no h3{color:var(--red)}
 .verdict p{margin:5px 0 0;color:var(--ink2)}
+.verdict p.vfwarn{color:var(--ink);font-weight:800}
 /* the winner row: kept at the bottom of the checker, in front of Card by card's 54 cards. It covers the sheet's own
    18px at the bottom, so at the end the last row of cards scrolls clear of it. */
 .vfwin{position:sticky;bottom:-18px;z-index:6;background:var(--bg);margin:0 -16px -18px;padding:4px 16px 18px}
@@ -346,9 +347,11 @@ a.chip{text-decoration:none}
   function defaultPaper() { var ls = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || 'en-US']; return /-(US|CA|MX|PH|CL|CO|VE|CR|GT|SV|HN|NI|PA|PR|DO)$/i.test(ls[0]) || /^(en|es|es-419)$/i.test(ls[0]) ? 'letter' : 'a4'; }
   function freshSettings() { return { speak: true, style: 'name', voice: '', rate: 1, pace: 'normal', sound: true, awake: true, check: false }; }
   function freshPrint() { return { name: '', count: 12, per: 1, deck: false, paper: defaultPaper() }; }
-  function fresh() { return { order: shuffled(), pos: 0, round: 1, patterns: L.CLASICO.slice(), juego: '', wins: [], print: freshPrint(), settings: freshSettings() }; }
+  function fresh() { return { order: shuffled(), pos: 0, round: 1, patterns: L.CLASICO.slice(), juego: '', printed: {}, wins: [], print: freshPrint(), settings: freshSettings() }; }
   var C = fresh();
   function goodWins(w) { return Array.isArray(w) ? w.filter(function (x) { return x && typeof x === 'object'; }) : []; } // a damaged save may hold nulls
+  // How many tablas El Cantor printed of each juego, {CANELA: 12}, so the checker can say a number past them is misheard.
+  function goodPrinted(p) { var out = {}; if (p && typeof p === 'object' && !Array.isArray(p)) Object.keys(p).forEach(function (k) { var n = p[k]; if (n === (n | 0) && n > 0) out[k] = n; }); return out; }
   function wholeDeck(o) { return o && Array.isArray(o.order) && o.order.length === 54 && o.order.slice().sort(function (a, b) { return a - b; }).every(function (n, i) { return n === i + 1; }); }
   // Takes in a save: this device's when the page opens, or one another El Cantor window made since. The settings
   // and print objects stay the same objects, because an open sheet holds on to them.
@@ -361,6 +364,7 @@ a.chip{text-decoration:none}
     C.round = Math.max(1, o.round | 0);
     if (!Array.isArray(C.patterns) || !C.patterns.length) C.patterns = L.CLASICO.slice();
     C.wins = goodWins(C.wins);
+    C.printed = goodPrinted(C.printed);
     if (typeof C.juego !== 'string') C.juego = '';
   }
   try {
@@ -368,9 +372,10 @@ a.chip{text-decoration:none}
     if (wholeDeck(o)) {
       take(o);
       if (o.settings && !('check' in o.settings)) { C.settings.style = 'name'; C.settings.check = false; save(); } // saved before Name only became the default
-    } else if (o) { // only what Google Drive brought over from another device: the winners and the juego
+    } else if (o) { // only what Google Drive brought over from another device: the winners, the juego and what was printed
       C.wins = goodWins(o.wins);
       if (typeof o.juego === 'string') C.juego = o.juego;
+      C.printed = goodPrinted(o.printed);
     }
   } catch (e) { }
   function save() { try { localStorage.setItem(LS, JSON.stringify(C)); } catch (e) { } if (window.LoteriaSync) LoteriaSync.changed(); }
@@ -950,6 +955,8 @@ a.chip{text-decoration:none}
         winRow(true);
         v.className = 'verdict no'; v.innerHTML = '<h3>' + T('cantor.notYet') + '</h3><p>' + T.html('cantor.closest_html', { n: many, juego: name, k: k, shape: cl.pat.name, miss: miss }) + '</p>';
       }
+      // A number past the tablas printed of this juego was most likely misheard: dieciséis taken for sesenta.
+      if (k > (C.printed[name] || 999)) v.insertAdjacentHTML('beforeend', '<p class="vfwarn">' + esc(T('cantor.printedWith', { juego: name, n: C.printed[name] })) + '</p>');
       host.innerHTML = tablaHtml(t, hit, need);
       // On a short screen the winner row would cover the verdict: the sheet scrolls just enough to show it above the row.
       var bd = v.closest('.bd'), over = v.getBoundingClientRect().bottom - (bd.querySelector('.vfwin').getBoundingClientRect().top - 12);
@@ -1058,7 +1065,7 @@ a.chip{text-decoration:none}
           if (how) toast(T('cantor.prDeckDone', { how: how, pages: T('pages', { n: DECK_PAGES }), mb: (bytes.length / 1048576).toFixed(1) }));
         });
       }) : makePdf(name, count, P.per, P.paper).then(function (bytes) {
-        C.juego = name; save();
+        C.juego = name; C.printed[name] = Math.max(C.printed[name] || 0, count); save();
         return savePdf(bytes, 'loteria-' + name.toLowerCase() + '-' + count + '.pdf').then(function (how) {
           if (how) toast(T('cantor.prDone', { how: how, tablas: T('tablas', { n: count }), mb: (bytes.length / 1048576).toFixed(1), name: name }));
         });
@@ -1267,9 +1274,9 @@ a.chip{text-decoration:none}
   if (window.LoteriaSync) LoteriaSync.onNote(function (m) { toast(m, 6000); }); // what went wrong after a tap on Sync now, long enough to read
   // El Cantor has no ☁ button: a winner or a juego saved after Google's hour says it waits here for Sync now.
   if (window.LoteriaSync) LoteriaSync.onWait(function () { toast(T('cantor.syncWait'), 6000); });
-  if (window.LoteriaSync) LoteriaSync.onUpdate(function (keys) { // winners and the juego from another device
+  if (window.LoteriaSync) LoteriaSync.onUpdate(function (keys) { // winners, the juego and what was printed, from another device
     if (keys.indexOf(LS) < 0) return;
-    try { var o = JSON.parse(localStorage.getItem(LS)); if (o) { if (Array.isArray(o.wins)) C.wins = goodWins(o.wins); if (typeof o.juego === 'string') C.juego = o.juego; } } catch (e) { }
+    try { var o = JSON.parse(localStorage.getItem(LS)); if (o) { if (Array.isArray(o.wins)) C.wins = goodWins(o.wins); if (typeof o.juego === 'string') C.juego = o.juego; C.printed = goodPrinted(o.printed); } } catch (e) { }
   });
 
   // ---------- another El Cantor window on this device ----------
