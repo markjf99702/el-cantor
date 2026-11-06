@@ -1084,8 +1084,8 @@ check('cantor: a winner’s name goes from the ¡Lotería! box to the checker, a
   const ctx = await context(PHONE);
   try {
     const page = await ctx.newPage(), problems = watch(page);
-    // Two rounds won by Tío Beto, typed two ways on two phones before.
-    const win = (round, who) => ({ round, who, how: 'Clásico', tabla: '', at: 9, t: round });
+    // Two rounds won by Tío Beto tonight, typed two ways on two phones.
+    const win = (round, who) => ({ round, who, how: 'Clásico', tabla: '', at: 9, t: Date.now() - 3600e3 + round });
     await seed(page, { 'loteria.cantor': { order: run(1, 54), pos: 6, round: 3, patterns: ['equis'], juego: '', wins: [win(1, 'Tío Beto'), win(2, 'tío beto')], settings: { speak: false, sound: false, check: false } } });
     await page.goto(base + 'cantor.html');
     const chips = sel => page.$$eval(sel + ' .chip', bs => bs.map(b => b.textContent + (b.classList.contains('on') ? ' (on)' : '')));
@@ -1128,6 +1128,78 @@ check('cantor: a winner’s name goes from the ¡Lotería! box to the checker, a
     assert.deepEqual(await chips('#winsCard'), ['Tío Beto · 3', 'Abuela · 2']);
     assert.deepEqual(problems, []);
   } finally { await ctx.close(); }
+});
+
+check('cantor: tonight’s standings under the winner in both ¡Lotería! boxes, earlier nights by date, and a new night starts at round 1', async () => {
+  const H = 3600e3, now = Date.now(), win = (round, who, t, tabla = '') => ({ round, who, how: 'Clásico', tabla, at: 9, t });
+  const CANELA7 = [21, 51, 23, 6, 16, 33, 8, 4, 14, 20, 9, 40, 29, 41, 13, 25];
+  // Last Saturday's three rounds, and the first round tonight. Less than six hours apart is one night.
+  const WINS = [win(1, 'Abuela', now - 30 * H), win(2, 'Mark', now - 28 * H), win(3, 'Abuela', now - 25 * H), win(1, 'Abuela', now - H)];
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    const order = CANELA7.slice(0, 4).concat(run(1, 54).filter(n => CANELA7.slice(0, 4).indexOf(n) < 0));
+    await seed(page, { 'loteria.cantor': { order, pos: 4, round: 2, last: now - H / 2, patterns: ['linea', 'esquinas', 'cuadro'], juego: 'CANELA', wins: WINS, settings: { speak: false, sound: false, check: false } } });
+    await page.goto(base + 'cantor.html');
+    const line = sel => page.$eval(sel, el => el.offsetParent ? el.textContent : '');
+    // Take their word: the line follows the name typed, counted the way the win will be.
+    await page.click('#lotBtn');
+    assert.equal(await line('#clTonight'), 'Abuela 1 tonight');
+    await page.fill('#clWho', 'mark');
+    assert.equal(await line('#clTonight'), 'Abuela 1 · Mark 1 tonight', 'a past winner typed without capitals');
+    await page.click('#clNames .chip:text-is("Abuela")');
+    assert.equal(await line('#clTonight'), 'Abuela 2 tonight', 'a tap on a past winner');
+    await page.click('#clNew');
+    await page.click('#ptx');
+    assert.equal(await page.textContent('#sub'), 'Round 3 · 0 of 54');
+    // Checked: the box after ¡Buena! has it too, with the win in it.
+    await page.evaluate(o => { const c = JSON.parse(localStorage.getItem('loteria.cantor')); c.order = o; c.pos = 4; c.settings.check = true; localStorage.setItem('loteria.cantor', JSON.stringify(c)); }, order);
+    await page.reload();
+    await page.click('#lotBtn');
+    await page.fill('#vfN', '7');
+    await page.fill('#vfWho', 'Mark');
+    await page.click('#vfWin');
+    assert.equal(await line('#winbox p.tonight'), 'Abuela 2 · Mark 1 tonight');
+    await page.click('#celOk'); await page.click('#ptx');
+    // Settings: tonight's tally and rounds, then the nights before by date.
+    await page.click('#setBtn');
+    assert.deepEqual(await page.$$eval('#winsCard > .chips .chip', cs => cs.map(c => c.textContent)), ['Abuela · 2', 'Mark · 1']);
+    assert.deepEqual(await page.$$eval('#winsCard .wins:not(.nights) b', bs => bs.map(b => b.textContent)), ['Mark', 'Abuela', 'Abuela']);
+    const sat = await page.evaluate(t => new Date(t).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }), now - 30 * H);
+    assert.deepEqual(await page.$$eval('#winsCard .nights div', ds => ds.map(d => d.textContent)), [sat + 'Abuela 2 · Mark 1']);
+    await noSideways(page, 'the Winners card');
+    // Clear empties the winners and starts the rounds again at 1.
+    await page.click('#wClr'); await page.click('#wClr');
+    assert.equal(await page.textContent('#sub'), 'Round 1 · 0 of 54', 'Clear kept the round count');
+    assert.deepEqual((await saved(page, 'loteria.cantor')).wins, []);
+    await page.click('#stx');
+    // A new night: El Cantor last used seven hours ago, on round 14 with ten cards out. The round shows as 1, and
+    // shuffled before a card of it is called, the new one is round 1 too; the next is 2.
+    await page.evaluate(() => { const c = JSON.parse(localStorage.getItem('loteria.cantor')); c.round = 14; c.pos = 10; c.last = Date.now() - 7 * 3600e3; localStorage.setItem('loteria.cantor', JSON.stringify(c)); });
+    await page.reload();
+    assert.equal(await page.textContent('#sub'), 'Round 1 · 10 of 54', 'a new night kept last night’s round');
+    await page.click('#newBtn'); await page.click('#nrOk'); await page.click('#ptx');
+    assert.equal(await page.textContent('#sub'), 'Round 1 · 0 of 54', 'the first shuffle of the night made round 2');
+    await page.click('#nextBtn');
+    await page.click('#newBtn'); await page.click('#nrOk'); await page.click('#ptx');
+    assert.equal(await page.textContent('#sub'), 'Round 2 · 0 of 54');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+  // In Spanish, with the date in Spanish.
+  const es = await context(PHONE);
+  try {
+    const page = await es.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.lang': 'es', 'loteria.cantor': { order: run(1, 54), pos: 4, round: 2, last: now - H / 2, patterns: ['linea', 'esquinas', 'cuadro'], juego: '', wins: WINS, settings: { speak: false, sound: false, check: false } } });
+    await page.goto(base + 'cantor.html');
+    await page.click('#lotBtn');
+    assert.equal(await page.textContent('#clTonight'), 'Esta noche: Abuela 1');
+    await page.keyboard.press('Escape');
+    await page.click('#setBtn');
+    const sab = await page.evaluate(t => new Date(t).toLocaleDateString('es-MX', { weekday: 'short', month: 'short', day: 'numeric' }), now - 30 * H);
+    assert.deepEqual(await page.$$eval('#winsCard .nights div', ds => ds.map(d => d.textContent)), [sab + 'Abuela 2 · Mark 1']);
+    assert.match(await page.textContent('#winsCard'), /^Ganadores · Esta noche/);
+    assert.deepEqual(problems, []);
+  } finally { await es.close(); }
 });
 
 check('cantor: checking card by card keeps a card read out twice, and a chip takes a card back off', async () => {
@@ -2847,7 +2919,7 @@ check('saves: a damaged save opens with what can be kept, instead of a blank pag
         await seed(page, { 'loteria.cantor': { wins: [null, { round: 1, who: 'Ana', how: 'Línea', tabla: '', at: 9, t: 1 }] } });
         await page.goto(base + 'cantor.html');
         await page.click('#setBtn');
-        assert.match(await page.textContent('#winsCard'), /Ana · 1/);
+        assert.match(await page.textContent('#winsCard .nights'), /Ana 1/);
         await page.click('#stx');
         await page.click('#nextBtn'); // a card first: with nothing called, ¡Lotería! only says ▶ starts the round
         await page.click('#lotBtn');

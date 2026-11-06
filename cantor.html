@@ -248,6 +248,8 @@ a.chip{text-decoration:none}
 .wins{display:flex;flex-direction:column;gap:4px;margin-top:8px;font-size:13.5px}
 .wins div{display:flex;gap:8px;color:var(--ink2);font-variant-numeric:tabular-nums}
 .wins div b{color:var(--ink);font-weight:800}
+.wins.nights div{flex-wrap:wrap;column-gap:10px;row-gap:0}
+.wins.nights div span{min-width:7.5em}
 /* overlays */
 .winbg{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(30,20,14,.55);padding:20px}
 .winc{background:var(--paper);border:3px solid var(--gold);border-radius:22px;padding:26px 28px 22px;text-align:center;max-width:420px;width:100%;box-shadow:0 30px 60px -20px rgba(0,0,0,.6);animation:pop .35s cubic-bezier(.2,.9,.3,1.2)}
@@ -258,6 +260,9 @@ a.chip{text-decoration:none}
 .winc .who{display:flex;flex-direction:column;gap:10px;margin-top:16px}
 .winc .who input{width:100%;text-align:center}
 .winc .chips{justify-content:center}
+.winc p.tonight{margin:0;font:800 13.5px var(--body);color:var(--ink);font-variant-numeric:tabular-nums}
+.winc p.tonight:empty{display:none}
+.winc .who p.tonight{margin-top:-2px}
 .linkb{background:none;border:0;padding:6px;margin-top:10px;color:var(--teal);font:700 13px var(--body);text-decoration:underline;text-underline-offset:3px}
 .toast{position:fixed;left:50%;width:max-content;bottom:calc(96px + var(--sab));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:10px;font:700 13px var(--body);opacity:0;transition:.2s;pointer-events:none;z-index:80;max-width:90vw;text-align:center}
 .toast.show{opacity:1;transform:translateX(-50%)}
@@ -349,7 +354,7 @@ a.chip{text-decoration:none}
   function freshPrint() { return { name: '', count: 12, per: 1, deck: false, paper: defaultPaper() }; }
   function fresh() { return { order: shuffled(), pos: 0, round: 1, patterns: L.CLASICO.slice(), juego: '', printed: {}, wins: [], print: freshPrint(), settings: freshSettings() }; }
   var C = fresh();
-  function goodWins(w) { return Array.isArray(w) ? w.filter(function (x) { return x && typeof x === 'object'; }) : []; } // a damaged save may hold nulls
+  function goodWins(w) { return Array.isArray(w) ? w.filter(function (x) { return x && typeof x === 'object'; }).map(function (x) { if (typeof x.t !== 'number') x.t = 0; return x; }) : []; } // a damaged save may hold nulls, or a win with no time
   // How many tablas El Cantor printed of each juego, {CANELA: 12}, so the checker can say a number past them is misheard.
   function goodPrinted(p) { var out = {}; if (p && typeof p === 'object' && !Array.isArray(p)) Object.keys(p).forEach(function (k) { var n = p[k]; if (n === (n | 0) && n > 0) out[k] = n; }); return out; }
   function wholeDeck(o) { return o && Array.isArray(o.order) && o.order.length === 54 && o.order.slice().sort(function (a, b) { return a - b; }).every(function (n, i) { return n === i + 1; }); }
@@ -378,13 +383,37 @@ a.chip{text-decoration:none}
       C.printed = goodPrinted(o.printed);
     }
   } catch (e) { }
-  function save() { try { localStorage.setItem(LS, JSON.stringify(C)); } catch (e) { } if (window.LoteriaSync) LoteriaSync.changed(); }
+  function save() { C.last = Date.now(); try { localStorage.setItem(LS, JSON.stringify(C)); } catch (e) { } if (window.LoteriaSync) LoteriaSync.changed(); }
+  // ---------- nights ----------
+  // Wins less than six hours apart are one night, and so is El Cantor used with less than six hours between saves.
+  // A new night starts the round numbers again at 1: the round left from the last night shows as round 1, and if it
+  // is shuffled before a card of it is called tonight, the new one is round 1 instead.
+  var NIGHT = 6 * 3600e3;
+  function newNight() { if (C.last && Date.now() - C.last >= NIGHT) { C.round = 1; R.stale = true; } }
+  function nights() { // oldest first: { start, end, wins }
+    var out = [];
+    C.wins.slice().sort(function (a, b) { return a.t - b.t; }).forEach(function (x) { var n = out[out.length - 1]; if (n && x.t - n.end < NIGHT) { n.wins.push(x); n.end = x.t; } else out.push({ start: x.t, end: x.t, wins: [x] }); });
+    return out;
+  }
+  function tonight() { var all = nights(), n = all[all.length - 1]; return n && Date.now() - n.end < NIGHT ? n.wins : []; }
+  // One count per person whatever the capitals, under the name as it was last typed, most wins first.
+  function standings(wins) {
+    var tally = {}, shown = {}, order = [];
+    wins.forEach(function (x) { var k = nameKey(x.who); if (!(k in tally)) { tally[k] = 0; order.push(k); } tally[k]++; shown[k] = k ? String(x.who).trim() : T('cantor.unnamed'); });
+    return order.sort(function (a, b) { return tally[b] - tally[a]; }).map(function (k) { return { name: shown[k], n: tally[k] }; });
+  }
+  function standLine(wins) { return standings(wins).map(function (x) { return x.name + ' ' + x.n; }).join(' · '); }
+  // The night's standings under the winner in a ¡Lotería! box: "Abuela 2 · Mark 1 tonight". more: a win not saved yet.
+  function tonightHtml(more) { var w = tonight().concat(more || []); return w.length ? esc(T('cantor.tonight', { list: standLine(w) })) : ''; }
+  // A win's t is its id in Google Drive, so no two are the same.
+  function stamp() { var t = Date.now(); C.wins.forEach(function (w) { if (w.t >= t) t = w.t + 1; }); return t; }
   function cur() { return C.pos ? C.order[C.pos - 1] : 0; }
   function orderOf(n) { var i = C.order.indexOf(n); return i >= 0 && i < C.pos ? i + 1 : 0; }
   function nth(o) { return T.lang === 'es' ? T.ord(o) : '#' + o; } // a card's place in the order: #3, or la 3.ª in Spanish
   function isOut(n) { return orderOf(n) > 0; }
 
-  var R = { playing: false, phase: 'idle', timer: 0, raf: 0, waitStart: 0, waitMs: 0, token: 0, down: false, opening: false };
+  var R = { playing: false, phase: 'idle', timer: 0, raf: 0, waitStart: 0, waitMs: 0, token: 0, down: false, opening: false, stale: false };
+  newNight();
   var PACE = { slow: 7000, normal: 4000, fast: 2000 };
   function paceName(v) { return T('pace.' + v); }
 
@@ -498,13 +527,17 @@ a.chip{text-decoration:none}
       navigator.wakeLock.request('screen').then(function (l) { WL = l; l.addEventListener('release', function () { if (WL === l) WL = null; }); }).catch(function () { WL = null; });
     } else if (!on && WL && WL !== 'asking') { WL.release().catch(function () { }); WL = null; }
   }
-  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible' && C.pos > 0 && C.pos < 54) wake(true); });
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState !== 'visible') return;
+    if (!R.playing && C.last && Date.now() - C.last >= NIGHT) { newNight(); renderCaption(); renderAll(); } // left open since the last night
+    if (C.pos > 0 && C.pos < 54) wake(true);
+  });
 
   // ---------- the call ----------
   function deal() {
     clearTimeout(R.timer); R.timer = 0; R.opening = false;
     if (C.pos >= 54) { finish(); return; }
-    C.pos++; save();
+    C.pos++; R.stale = false; save();
     var c = card(cur()), style = C.settings.style;
     snap(); $('live').textContent = c.name;
     R.phase = 'speaking';
@@ -551,7 +584,7 @@ a.chip{text-decoration:none}
   function finish() { R.playing = false; R.phase = 'idle'; clearTimeout(R.timer); wake(false); renderAll(); }
   function newRound() {
     hush(); pause(); R.phase = 'idle'; R.opening = false;
-    C.order = shuffled(); C.pos = 0; C.round++; save();
+    C.order = shuffled(); C.pos = 0; C.round = R.stale ? 1 : C.round + 1; R.stale = false; save();
     wake(false); showCard(false, true); renderAll();
   }
   function newRoundAsk() {
@@ -796,11 +829,17 @@ a.chip{text-decoration:none}
     function winsCard() {
       var el = $('winsCard'), w = C.wins;
       if (!w.length) { el.innerHTML = '<div class="eyebrow">' + T('cantor.winners') + '</div><p class="note" style="margin-top:6px">' + T('cantor.winnersNone') + '</p>'; return; }
-      // One count per person whatever the capitals, under the name as it was last typed.
-      var tally = {}, shown = {}; w.forEach(function (x) { var k = nameKey(x.who); tally[k] = (tally[k] || 0) + 1; shown[k] = k ? String(x.who).trim() : T('cantor.unnamed'); });
-      el.innerHTML = '<div class="row sp"><div class="eyebrow">' + T('cantor.winners') + '</div><button class="btn sec sm" type="button" id="wClr">' + T('cantor.clear') + '</button></div><div class="chips" style="margin-top:8px">' + Object.keys(tally).sort(function (a, b) { return tally[b] - tally[a]; }).map(function (k) { return '<span class="chip">' + esc(shown[k]) + ' · ' + tally[k] + '</span>'; }).join('') + '</div><div class="wins">' + w.slice(-8).reverse().map(function (x) { return '<div><span>' + T('cantor.round', { r: x.round }) + '</span><b>' + esc(x.who || T('cantor.unnamed')) + '</b><span>' + esc(x.how) + (x.tabla ? ' · ' + esc(x.tabla) : '') + ' · ' + T('cards', { n: x.at }) + '</span></div>'; }).join('') + '</div>';
+      // Tonight: one count per person whatever the capitals, then its rounds, newest first. Then the nights before, by date.
+      var all = nights(), now = tonight(), before = now.length ? all.slice(0, -1) : all, year = new Date().getFullYear();
+      function day(t) { if (!t) return '—'; var d = new Date(t); return d.toLocaleDateString(T.locale, d.getFullYear() === year ? { weekday: 'short', month: 'short', day: 'numeric' } : { year: 'numeric', month: 'short', day: 'numeric' }); }
+      el.innerHTML = '<div class="row sp"><div class="eyebrow">' + T('cantor.winners') + ' · ' + T('cantor.tonightH') + '</div><button class="btn sec sm" type="button" id="wClr">' + T('cantor.clear') + '</button></div>' +
+        (now.length ? '<div class="chips" style="margin-top:8px">' + standings(now).map(function (x) { return '<span class="chip">' + esc(x.name) + ' · ' + x.n + '</span>'; }).join('') + '</div><div class="wins">' + now.slice(-8).reverse().map(function (x) { return '<div><span>' + T('cantor.round', { r: x.round }) + '</span><b>' + esc(x.who || T('cantor.unnamed')) + '</b><span>' + esc(x.how) + (x.tabla ? ' · ' + esc(x.tabla) : '') + ' · ' + T('cards', { n: x.at }) + '</span></div>'; }).join('') + '</div>'
+          : '<p class="note" style="margin-top:6px">' + T('cantor.tonightNone') + '</p>') +
+        (before.length ? '<div class="eyebrow" style="margin-top:14px">' + T('cantor.earlierH') + '</div><div class="wins nights">' + before.slice(-10).reverse().map(function (n) { return '<div><span>' + esc(day(n.start)) + '</span><b>' + esc(standLine(n.wins)) + '</b></div>'; }).join('') + '</div>' : '') +
+        '<p class="note" style="margin-top:10px">' + T('cantor.nightsNote') + '</p>';
       var armed = false;
-      $('wClr').addEventListener('click', function () { if (!armed) { armed = true; this.textContent = T('cantor.clearAgain'); return; } C.wins = []; save(); winsCard(); });
+      // Clear empties the winners and starts the round numbers again at 1.
+      $('wClr').addEventListener('click', function () { if (!armed) { armed = true; this.textContent = T('cantor.clearAgain'); return; } C.wins = []; C.round = 1; R.stale = false; save(); winsCard(); renderCaption(); renderAll(); });
     }
     $('spBtn').addEventListener('click', function () {
       st.speak = !st.speak; save();
@@ -861,9 +900,10 @@ a.chip{text-decoration:none}
     for (var i = C.wins.length - 1; i >= 0 && names.length < 8; i--) { var w = C.wins[i].who, k = nameKey(w); if (k && !seen[k]) { seen[k] = 1; names.push(String(w).trim()); } }
     return names.length ? '<div class="chips" id="' + id + '">' + names.map(function (n) { return '<button type="button" class="chip">' + esc(n) + '</button>'; }).join('') + '</div>' : '';
   }
-  function wireNames(id, input) {
+  function wireNames(id, input, then) {
     var host = $(id), chips = document.querySelectorAll('#' + id + ' .chip');
     function mark() {
+      if (then) then();
       var k = nameKey(input.value), on = null;
       chips.forEach(function (x) { x.classList.toggle('on', !!k && nameKey(x.textContent) === k); if (x.classList.contains('on')) on = x; });
       if (on) { var r = on.getBoundingClientRect(), h = host.getBoundingClientRect(); if (r.left < h.left || r.right > h.right) host.scrollLeft += r.left - h.left - 14; } // on a line that scrolls, into view
@@ -885,14 +925,15 @@ a.chip{text-decoration:none}
     var was = R.playing; stopCalling(); cheer();
     var box = $('winbox'), r = C.round;
     box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p>' + esc(T('cantor.roundGame', { r: r, game: L.gameName(C.patterns) })) + ' · ' + T('cantor.cardsCalled', { n: C.pos }) + '</p>' +
-      '<div class="who"><input id="clWho" placeholder="' + T('cantor.whoWon') + '" autocomplete="off" autocapitalize="words" enterkeyhint="go" maxlength="30" aria-label="' + T('cantor.whoWonAria') + '">' + namesHtml('clNames') + '</div>' +
+      '<div class="who"><input id="clWho" placeholder="' + T('cantor.whoWon') + '" autocomplete="off" autocapitalize="words" enterkeyhint="go" maxlength="30" aria-label="' + T('cantor.whoWonAria') + '">' + namesHtml('clNames') + '<p class="tonight" id="clTonight"></p></div>' +
       '<div class="row"><button class="btn red" type="button" id="clNew">' + T('cantor.shuffleFor', { r: r + 1 }) + '</button><button class="btn sec" type="button" id="clBack">' + T('cantor.keepCalling') + '</button></div>' +
       '<button type="button" class="linkb" id="clCheck">' + T('cantor.checkFirst') + '</button></div></div>';
     box.hidden = false;
-    wireNames('clNames', $('clWho'));
+    // Tonight's standings follow the name typed, as they will be once the win is counted.
+    wireNames('clNames', $('clWho'), function () { var w = winnerName($('clWho').value); $('clTonight').innerHTML = tonightHtml(w ? [{ who: w }] : []); });
     $('clWho').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); $('clNew').click(); } });
     $('clNew').addEventListener('click', function () {
-      C.wins.push({ round: r, who: winnerName($('clWho').value), how: L.gameName(C.patterns), tabla: '', at: C.pos, t: Date.now() }); save();
+      C.wins.push({ round: r, who: winnerName($('clWho').value), how: L.gameName(C.patterns), tabla: '', at: C.pos, t: stamp() }); save();
       box.hidden = true; shuffleNext();
     });
     $('clBack').addEventListener('click', function () { box.hidden = true; UI.cheered = 0; if (was) play(); });
@@ -992,7 +1033,7 @@ a.chip{text-decoration:none}
     $('vfBack').addEventListener('click', closeSheet);
     $('vfWin').addEventListener('click', function () {
       var who = winnerName($('vfWho').value);
-      C.wins.push({ round: C.round, who: who, how: V.how || L.gameName(C.patterns), tabla: V.tabla, at: C.pos, t: Date.now() });
+      C.wins.push({ round: C.round, who: who, how: V.how || L.gameName(C.patterns), tabla: V.tabla, at: C.pos, t: stamp() });
       save(); UI.won = true; closeSheet(); celebrate(who);
     });
     body();
@@ -1001,7 +1042,7 @@ a.chip{text-decoration:none}
     var box = $('winbox'), r = C.round, first = UI.cheered !== r;
     if (first) { UI.cheered = r; fanfare(); }
     var n = C.pos; // the cards called
-    box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p>' + (who ? T.html('cantor.won_html', { who: who, r: r, n: n }) : esc(T('cantor.wonNobody', { r: r, n: n }))) + '</p><div class="row"><button class="btn red" type="button" id="celOk">' + T('cantor.shuffleFor', { r: r + 1 }) + '</button></div></div></div>';
+    box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p>' + (who ? T.html('cantor.won_html', { who: who, r: r, n: n }) : esc(T('cantor.wonNobody', { r: r, n: n }))) + '</p><p class="tonight">' + tonightHtml() + '</p><div class="row"><button class="btn red" type="button" id="celOk">' + T('cantor.shuffleFor', { r: r + 1 }) + '</button></div></div></div>';
     box.hidden = false;
     var lines = (first ? [{ clip: 'loteria', text: '¡Lotería!', gap: 200 }] : []).concat(who && !choice().pack ? [{ text: 'Felicidades, ' + who + '.' }] : []);
     if (voiceOn() && lines.length) say(lines, null);
