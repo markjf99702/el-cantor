@@ -1575,8 +1575,7 @@ a.chip{text-decoration:none}
     ops.push(num(0.5 * s) + ' w ' + rrect(gx + 3 * s, gy + 3 * s, gw - 6 * s, gh - 6 * s, 3.5 * s) + ' S');
     t.forEach(function (n, j) {
       var im = pdf.image('c' + n, imgs[n]), x = gx + pad + (j % 4) * (cw + gap), y = gy + pad + Math.floor(j / 4) * (ch + gap);
-      ops.push('q ' + num(cw) + ' 0 0 ' + num(ch) + ' ' + num(x) + ' ' + Y(y + ch) + ' cm /' + im.name + ' Do Q'); used.push(im);
-      ops.push(num(0.6 * s) + ' w ' + num(x) + ' ' + Y(y + ch) + ' ' + num(cw) + ' ' + num(ch) + ' re S');
+      ops.push('q ' + num(cw) + ' 0 0 ' + num(ch) + ' ' + num(x) + ' ' + Y(y + ch) + ' cm /' + im.name + ' Do Q'); used.push(im); // each card brings its own printed border
     });
     var foot = T('pdf.footer', { name: name, k: k }), fsz = 7 * s; // in the language chosen (it fits, in Spanish too, on every layout)
     text('H', fsz, gx + (gw - textW('H', fsz, foot)) / 2, box.y + box.h - 2 * s, foot, GREY);

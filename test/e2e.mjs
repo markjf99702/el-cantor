@@ -2239,6 +2239,38 @@ check('cantor: on a phone, the PDF made goes to the phone’s share sheet with P
   }
 });
 
+check('printing: a printed card’s own border is its only one, in El Cantor’s PDF and in Make tablas', async () => {
+  // The cut-paper cards print their own cream edge and rounded line; a second line drawn round each one doubled it.
+  const ctx = await context(DESKTOP, { acceptDownloads: true });
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await page.goto(base + 'cantor.html');
+    await page.click('#printBtn');
+    await page.fill('#prName', 'CANELA');
+    await page.fill('#prCount', '2'); await page.press('#prCount', 'Tab');
+    for (const per of ['1', '2']) {
+      await page.click(`#prPer [data-v="${per}"]`);
+      const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#prGo')]);
+      const pdf = await readPdf(await dl.path());
+      assert.deepEqual(pdf.cards.map(c => c.length), per === '1' ? [16, 16] : [32], per + ' per page: the cards');
+      assert.ok(pdf.pages.every(p => !/ re S/.test(p)), per + ' per page: a line is drawn round each card');
+      assert.ok(pdf.pages.every(p => / c h S/.test(p)), per + ' per page: the tabla’s own frame is gone');
+      if (!(await page.isVisible('#prGo'))) await page.click('#printBtn'); // open again, if a download closed it
+    }
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+  const mt = await context(DESKTOP);
+  try {
+    const page = await mt.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.print': { tablas: [{ id: 'a', name: 'Tabla 1', cards: run(1).map((n, i) => i === 15 ? 0 : n) }], set: { doubles: true, per: 1, paper: 'letter', names: true, who: '' } } });
+    await page.goto(base + 'print.html');
+    const borders = await page.$$eval('#printout .pc', ps => ps.map(p => getComputedStyle(p).borderTopStyle));
+    assert.deepEqual([borders.filter(b => b === 'none').length, borders.filter(b => b === 'dashed').length], [15, 1], 'cards print with no line of their own, and a blank square dashed');
+    assert.notEqual(await page.$eval('#printout .pt', p => getComputedStyle(p).borderTopStyle), 'none', 'the tabla keeps its frame');
+    assert.deepEqual(problems, []);
+  } finally { await mt.close(); }
+});
+
 check('cantor: Print tablas at two per page draws the cut line between two tablas, and none beside a lone one', async () => {
   // 3 tablas, 2 per page: page 1 has two side by side and a dashed line down the middle; page 2 has tabla 3 alone.
   const ctx = await context(DESKTOP, { acceptDownloads: true });
