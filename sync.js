@@ -450,7 +450,7 @@
     var armed = false;
     function draw() {
       if (!host.isConnected) return false; // the sheet it was in has closed
-      var wrong = status === 'error'; // then it doesn't say "Saved to"
+      var wrong = status === 'error' || cantor && status === 'tap' && waiting(); // then it doesn't say "Saved to", nor while El Cantor's winner waits here
       host.innerHTML = st.on
         ? '<div class="eyebrow">' + T(wrong ? 'sync.errH' : 'sync.savedH') + '</div><p class="note">' + T.html(cantor ? 'sync.c.savedTo_html' : 'sync.savedTo_html', { email: st.email || T('sync.yourDrive') }) + ' ' + line(cantor) + '</p>' +
           '<div class="row"><button class="btn sm" type="button" data-a="now"' + (status === 'busy' ? ' disabled' : '') + '>' + T('sync.now') + '</button><button class="btn sec sm" type="button" data-a="off">' + T(armed ? 'sync.stopAgain' : 'sync.stop') + '</button></div>'

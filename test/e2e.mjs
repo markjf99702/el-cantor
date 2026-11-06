@@ -3014,6 +3014,7 @@ check('drive: El Cantor, with no ☁ button, says a winner saved after Google’
       await page.click('#ptx');
       await page.click('#setBtn');
       assert.ok((await note()).endsWith(SAYS.wait), lang + ': the card says “' + await note() + '”');
+      assert.equal(await page.textContent('#syncCard .eyebrow'), 'Google Drive', lang + ': the card is headed “Saved to Google Drive” over “Saved here”');
       assert.deepEqual(Object.keys(wins()), [], 'the win went to Drive after the hour');
       await page.click('#syncCard [data-a="now"]'); // signs in again (here with no Google window) and syncs
       await until(page, () => Object.keys(JSON.parse(localStorage.getItem('loteria.sync.base')).cols.wins.items).length === 1, null, 15000);
