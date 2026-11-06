@@ -1903,6 +1903,68 @@ check('cantor: Print tablas prints the deck too: 54 cards to cut out, 9 to a pag
   }
 });
 
+check('cantor: on a phone, the PDF made goes to the phone’s share sheet with Print or send…, and Download still saves it', async () => {
+  // A stand-in for the share sheet: it keeps what it was handed. cancel: the person closes it without picking.
+  const SHARE = () => {
+    window.__shared = []; window.__cancel = false;
+    navigator.canShare = d => !!(d && d.files && d.files.every(f => f instanceof File));
+    navigator.share = d => { window.__shared.push(d.files.map(f => ({ name: f.name, type: f.type, size: f.size }))); return window.__cancel ? Promise.reject(new DOMException('closed', 'AbortError')) : Promise.resolve(); };
+  };
+  for (const kind of [PHONE, DESKTOP]) {
+    const ctx = await context(kind, { acceptDownloads: true });
+    try {
+      const page = await ctx.newPage(), problems = watch(page), phone = kind === PHONE;
+      await page.addInitScript(SHARE);
+      let downloads = 0; page.on('download', () => downloads++);
+      await page.goto(base + 'cantor.html');
+      await page.click('#printBtn');
+      await page.fill('#prName', 'CANELA');
+      await page.fill('#prCount', '3'); await page.press('#prCount', 'Tab');
+      if (!phone) { // a computer saves it straight away, as before, and has nothing to share
+        const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#prGo')]);
+        assert.equal(dl.suggestedFilename(), 'loteria-canela-3.pdf');
+        assert.equal(await page.textContent('#prGo'), 'Make the PDF');
+        assert.ok(await page.isHidden('#prDl'));
+        assert.deepEqual(await page.evaluate(() => window.__shared), []);
+        assert.deepEqual(problems, []);
+        continue;
+      }
+      await page.click('#prGo');
+      await until(page, () => document.getElementById('prGo').textContent === 'Print or send…');
+      assert.match(await page.textContent('#toast'), /^Ready — 3 tablas, [\d.]+ MB\. Keep the name CANELA\.$/);
+      assert.equal(downloads, 0, 'the phone downloaded it as well');
+      assert.ok(await page.isVisible('#prDl'), 'no Download');
+      assert.equal((await saved(page, 'loteria.cantor')).printed.CANELA, 3, 'the checker doesn’t know 3 were printed');
+      // Closed without picking anything: nothing else happens, and it's there for another go.
+      await page.evaluate(() => { window.__cancel = true; });
+      await page.click('#prGo');
+      await page.evaluate(() => { window.__cancel = false; });
+      await page.click('#prGo');
+      const shared = await page.evaluate(() => window.__shared);
+      assert.equal(shared.length, 2);
+      assert.deepEqual(shared[1].map(f => [f.name, f.type]), [['loteria-canela-3.pdf', 'application/pdf']]);
+      assert.ok(shared[1][0].size > 20000, 'the PDF handed over is ' + shared[1][0].size + ' bytes');
+      assert.equal(downloads, 0, 'closing the share sheet downloaded it');
+      // Download: today's way.
+      const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#prDl')]);
+      assert.equal(dl.suggestedFilename(), 'loteria-canela-3.pdf');
+      const bytes = await readFile(await dl.path());
+      assert.equal(bytes.length, shared[1][0].size, 'Download saved another PDF than the one shared');
+      // A choice changed: the PDF is made again.
+      await page.click('#prPer [data-v="2"]');
+      assert.equal(await page.textContent('#prGo'), 'Make the PDF');
+      assert.ok(await page.isHidden('#prDl'));
+      // The deck too.
+      await page.click('#prPer [data-v="deck"]');
+      await page.click('#prGo');
+      await until(page, () => document.getElementById('prGo').textContent === 'Print or send…', null, 60000);
+      await page.click('#prGo');
+      assert.deepEqual((await page.evaluate(() => window.__shared))[2].map(f => f.type), ['application/pdf']);
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
+});
+
 check('cantor: Print tablas at two per page draws the cut line between two tablas, and none beside a lone one', async () => {
   // 3 tablas, 2 per page: page 1 has two side by side and a dashed line down the middle; page 2 has tabla 3 alone.
   const ctx = await context(DESKTOP, { acceptDownloads: true });

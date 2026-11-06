@@ -1298,9 +1298,24 @@ a.chip{text-decoration:none}
       '<div class="fld" id="prCountF"><span>' + T('cantor.prHowMany') + '</span><span class="stepper"><button type="button" id="prMinus" aria-label="' + T('cantor.prFewer') + '">−</button><input id="prCount" inputmode="numeric" maxlength="3" aria-label="' + T('cantor.prCountAria') + '"><button type="button" id="prPlus" aria-label="' + T('cantor.prMore') + '">+</button></span></div>' +
       '<div class="fld"><span>' + T('cantor.prPer') + '</span><div class="seg" id="prPer"><button type="button" data-v="1">' + T('cantor.prOneBig') + '</button><button type="button" data-v="2">' + T('cantor.prTwo') + '</button><button type="button" data-v="deck">' + T('cantor.prDeck') + '</button></div></div>' +
       '<div class="fld"><span>' + T('paper') + '</span><div class="seg" id="prPaper"><button type="button" data-v="letter">' + T('paper.letter') + '</button><button type="button" data-v="a4">A4</button></div></div></div>' +
-      '<div class="row sp" style="flex-wrap:wrap"><p class="note" id="prInfo"></p><button class="btn red" type="button" id="prGo">' + T('cantor.prGo') + '</button></div>' +
+      '<div class="row sp" style="flex-wrap:wrap"><p class="note" id="prInfo"></p><span class="row" style="gap:2px"><button class="btn red" type="button" id="prGo">' + T('cantor.prGo') + '</button><button class="linkb" type="button" id="prDl" style="margin:0" hidden>' + T('cantor.prDownload') + '</button></span></div>' +
       '<div class="prgrid" id="prGrid"></div></div>');
+    // On a phone that can hand a file to its share sheet, the PDF made waits for a second tap on Print or send…, which
+    // opens the share sheet with it: Print, Files, or the family chat. The share sheet opens only straight from a tap,
+    // and making the PDF takes longer than a tap lasts. Download keeps today's way, the one that always works. A
+    // computer saves it straight away, as before. made: { what, bytes, filename, done(how) }, until a choice changes.
+    var made = null;
+    function what() { return P.deck ? 'deck:' + P.paper : [P.name, P.count, P.per, P.paper].join(':'); }
+    function goBtn() { $('prGo').textContent = T(made ? 'cantor.prShare' : 'cantor.prGo'); $('prDl').hidden = !made; }
+    function send(pdf) {
+      navigator.share({ files: [new File([pdf.bytes], pdf.filename, { type: 'application/pdf' })] }).catch(function (e) {
+        if (e && e.name === 'AbortError') return; // the share sheet closed with nothing picked
+        download(pdf);
+      });
+    }
+    function download(pdf) { savePdf(pdf.bytes, pdf.filename).then(function (how) { if (how) toast(pdf.done(how)); }, function (e) { toast(e && e.message ? e.message : T('cantor.prFail')); }); }
     function info() {
+      if (made && made.what !== what()) { made = null; goBtn(); }
       var pages = Math.ceil(P.count / P.per), paper = P.paper === 'a4' ? 'A4' : T('paper.letterSize');
       $('prInfo').innerHTML = P.deck ? T.html('cantor.prDeckInfo_html', { pages: T('pages', { n: DECK_PAGES }), paper: paper })
         : T.html('cantor.prInfo_html', { tablas: T('tablas', { n: P.count }), name: P.name || '—', pages: T('pages', { n: pages }), paper: paper }) + (P.per === 2 ? T('cantor.prSideways') : '');
@@ -1333,25 +1348,29 @@ a.chip{text-decoration:none}
     document.querySelectorAll('#prPer button').forEach(function (b) { b.addEventListener('click', function () { var was = P.deck; P.deck = b.dataset.v === 'deck'; if (!P.deck) P.per = +b.dataset.v; save(); info(); if (was !== P.deck) preview(); }); });
     document.querySelectorAll('#prPaper button').forEach(function (b) { b.addEventListener('click', function () { P.paper = b.dataset.v; save(); info(); }); });
     $('prGo').addEventListener('click', function () {
-      var btn = this, name = P.name, count = P.count;
-      if (!name && !P.deck) return;
+      var btn = this, name = P.name, count = P.count, deck = P.deck, key = what();
+      if (made && made.what === key) { send(made); return; }
+      if (!name && !deck) return;
       if (window.claude && !DL) { toast(T('cantor.prNoSave')); return; }
       btn.disabled = true; btn.textContent = T('cantor.prMaking');
-      (P.deck ? makeDeck(P.paper).then(function (bytes) {
-        return savePdf(bytes, T('cantor.deckFile')).then(function (how) {
-          if (how) toast(T('cantor.prDeckDone', { how: how, pages: T('pages', { n: DECK_PAGES }), mb: (bytes.length / 1048576).toFixed(1) }));
-        });
-      }) : makePdf(name, count, P.per, P.paper).then(function (bytes) {
-        C.juego = name; C.printed[name] = Math.max(C.printed[name] || 0, count); save();
-        return savePdf(bytes, 'loteria-' + name.toLowerCase() + '-' + count + '.pdf').then(function (how) {
-          if (how) toast(T('cantor.prDone', { how: how, tablas: T('tablas', { n: count }), mb: (bytes.length / 1048576).toFixed(1), name: name }));
-        });
-      })).catch(function (e) {
+      (deck ? makeDeck(P.paper) : makePdf(name, count, P.per, P.paper)).then(function (bytes) {
+        if (!deck) { C.juego = name; C.printed[name] = Math.max(C.printed[name] || 0, count); save(); }
+        var mb = (bytes.length / 1048576).toFixed(1), pdf = { what: key, bytes: bytes, filename: deck ? T('cantor.deckFile') : 'loteria-' + name.toLowerCase() + '-' + count + '.pdf' };
+        pdf.done = function (how) { return deck ? T('cantor.prDeckDone', { how: how, pages: T('pages', { n: DECK_PAGES }), mb: mb }) : T('cantor.prDone', { how: how, tablas: T('tablas', { n: count }), mb: mb, name: name }); };
+        if (shareFiles()) { if (what() === key) { made = pdf; toast(pdf.done(T('cantor.prReady')), 6000); } return; } // a choice changed meanwhile: it waits to be made again
+        return savePdf(bytes, pdf.filename).then(function (how) { if (how) toast(pdf.done(how)); });
+      }).catch(function (e) {
         toast(e && e.message ? e.message : T('cantor.prFail'));
-      }).then(function () { if (btn.isConnected) { btn.disabled = false; btn.textContent = T('cantor.prGo'); } });
+      }).then(function () { if (btn.isConnected) { btn.disabled = false; goBtn(); } });
     });
+    $('prDl').addEventListener('click', function () { if (made) download(made); });
     $('prx').addEventListener('click', closeSheet);
     info(); preview();
+  }
+  // A phone that can give a PDF to its share sheet. Not a computer, which saves it straight away.
+  function shareFiles() {
+    if (window.claude || !navigator.share || !navigator.canShare || !window.File || !(window.matchMedia && matchMedia('(hover: none) and (pointer: coarse)').matches)) return false;
+    try { return navigator.canShare({ files: [new File([new Uint8Array(4)], 'tablas.pdf', { type: 'application/pdf' })] }); } catch (e) { return false; }
   }
   function savePdf(bytes, filename) {
     var blob = new Blob([bytes], { type: 'application/pdf' });
