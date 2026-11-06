@@ -311,7 +311,8 @@ check('espanol: El Cantor in Spanish, every sheet and the ¡Lotería! box, and t
       await page.goto(base + 'cantor.html');
       await page.evaluate(() => document.fonts.ready);
       assert.equal(await page.getAttribute('html', 'lang'), 'es-MX');
-      assert.deepEqual([await page.textContent('#cap .no'), await page.textContent('#sabCount'), await page.textContent('#sub')], ['No. 5 · 5.ª en salir', '5 cantadas · faltan 49', 'Ronda 2 · 5 de 54']);
+      assert.deepEqual([await page.$eval('#cap .no', e => e.firstChild.textContent), await page.textContent('#cap .no .g'), await page.textContent('#sabCount'), await page.textContent('#sub')], ['No. 5 · 5.ª en salir', ' · Clásico', '5 cantadas · faltan 49', 'Ronda 2 · 5 de 54']);
+      assert.equal(await page.textContent('#sabGame'), 'Se juegaClásico');
       assert.deepEqual(await english(page), [], where + 'English on El Cantor');
       const sheet = async (open, what) => {
         await page.click(open);
@@ -788,6 +789,62 @@ check('cantor: deals cards and keeps the round through a reload', async () => {
     await noSideways(page, 'El Cantor');
     assert.deepEqual(problems, []);
   } finally { await ctx.close(); }
+});
+
+check('cantor: the game is in view for the table: over Ready with its diagram, beside Sábana, and under the card on a phone', async () => {
+  const EQUIS = [0, 3, 5, 6, 9, 10, 12, 15];
+  const shown = sel => `(() => { const e = document.querySelector('${sel}'); return !!e && !!e.offsetParent && getComputedStyle(e).display !== 'none'; })()`;
+  for (const lang of ['en', 'es']) {
+    const en = lang === 'en';
+    // On a phone: before the first card, the game and its shape over Ready when you are.
+    let ctx = await context(PHONE);
+    try {
+      const page = await ctx.newPage(), problems = watch(page);
+      await seed(page, { 'loteria.lang': lang, 'loteria.cantor': { order: run(1, 54), pos: 0, round: 4, patterns: ['equis'], juego: '', wins: [], last: Date.now(), settings: { speak: false, sound: false, awake: false } } });
+      await page.goto(base + 'cantor.html');
+      const label = () => page.$eval('#cap .gm', g => ({ top: g.querySelector('small').textContent, name: g.querySelector('b').textContent, all: g.textContent, teal: [...g.querySelectorAll('.mini i')].flatMap((x, i) => x.classList.contains('f') ? [i] : []), minis: g.querySelectorAll('.mini').length }));
+      let got = await label();
+      assert.equal(got.top, en ? 'Round 4 · We’re playing' : 'Ronda 4 · Se juega');
+      assert.equal(got.name, 'La Equis');
+      assert.match(got.all, en ? /La Equis — both diagonals/ : /La Equis — las dos diagonales/);
+      assert.deepEqual(got.teal, EQUIS, 'La Equis’s diagram shows both diagonals');
+      assert.ok(await page.$eval('#cap .gm b', b => parseFloat(getComputedStyle(b).fontSize)) >= 18, 'the game’s name is small');
+      // A new game picked shows at once; Clásico + Siete Loco shows both shapes.
+      await page.click('#patBtn');
+      await page.locator('.pat', { hasText: 'Clásico' }).click();
+      await page.click('#ptx');
+      got = await label();
+      assert.equal(got.name, 'Clásico');
+      await page.evaluate(() => { const s = JSON.parse(localStorage.getItem('loteria.cantor')); s.patterns = ['linea', 'esquinas', 'cuadro', 'siete']; localStorage.setItem('loteria.cantor', JSON.stringify(s)); });
+      await page.reload();
+      got = await label();
+      assert.equal(got.name, 'Clásico + Siete Loco');
+      assert.equal(got.minis, 2, 'a diagram for Clásico and one for Siete Loco');
+      assert.match(got.all, en ? /any one of them/ : /cualquiera de ellas/);
+      // Once cards are called, the line over the card's name keeps the game; the sábana isn't on screen.
+      for (let i = 0; i < 5; i++) await page.click('#nextBtn');
+      assert.equal(await page.textContent('#cap .no'), en ? 'No. 5 · 5th card · Clásico + Siete Loco' : 'No. 5 · 5.ª en salir · Clásico + Siete Loco');
+      assert.ok(await page.evaluate(shown('#cap .no .g')), 'the game under the card on a phone');
+      await noSideways(page, 'El Cantor with the game under the card');
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+    // On a laptop: the game beside Sábana, as big as Sábana, and not again under the card.
+    ctx = await context(DESKTOP);
+    try {
+      const page = await ctx.newPage(), problems = watch(page);
+      await seed(page, { 'loteria.lang': lang, 'loteria.cantor': { order: run(1, 54), pos: 7, round: 4, patterns: ['equis'], juego: '', wins: [], last: Date.now(), settings: { speak: false, sound: false, awake: false } } });
+      await page.goto(base + 'cantor.html');
+      assert.ok(await page.evaluate(shown('#sabGame')), 'the game beside Sábana');
+      assert.equal(await page.$eval('#sabGame', g => g.textContent), (en ? 'We’re playing' : 'Se juega') + 'La Equis');
+      assert.deepEqual(await page.$$eval('#sabGame .mini i', is => is.flatMap((x, i) => x.classList.contains('f') ? [i] : [])), EQUIS);
+      const size = await page.evaluate(() => [parseFloat(getComputedStyle(document.querySelector('#sabGame b')).fontSize), parseFloat(getComputedStyle(document.querySelector('.sabhd > b')).fontSize)]);
+      assert.ok(size[0] >= size[1], 'the game is smaller than Sábana: ' + size);
+      assert.ok(!(await page.evaluate(shown('#cap .no .g'))), 'the game is under the card too, beside the sábana');
+      const hd = await rect(page, '.sabhd'), g = await rect(page, '#sabGame');
+      assert.ok(g.top >= hd.top - 1 && g.bottom <= hd.bottom + 1, 'the game is on the sábana’s own line');
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
 });
 
 check('cantor: a recorded voice reads each card, and a clip that won’t load falls back without holding up the round', async () => {

@@ -106,6 +106,22 @@ a.chip{text-decoration:none}
 .cap h2{margin:3px 0 4px;font:400 clamp(28px,4.4vw,48px)/1.04 var(--disp);text-wrap:balance}
 .cap p{margin:0;font-style:italic;color:var(--ink2);font-size:clamp(14.5px,1.8vw,19px);line-height:1.35;text-wrap:balance}
 .cap .btn{margin-top:12px}
+/* the game being played, with its little diagram: over Ready when you are, and beside Sábana */
+.gm{display:flex;align-items:center;gap:10px;text-align:left;max-width:100%}
+.gm .minis{display:flex;gap:4px;flex:none}
+.gm .mini{width:34px}
+.gm .gt{min-width:0;text-wrap:balance}
+.gm .gt small{display:block;font:800 11px var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--red)}
+.gm .gt b{font:400 19px/1.15 var(--disp);color:var(--ink)}
+.gm .gt span{font-size:13.5px;color:var(--ink2)}
+.cap .gm{margin-bottom:6px}
+.cap .no .g{white-space:nowrap}
+.app.wide .cap .no .g,.app.tall .cap .no .g{display:none} /* the game is over the sábana there */
+.sabhd .gm{flex:1;justify-content:center;gap:8px;min-width:0}
+.sabhd .gm .mini{width:22px;gap:1px}
+.sabhd .gm .gt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sabhd .gm .gt small{display:inline;margin-right:6px;color:var(--ink3)}
+.sabhd .gm .gt b{font-size:18px}
 .cap .again{background:none;border:0;padding:0 4px;margin:0;font:inherit;color:inherit;text-wrap:balance;border-radius:8px} /* the card's name: a tap says it again */
 @media (hover:hover){.cap .again:hover{text-decoration:underline;text-decoration-color:var(--line2);text-decoration-thickness:2px;text-underline-offset:5px}}
 .antes{flex:none;display:flex;gap:6px;align-items:center;justify-content:center;height:34px;overflow:hidden;max-width:100%;flex-wrap:wrap}
@@ -127,9 +143,9 @@ a.chip{text-decoration:none}
 .app.side .antes{grid-column:2;grid-row:4}
 .app.side .sab{display:none}
 .app.side .bar{padding-top:6px;padding-bottom:8px}
-.sabhd{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:none;padding:0 2px}
-.sabhd b{font:400 18px var(--disp)}
-.sabhd span{font:800 11px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);font-variant-numeric:tabular-nums}
+.sabhd{display:flex;justify-content:space-between;align-items:center;gap:10px;flex:none;padding:0 2px}
+.sabhd>b{font:400 18px var(--disp)}
+.sabhd>#sabCount{font:800 11px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);font-variant-numeric:tabular-nums}
 .sbgrid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(var(--cols,9),var(--tw,48px));gap:var(--tg,5px);justify-content:center;align-content:start}
 .sb{position:relative;width:var(--tw,48px);aspect-ratio:200/327;border-radius:calc(var(--tw,48px)*.07);overflow:hidden}
 .sb.on{background:#fff;box-shadow:0 1px 0 rgba(0,0,0,.08)}
@@ -196,10 +212,10 @@ a.chip{text-decoration:none}
 .pats{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
 .pat{display:flex;gap:10px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:8px 10px;cursor:pointer;text-align:left}
 .pat.on{border-color:var(--teal);background:var(--teal-soft)}
-.pat .mini{display:grid;grid-template-columns:repeat(4,1fr);gap:1.5px;width:32px;flex:none}
-.pat .mini i{display:block;aspect-ratio:1;background:var(--line);border-radius:1px}
-.pat .mini i.f{background:var(--teal)}
-.pat .mini i.q{background:var(--gold)}
+.mini{display:grid;grid-template-columns:repeat(4,1fr);gap:1.5px;width:32px;flex:none}
+.mini i{display:block;aspect-ratio:1;background:var(--line);border-radius:1px}
+.mini i.f{background:var(--teal)}
+.mini i.q{background:var(--gold)}
 .pat b{display:block;font:400 15px var(--disp)}
 .pat small{display:block;font-size:11.5px;color:var(--ink2)}
 /* tabla (verify) */
@@ -363,7 +379,7 @@ a.chip{text-decoration:none}
       <div class="antes" id="antes"></div>
     </div>
     <div class="sab" id="sab">
-      <div class="sabhd"><b>Sábana</b><span id="sabCount"></span></div>
+      <div class="sabhd"><b>Sábana</b><span class="gm" id="sabGame"></span><span id="sabCount"></span></div>
       <div class="sbgrid" id="sbgrid"></div>
     </div>
   </div>
@@ -731,9 +747,17 @@ a.chip{text-decoration:none}
     renderCaption();
   }
   function reveal() { R.down = false; var inner = $('inner'); inner.className = 'inner'; if (!reduced) { void inner.offsetWidth; inner.className = 'inner turn'; } renderCaption(); renderSabana(); }
+  // A shape's little 4×4 diagram, as in the game picker: teal for its one way to win, gold for one of several ways.
+  function miniHtml(p) { var show = p.show || p.sets[0]; return '<span class="mini" aria-hidden="true">' + ALL.map(function (i) { return '<i class="' + (show.indexOf(i) >= 0 ? (p.combo || p.min || (p.sets && p.sets.length > 1) ? 'q' : 'f') : '') + '"></i>'; }).join('') + '</span>'; }
+  // The game being played, for the whole table to see: each shape's diagram (Clásico as one), and its name.
+  function gameShapes() { var both = L.hasClasico(C.patterns); return (both ? ['clasico'] : []).concat(C.patterns.filter(function (id) { return !both || L.CLASICO.indexOf(id) < 0; })).map(L.pat).filter(Boolean); }
+  function gameHtml(top, about) {
+    var ps = gameShapes(), what = ps.length === 1 ? T('pat.' + ps[0].id) : T('cantor.anyOne');
+    return '<span class="minis">' + ps.slice(0, 3).map(miniHtml).join('') + '</span><span class="gt"><small>' + esc(top) + '</small><b>' + esc(L.gameName(C.patterns)) + '</b>' + (about && ps.length ? '<span> — ' + esc(what) + '</span>' : '') + '</span>';
+  }
   function renderCaption() {
     var n = cur(), el = $('cap');
-    var head = '<div class="no">' + esc(T('cantor.roundGame', { r: C.round, game: L.gameName(C.patterns) })) + '</div>';
+    var head = '<div class="gm">' + gameHtml(T('cantor.playingRound', { r: C.round }), true) + '</div>';
     if (R.opening) { el.innerHTML = head + '<h2>¡Se va y se corre…</h2><p>…con la vieja en el coche!</p>'; return; }
     if (!n) {
       el.innerHTML = head + '<h2>' + T('cantor.readyH') + '</h2><p>' + T('cantor.readyP') + '</p><button class="btn red big" type="button" id="startBtn">' + T('cantor.start') + '</button>';
@@ -742,7 +766,7 @@ a.chip{text-decoration:none}
     }
     var c = card(n);
     var shown = R.down ? '¿Cuál será?' : c.name;
-    el.innerHTML = '<div class="no">' + T('cantor.capNo', { n: c.n, ord: T.ord(C.pos) }) + '</div><h2><button type="button" class="again" id="againBtn" title="' + esc(T('cantor.againTitle')) + '" aria-label="' + esc(T('cantor.againAria', { card: shown })) + '">' + esc(shown) + '</button></h2><p>“' + esc(c.verse) + '”</p>';
+    el.innerHTML = '<div class="no">' + T('cantor.capNo', { n: c.n, ord: T.ord(C.pos) }) + '<span class="g"> · ' + esc(L.gameName(C.patterns)) + '</span></div><h2><button type="button" class="again" id="againBtn" title="' + esc(T('cantor.againTitle')) + '" aria-label="' + esc(T('cantor.againAria', { card: shown })) + '">' + esc(shown) + '</button></h2><p>“' + esc(c.verse) + '”</p>';
     $('againBtn').addEventListener('click', function () { if (!keyed(this)) this.blur(); again(); }); // a tap leaves Space to start and pause
   }
   function renderAntes() {
@@ -781,6 +805,7 @@ a.chip{text-decoration:none}
     $('sub').textContent = T('cantor.sub', { r: C.round, n: C.pos });
     $('patBtn').textContent = L.gameName(C.patterns) + ' ▾';
     $('patBtn').classList.toggle('teal', C.patterns.length > 0);
+    $('sabGame').innerHTML = gameHtml(T('cantor.playing'), false);
   }
   var ICON = { play: '<path d="M8 5.5v13l10.5-6.5z"/>', pause: '<path d="M7 5h3.6v14H7zM13.4 5H17v14h-3.6z"/>', again: '<path d="M12 5a7 7 0 1 1-6.6 4.7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M4 4v6h6z"/>' };
   var RC = 2 * Math.PI * 33;
@@ -894,9 +919,9 @@ a.chip{text-decoration:none}
     function draw() {
       var host = $('pats'); host.innerHTML = '';
       PATS.forEach(function (p) {
-        var both = L.hasClasico(C.patterns), on = p.combo ? both : C.patterns.indexOf(p.id) >= 0 && !(both && L.CLASICO.indexOf(p.id) >= 0), show = p.show || p.sets[0];
+        var both = L.hasClasico(C.patterns), on = p.combo ? both : C.patterns.indexOf(p.id) >= 0 && !(both && L.CLASICO.indexOf(p.id) >= 0);
         var b = document.createElement('button'); b.type = 'button'; b.className = 'pat' + (on ? ' on' : '');
-        b.innerHTML = '<span class="mini">' + ALL.map(function (i) { return '<i class="' + (show.indexOf(i) >= 0 ? (p.combo || p.min || (p.sets && p.sets.length > 1) ? 'q' : 'f') : '') + '"></i>'; }).join('') + '</span><span><b>' + p.name + '</b><small>' + T('pat.' + p.id) + '</small></span>';
+        b.innerHTML = miniHtml(p) + '<span><b>' + p.name + '</b><small>' + T('pat.' + p.id) + '</small></span>';
         function pick(add) {
           if (add) toast(L.holdShape(C.patterns, p.id)); // on top of the game, saying what it did
           else C.patterns = p.combo ? L.CLASICO.slice() : [p.id];

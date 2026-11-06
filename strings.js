@@ -126,6 +126,9 @@
 
       // El Cantor: the call
       'cantor.roundGame': 'Round {r} · {game}',
+      'cantor.playingRound': 'Round {r} · We’re playing', // over the game's name and its little diagram, before the first card
+      'cantor.playing': 'We’re playing', // beside Sábana, over the sábana
+      'cantor.anyOne': 'a tabla wins with any one of them', // a game of two shapes or more
       'cantor.readyH': 'Ready when you are',
       'cantor.readyP': 'All 54 cards are shuffled. El Cantor turns them over one at a time and reads each one out.',
       'cantor.capNo': 'No. {n} · {ord} card',
@@ -658,6 +661,9 @@
 
       // El Cantor: the call
       'cantor.roundGame': 'Ronda {r} · {game}',
+      'cantor.playingRound': 'Ronda {r} · Se juega',
+      'cantor.playing': 'Se juega',
+      'cantor.anyOne': 'una tabla gana con cualquiera de ellas',
       'cantor.readyH': 'Cuando quieras',
       'cantor.readyP': 'Las 54 cartas ya están barajadas. El Cantor las voltea una por una y canta cada una.',
       'cantor.capNo': 'No. {n} · {ord} en salir',
