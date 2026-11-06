@@ -152,7 +152,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 .per{display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:10px 6px 8px;text-align:center}
 .per.on{border-color:var(--teal);background:var(--teal-soft)}
 .per b{font:400 15px var(--disp)}
-.per small{font-size:11.5px;color:var(--ink2);line-height:1.25}
+.per small{font-size:11.5px;color:var(--ink2);line-height:1.25;text-wrap:balance}
 .tchips .chip{cursor:pointer}
 .pwarn{color:var(--red);font-size:13px;font-weight:600;margin:0}
 .toast{position:fixed;left:50%;width:max-content;bottom:calc(20px + var(--sab));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:10px;font:600 13px var(--body);opacity:0;transition:.2s;pointer-events:none;z-index:95;max-width:90vw;text-align:center}
@@ -625,7 +625,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   }
   function sizeText(g) {
     var inch = g.pp.inch, f = inch ? 1 : 2.54, d = inch ? 2 : 1; // inches on Letter, centimetres on A4
-    return (g.cw * f).toFixed(d) + ' × ' + (g.ch * f).toFixed(d) + '\u00a0' + (inch ? T('print.unitIn') : 'cm'); // the unit stays with its number
+    return (g.cw * f).toFixed(d) + '\u00a0×\u00a0' + (g.ch * f).toFixed(d) + '\u00a0' + (inch ? T('print.unitIn') : 'cm'); // the size on one line, its unit with it
   }
   function pageIcon(per) {
     var r = per === 1 ? '<rect x="8" y="6" width="18" height="32" rx="1.5"/>'
@@ -647,7 +647,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       '<div class="row"><button class="btn red" type="button" id="pdo">' + T('print.print') + '</button></div>' +
       '<p class="note">' + T('print.scaleNote') + '</p></div>');
     function draw() {
-      $('pers').innerHTML = [1, 2, 4].map(function (n) { var g = geometry(n, P.set.paper); return '<button class="per' + (P.set.per === n ? ' on' : '') + '" type="button" data-v="' + n + '">' + pageIcon(n) + '<b>' + T('print.nPer', { n: n }) + '</b><small>' + T(n === 1 ? 'print.big' : n === 2 ? 'print.regular' : 'print.mini') + ' · ' + (g.L.rot ? T('print.sideways') + ' · ' : '') + T('print.cardsSize', { size: sizeText(g) }) + '</small></button>'; }).join('');
+      $('pers').innerHTML = [1, 2, 4].map(function (n) { var g = geometry(n, P.set.paper); return '<button class="per' + (P.set.per === n ? ' on' : '') + '" type="button" data-v="' + n + '">' + pageIcon(n) + '<b>' + T('print.nPer', { n: n }) + '</b><small>' + T(n === 1 ? 'print.big' : n === 2 ? 'print.regular' : 'print.mini') + '\u00a0· ' + (g.L.rot ? T('print.sideways') + '\u00a0· ' : '') + sizeText(g) + '</small></button>'; }).join('');
       $('pers').querySelectorAll('.per').forEach(function (b) { b.addEventListener('click', function () { P.set.per = +b.dataset.v; save(); renderPrint(); draw(); }); });
       document.querySelectorAll('#paperSeg button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === P.set.paper); });
       document.querySelectorAll('#nameSeg button').forEach(function (b) { b.classList.toggle('on', (b.dataset.v === '1') === !!P.set.names); });

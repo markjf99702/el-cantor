@@ -225,7 +225,7 @@ check('strings: Spanish for a device in Spanish until a language is chosen, and 
   // The Spanish read through by a native ear: everyday word order, the shapes named as the picker names them, tú
   // and one person where it's one person.
   assert.deepEqual([S('newRound'), S('cantor.shuffleNew'), S('cantor.buenaNew'), S('board.newRoundWhat')], ['Nueva ronda', 'Barajar — nueva ronda', '¡Buena! Nueva ronda', 'Nueva ronda — ¿a qué jugamos?']);
-  assert.deepEqual([S('shapeAdded', { shape: 'Esquinas' }), S('pat.siete'), S('pat.clasico'), S('pat.cuadro')], ['Ahora también se gana con Esquinas', 'siete casillas, las que sean', 'línea, esquinas o cuadrito', 'cualquier cuadrito de 2×2']);
+  assert.deepEqual([S('shapeAdded', { shape: 'Esquinas' }), S('pat.siete'), S('pat.clasico'), S('pat.cuadro')], ['Ahora también se gana con Esquinas', 'siete casillas, las que sean', 'línea, esquinas o cuadrito', 'cualquier cuadrito de\u00a02×2']);
   for (const k of ['cantor.patsNote_html', 'board.patsNote_html']) assert.match(S(k), /<b>Clásico<\/b> es lo de siempre — (una tabla gana con )?línea, esquinas o cuadrito\./, k);
   assert.deepEqual([S('cantor.startRoundNote', { n: 1 }), S('cantor.startRoundNote', { n: 6 })].map(t => t.split('. ')[0]), ['La carta que ya salió regresa a la baraja y se vuelve a barajar', 'Las 6 cartas que ya salieron regresan a la baraja y se vuelve a barajar']);
   assert.deepEqual([S('cantor.checkIt'), S('cantor.trust'), S('cantor.check'), S('cantor.prMaking'), S('cantor.prHowMany')], ['¡Lotería! — a ver', 'Le creemos', 'Revisamos la tabla', 'Haciendo el PDF…', '¿Cuántas?']);
@@ -311,7 +311,7 @@ check('espanol: El Cantor in Spanish, every sheet and the ¡Lotería! box, and t
       await page.goto(base + 'cantor.html');
       await page.evaluate(() => document.fonts.ready);
       assert.equal(await page.getAttribute('html', 'lang'), 'es-MX');
-      assert.deepEqual([await page.$eval('#cap .no', e => e.firstChild.textContent), await page.textContent('#cap .no .g'), await page.textContent('#sabCount'), await page.textContent('#sub')], ['No. 5 · 5.ª en salir', ' · Clásico', '5 cantadas · faltan 49', 'Ronda 2 · 5 de 54']);
+      assert.deepEqual([await page.$eval('#cap .no', e => e.firstChild.textContent), await page.textContent('#cap .no .g'), await page.textContent('#sabCount'), await page.textContent('#sub')], ['No. 5 · 5.ª en salir', '\u00a0· Clásico', '5 cantadas · faltan 49', 'Ronda 2 · 5 de 54']);
       assert.equal(await page.textContent('#sabGame'), 'Se juegaClásico');
       assert.deepEqual(await english(page), [], where + 'English on El Cantor');
       const sheet = async (open, what) => {
@@ -542,7 +542,7 @@ check('espanol: Make tablas in Spanish, with Print… and Play these in My tabla
       // Print…: the sizes in pulgadas, and each Sí / No on the right of its row, even when its label wraps.
       await page.click('#printBtn');
       assert.equal(await page.textContent('#dlg h2'), 'Imprimir tablas');
-      assert.match(await page.textContent('#pers .per.on small'), /^Normal · de lado · cartas de \d\.\d\d × \d\.\d\d\u00a0pulg\.$/);
+      assert.match(await page.textContent('#pers .per.on small'), /^Normal\u00a0· de lado\u00a0· \d\.\d\d\u00a0×\u00a0\d\.\d\d\u00a0pulg\.$/);
       assert.equal(await page.textContent('#pwarn'), 'Todavía no está llena; sus casillas vacías salen en blanco: Tabla 2 (faltan\u00a07)');
       const right = await page.$$eval('#paperSeg, #nameSeg', ss => ss.map(s => Math.round(s.getBoundingClientRect().right)));
       assert.equal(right[0], right[1], 'Sí / No isn’t on the right of its row');
@@ -600,14 +600,14 @@ check('home: El Cantor is the one that prints numbered tablas and Make tablas is
     await page.goto(base);
     // Someone who wants tablas for tonight finds the numbered set, not a blank tabla to fill by hand.
     assert.deepEqual(await page.$$eval('.tile h2 small', s => s.map(e => e.textContent)), ['Call the game', 'Play along', 'By hand']);
-    assert.equal(await page.textContent('.tile[href="cantor.html"] p'), 'Shuffles the deck and calls each card aloud in Spanish, prints numbered tablas, and checks a ¡Lotería!');
+    assert.equal(await page.textContent('.tile[href="cantor.html"] p'), 'Shuffles the deck and calls each card aloud in Spanish, prints numbered tablas, and checks a\u00a0¡Lotería!');
     assert.equal(await page.textContent('footer:has(#privacy)'), 'Everything stays on this device: no accounts, nothing sent anywhere. Need tablas for tonight? El Cantor’s Print tablas makes a numbered set it can check by number.');
     assert.equal(await page.textContent('footer:has(#privacy) b'), 'Print tablas');
     await page.click('#langSw [lang="es"]');
     await page.waitForLoadState();
     await until(page, () => document.documentElement.lang === 'es-MX');
     assert.deepEqual(await page.$$eval('.tile h2 small', s => s.map(e => e.textContent)), ['Canta la lotería', 'Juega', 'A mano']);
-    assert.equal(await page.textContent('.tile[href="cantor.html"] p'), 'Baraja las cartas, canta cada una en voz alta, imprime tablas numeradas y revisa una ¡Lotería!');
+    assert.equal(await page.textContent('.tile[href="cantor.html"] p'), 'Baraja las cartas, canta cada una en voz alta, imprime tablas numeradas y revisa una\u00a0¡Lotería!');
     assert.equal(await page.textContent('footer:has(#privacy) b'), 'Imprimir tablas');
     await page.click('#langSw [lang="en"]');
     await page.waitForLoadState();
@@ -615,7 +615,7 @@ check('home: El Cantor is the one that prints numbered tablas and Make tablas is
     // El Cantor's pace note names → for the next card, as a phone shows it (it hides the words Next card).
     await page.goto(base + 'cantor.html');
     await page.click('#setBtn');
-    assert.equal(await page.locator('#paceSeg').locator('xpath=../..').locator('.note').textContent(), 'Counted after the card is read. ▶ turns the next card automatically; → turns it now.');
+    assert.equal(await page.locator('#paceSeg').locator('xpath=../..').locator('.note').textContent(), 'Counted after the card is read. ▶\u00a0turns the next card automatically; →\u00a0turns it now.');
     await seed(page, { 'loteria.v1': ANA });
     await page.goto(base + 'board.html');
     await page.click('#setBtn');
@@ -823,7 +823,7 @@ check('cantor: the game is in view for the table: over Ready with its diagram, b
       assert.match(got.all, en ? /any one of them/ : /cualquiera de ellas/);
       // Once cards are called, the line over the card's name keeps the game; the sábana isn't on screen.
       for (let i = 0; i < 5; i++) await page.click('#nextBtn');
-      assert.equal(await page.textContent('#cap .no'), en ? 'No. 5 · 5th card · Clásico + Siete Loco' : 'No. 5 · 5.ª en salir · Clásico + Siete Loco');
+      assert.equal(await page.textContent('#cap .no'), en ? 'No. 5 · 5th card\u00a0· Clásico + Siete Loco' : 'No. 5 · 5.ª en salir\u00a0· Clásico + Siete Loco');
       assert.ok(await page.evaluate(shown('#cap .no .g')), 'the game under the card on a phone');
       await noSideways(page, 'El Cantor with the game under the card');
       assert.deepEqual(problems, []);
@@ -3422,9 +3422,9 @@ const SAFARI = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebK
 const CHROME_IOS = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/130.0.6723.90 Mobile/15E148 Safari/604.1';
 check('safari: in a Safari tab, My tablas and Make tablas say how to keep the tablas, until it’s dismissed, and every page asks to keep its saves', async () => {
   const LINE = {
-    en: 'Safari clears what a website saves after a week without a visit. Add El Cantor to your Home Screen (Share → Add to Home Screen) to keep these tablas.',
-    es: 'Safari borra lo que guarda un sitio web después de una semana sin visitarlo. Agrega El Cantor a tu pantalla de inicio (Compartir → Agregar a Inicio) para no perder estas tablas.',
-    drive: 'Safari clears what a website saves after a week without a visit. Add El Cantor to your Home Screen (Share → Add to Home Screen), or save to Google Drive, to keep these tablas.'
+    en: 'Safari clears what a website saves after a week without a visit. Add El Cantor to your Home Screen (Share\u00a0→ Add to Home Screen) to keep these tablas.',
+    es: 'Safari borra lo que guarda un sitio web después de una semana sin visitarlo. Agrega El Cantor a tu pantalla de inicio (Compartir\u00a0→ Agregar a Inicio) para no perder estas tablas.',
+    drive: 'Safari clears what a website saves after a week without a visit. Add El Cantor to your Home Screen (Share\u00a0→ Add to Home Screen), or save to Google Drive, to keep these tablas.'
   };
   const line = page => page.evaluate(() => { const e = document.getElementById('keepNote'); return e.checkVisibility() ? e.querySelector('span').textContent : null; });
   for (const lang of ['en', 'es']) {
@@ -3721,7 +3721,7 @@ check('print: Print… shows page 1 as it will print, says two per page turn sid
     assert.deepEqual([got.shown, got.tablas, got.rot, got.names, got.cards], [true, 2, 2, ['Tabla 1', 'Tabla 2'], 32], 'page 1 at two per page: ' + JSON.stringify(got));
     assert.ok(Math.abs(got.h / got.w - 11 / 8.5) < 0.03, 'a Letter page is 8.5 by 11: ' + got.w + '×' + got.h);
     const tile = n => page.textContent(`#pers .per[data-v="${n}"] small`);
-    assert.match(await tile(2), /^Regular · sideways · /);
+    assert.match(await tile(2), /^Regular\u00a0· sideways\u00a0· /);
     assert.doesNotMatch(await tile(1) + await tile(4), /sideways/);
     await page.click('#pers .per[data-v="4"]');
     got = await pv();

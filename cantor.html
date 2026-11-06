@@ -123,7 +123,7 @@ a.chip{text-decoration:none}
 .gm .gt b{font:400 19px/1.15 var(--disp);color:var(--ink)}
 .gm .gt span{font-size:13.5px;color:var(--ink2)}
 .cap .gm{margin-bottom:6px}
-.cap .no .g{white-space:nowrap}
+.cap .no .g b{font:inherit;white-space:nowrap} /* on a narrow phone the game goes under, whole, after its dot */
 .app.wide .cap .no .g,.app.tall .cap .no .g{display:none} /* the game is over the sábana there */
 .sabhd .gm{flex:1;justify-content:center;gap:8px;min-width:0}
 .sabhd .gm .mini{width:22px;gap:1px}
@@ -225,7 +225,7 @@ a.chip{text-decoration:none}
 .mini i.f{background:var(--teal)}
 .mini i.q{background:var(--gold)}
 .pat b{display:block;font:400 15px var(--disp)}
-.pat small{display:block;font-size:11.5px;color:var(--ink2)}
+.pat small{display:block;font-size:11.5px;color:var(--ink2);text-wrap:balance}
 /* tabla (verify) */
 .grid{display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);gap:2px;background:var(--line2);border:2px solid var(--line2);border-radius:8px;overflow:hidden;aspect-ratio:2/3.26;max-width:100%}
 .cell{position:relative;background:#fff;overflow:hidden}
@@ -298,7 +298,7 @@ a.chip{text-decoration:none}
 .winc{background:var(--paper);border:3px solid var(--gold);border-radius:22px;padding:26px 28px 22px;text-align:center;max-width:420px;width:100%;box-shadow:0 30px 60px -20px rgba(0,0,0,.6);animation:pop .35s cubic-bezier(.2,.9,.3,1.2)}
 @keyframes pop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
 .winc h2{margin:0;font:400 44px/1 var(--disp);color:var(--red)}
-.winc p{margin:10px 0 0;color:var(--ink2);font-size:15px}
+.winc p{margin:10px 0 0;color:var(--ink2);font-size:15px;text-wrap:balance}
 .winc .row{justify-content:center;margin-top:18px}
 .winc .who{display:flex;flex-direction:column;gap:10px;margin-top:16px}
 .winc .who input{width:100%;text-align:center}
@@ -776,7 +776,7 @@ a.chip{text-decoration:none}
     }
     var c = card(n);
     var shown = R.down ? '¿Cuál será?' : c.name;
-    el.innerHTML = '<div class="no">' + T('cantor.capNo', { n: c.n, ord: T.ord(C.pos) }) + '<span class="g"> · ' + esc(L.gameName(C.patterns)) + '</span></div><h2><button type="button" class="again" id="againBtn" title="' + esc(T('cantor.againTitle')) + '" aria-label="' + esc(T('cantor.againAria', { card: shown })) + '">' + esc(shown) + '</button></h2><p>“' + esc(c.verse) + '”</p>';
+    el.innerHTML = '<div class="no">' + T('cantor.capNo', { n: c.n, ord: T.ord(C.pos) }) + '<span class="g">\u00a0· <b>' + esc(L.gameName(C.patterns)) + '</b></span></div><h2><button type="button" class="again" id="againBtn" title="' + esc(T('cantor.againTitle')) + '" aria-label="' + esc(T('cantor.againAria', { card: shown })) + '">' + esc(shown) + '</button></h2><p>“' + esc(c.verse) + '”</p>';
     $('againBtn').addEventListener('click', function () { if (!keyed(this)) this.blur(); again(); }); // a tap leaves Space to start and pause
   }
   function renderAntes() {
@@ -1130,7 +1130,7 @@ a.chip{text-decoration:none}
   function throwConfetti() { var bg = document.querySelector('#winbox .winbg'); if (bg) L.confetti(bg); }
   function claimBox(was, typed) {
     var box = $('winbox'), r = C.round, list = co(), more = rule2() !== 'first';
-    box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p>' + esc(T('cantor.roundGame', { r: r, game: L.gameName(C.patterns) })) + ' · ' + T('cantor.cardsCalled', { n: C.pos }) + '</p>' + coHtml(list) +
+    box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p>' + esc(T('cantor.roundGame', { r: r, game: L.gameName(C.patterns).replace(/ /g, '\u00a0') })) + '\u00a0· ' + T('cantor.cardsCalled', { n: C.pos }) + '</p>' + coHtml(list) +
       '<div class="who"><input id="clWho" placeholder="' + T('cantor.whoWon') + '" autocomplete="off" autocapitalize="words" enterkeyhint="go" maxlength="30" aria-label="' + T('cantor.whoWonAria') + '">' + namesHtml('clNames') + '<p class="tonight" id="clTonight"></p></div>' +
       '<p class="note conote" id="clWhy" hidden>' + T('cantor.tieNoCard') + '</p>' +
       '<div class="row"><button class="btn red" type="button" id="clNew"></button><button class="btn sec" type="button" id="clBack"' + (list.length ? ' hidden' : '') + '>' + T('cantor.keepCalling') + '</button></div>' +
