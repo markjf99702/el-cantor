@@ -525,6 +525,7 @@ a{color:var(--teal);font-weight:700}
       '<div class="card"><div class="row sp"><div><b>' + T('sounds') + '</b><div class="note">' + T('board.soundsNote') + '</div></div><button class="chip" type="button" id="sndBtn"></button></div></div>' +
       '<div class="card"><div class="row sp"><div><b>' + T('board.dim') + '</b><div class="note">' + T('board.dimNote') + '</div></div><button class="chip" type="button" id="gdBtn"></button></div></div>' +
       '<div class="card"><div class="eyebrow">' + T('board.whoH') + '</div><div class="row" id="plist" style="margin-top:8px"></div><div class="row" style="margin-top:10px"><input id="pnew" placeholder="' + esc(T('board.addPerson')) + '" autocomplete="off" autocapitalize="words" enterkeyhint="done" style="flex:1"><button class="btn sm" type="button" id="padd">' + T('board.add') + '</button></div><p class="note" style="margin-top:8px">' + T.html('board.eachPerson_html') + '</p></div>' +
+      pasteCard() +
       '<div class="card"><div class="eyebrow">' + T('board.callingH') + '</div><p class="note" style="margin-top:6px">' + T.html('board.calling_html') + '</p></div>' +
       '<div class="card" id="syncCard" hidden></div>' +
       '<div class="card"><div class="eyebrow">' + T('board.about') + '</div><p class="note" style="margin-top:6px">' + T(window.LoteriaSync && LoteriaSync.ready ? 'board.aboutDrive' : 'board.aboutLocal') + '</p></div>' +
@@ -544,6 +545,7 @@ a{color:var(--teal);font-weight:700}
     $('gdBtn').addEventListener('click', function () { st.guide = !st.guide; save(); draw(); renderBoards(); });
     $('padd').addEventListener('click', function () { var n = $('pnew').value.trim(); if (!n) return; var p = { id: uid(), name: n, boards: [randomBoard('Tabla 1'), randomBoard('Tabla 2')] }; S.players.push(p); S.current = p.id; save(); $('pnew').value = ''; draw(); render(); toast(T('board.gotTwo', { name: n })); });
     $('pnew').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); $('padd').click(); } });
+    wirePaste();
     $('stx').addEventListener('click', closeSheet); draw();
   }
 
@@ -650,20 +652,36 @@ a{color:var(--teal);font-weight:700}
     } catch (e) { return null; } // a name cut off in the middle of a letter
   }
   function shareUrl(p) { return location.href.split('#')[0] + encodeShare(p); }
+  // It says the link is copied once it is. Where the clipboard refuses (no permission, some installed apps), the
+  // browser's older copy command has a go; if that can't either, the link is left selected in its box (shown if it
+  // was hidden) for the phone's own Copy.
+  function copyLink(url, box) {
+    function pick() { box.hidden = false; box.focus({ preventScroll: true }); box.select(); box.setSelectionRange(0, box.value.length); }
+    function old() { pick(); var ok = false; try { ok = document.execCommand('copy'); } catch (e) { } if (!ok) pick(); toast(T(ok ? 'linkCopied' : 'board.selectCopy')); }
+    if (!box.hidden) pick();
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { toast(T('linkCopied')); }, old);
+    else old();
+  }
+  // ---------- a share link pasted in ----------
+  // On an iPhone a link in Messages opens in Safari, and El Cantor on the Home Screen keeps its own saves apart from
+  // Safari's (WebKit bug 181849), so tablas sent to someone who installed it land in Safari. The link, or the whole
+  // message it came in, can be pasted in Settings (or on a first visit, Who's playing) and is offered as a tapped link is.
+  function pasteRow() { return '<div class="row"><input id="lnk" placeholder="' + esc(T('board.pastePh')) + '" aria-label="' + esc(T('board.pasteH')) + '" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="go" style="flex:1"><button class="btn sm" type="button" id="lnkAdd">' + T('board.add') + '</button></div>'; }
+  function pasteCard() { return '<div class="card"><div class="eyebrow">' + T('board.pasteH') + '</div><div style="margin-top:8px">' + pasteRow() + '</div><p class="note" style="margin-top:8px">' + T('board.pasteNote') + '</p></div>'; }
+  function wirePaste() {
+    $('lnkAdd').addEventListener('click', function () {
+      // The link ends at a space or a quote; a full stop or bracket after it isn't part of it (it ends in a card).
+      var m = /#t=[^\s<>"\u201c\u201d\u2018\u2019\u00ab\u00bb]+/.exec($('lnk').value), h = m && m[0].replace(/[^0-9a-z]+$/i, ''), imp = h && decodeShare(h);
+      if (!imp) { toast(T('board.pasteBad'), 4000); $('lnk').focus(); return; }
+      imp.link = h; importSheet(imp);
+    });
+    $('lnk').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); $('lnkAdd').click(); } });
+  }
   function shareSheet() {
     var p = player(), url = shareUrl(p);
     openSheet('<div class="hd"><h2>' + esc(T('board.shareH', { name: p.name })) + '</h2><button class="btn sec sm" type="button" id="shx">' + T('done') + '</button></div><div class="bd stack"><p class="note">' + esc(T('board.shareNote', { n: p.boards.length, name: p.name })) + '</p><input id="shUrl" readonly value="' + esc(url) + '"><div class="row"><button class="btn red" type="button" id="shCopy">' + T('copyLink') + '</button>' + (navigator.share ? '<button class="btn sec" type="button" id="shNative">' + T('board.send') + '</button>' : '') + '</div></div>');
     $('shx').addEventListener('click', closeSheet);
-    // It says the link is copied once it is. Where the clipboard refuses (no permission, some installed apps), the
-    // browser's older copy command has a go; if that can't either, the link stays selected for the phone's own Copy.
-    $('shCopy').addEventListener('click', function () {
-      var i = $('shUrl');
-      function pick() { i.focus({ preventScroll: true }); i.select(); i.setSelectionRange(0, i.value.length); }
-      function old() { pick(); var ok = false; try { ok = document.execCommand('copy'); } catch (e) { } if (!ok) pick(); toast(T(ok ? 'linkCopied' : 'board.selectCopy')); }
-      pick();
-      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { toast(T('linkCopied')); }, old);
-      else old();
-    });
+    $('shCopy').addEventListener('click', function () { copyLink(url, $('shUrl')); });
     var nb = $('shNative'); if (nb) nb.addEventListener('click', function () { navigator.share({ title: T('board.shareTitle'), text: T('board.shareText', { name: p.name }), url: url }).catch(function () { }); });
   }
   function maybeImport() {
@@ -734,6 +752,7 @@ a{color:var(--teal);font-weight:700}
   function welcomeSheet(name) { // name: one typed in a shared link's offer, turned down
     openSheet('<div class="hd"><h2>' + T('board.welcomeH') + '</h2></div><div class="bd stack"><p class="note">' + T(window.LoteriaSync && LoteriaSync.ready ? 'board.welcomeDrive' : 'board.welcomeLocal') + '</p><input id="wName" placeholder="' + esc(T('board.yourName')) + '" autocomplete="off" autocapitalize="words" aria-describedby="wNeed"><p class="need" id="wNeed" hidden>' + T('board.nameFirst') + '</p><div class="card"><div class="eyebrow">' + T('board.startWith') + '</div><div class="row" style="margin-top:8px"><button class="btn red" type="button" id="wRandom">' + T('board.wRandom') + '</button><button class="btn sec" type="button" id="wMark">' + T('board.wMark') + '</button></div><p class="note" style="margin-top:8px">' + T.html('board.eitherWay_html') + '</p></div>' +
       (window.LoteriaSync && LoteriaSync.ready ? '<p class="note">' + T('board.alreadyDrive') + '</p><div class="card" id="wSync"></div>' : '') +
+      '<div class="later" id="wPasteRow"><a href="#" id="wPaste">' + T('board.pasteAsk') + '</a></div>' +
       '<p class="later"><a href="./" id="wLater">' + T('board.notNow') + '</a></p>' + langRow() + '</div>');
     UI.welcome = true; // waits for a choice: no tap outside, no Escape. Not now goes home, and it asks again next time.
     UI.blank = true; render(); // over no tablas and no name, as a shared link's offer: nothing here is anyone's yet
@@ -750,6 +769,10 @@ a{color:var(--teal);font-weight:700}
       S.players = [p]; S.current = p.id; firstRun = false; save(); closeSheet(); render();
       toast(T(mark ? 'board.playingAs' : 'board.tapTablas', { name: name }));
     }
+    $('wPaste').addEventListener('click', function (e) { // a share link someone sent, for El Cantor on the Home Screen
+      e.preventDefault();
+      var row = $('wPasteRow'); row.className = ''; row.innerHTML = pasteRow(); wirePaste(); $('lnk').focus();
+    });
     $('wRandom').addEventListener('click', function () { go(false); });
     $('wMark').addEventListener('click', function () { go(true); });
     $('wName').addEventListener('keydown', function (e) { if (e.key === 'Enter') go(false); });

@@ -56,6 +56,7 @@ Someone calls the cards; you tap **Cantaron…**, pick the card, and it marks it
 - **The first visit** asks who's playing on the device, over an empty board, as nothing there is anyone's yet: a name, which it waits for, and two random tablas to edit or Mark's four to start with. **Not now** goes back to the home screen without saving anything, and the question comes back next time.
 - Several people on one device, each with their own tablas. The name of whoever is playing takes the place of the Lotería title at the top, and a tap on it switches to someone else.
 - **Share** makes a link that carries someone's tablas to another phone, six at most (a link with more brings its first six). The phone that opens it shows those tablas before anything is saved. On a phone nobody has set up, it asks whose they are, with the link's name filled in to keep or change. For someone already on the phone, whatever the capitals, it adds the link's tablas after theirs, leaving out any they already have, up to six (one named like one of theirs comes in as the next Tabla number); **Replace** puts the link's in place of theirs instead, on a second tap.
+- **Paste a share link** in Settings (or, on a first visit, under Who's playing) takes the link, or the whole message it came in, and offers its tablas as a tapped link does. It's for El Cantor on an iPhone's Home Screen, which keeps its own tablas apart from Safari's, where a tapped link opens (WebKit bug 181849).
 
 ### Make tablas — by hand, to print
 

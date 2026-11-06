@@ -1526,6 +1526,43 @@ check('espanol: on a first visit, English | Español on the shared-link sheet ke
   } finally { await ctx.close(); }
 });
 
+check('board: a share link pasted in Settings, or the whole message it came in, is offered as a tapped link is, and on a first visit too', async () => {
+  const cards = from => run(from).map(n => n.toString(36)).join('.');
+  const link = base + 'board.html#t=Mom\'s%20tablas~Tabla%201:' + cards(1) + '~Tabla%202:' + cards(17);
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.v1': ANA });
+    await page.goto(base + 'board.html');
+    await page.click('#setBtn');
+    assert.equal(await page.textContent('#lnkAdd'), 'Add');
+    await page.fill('#lnk', 'hello there');
+    await page.click('#lnkAdd');
+    await until(page, t => document.getElementById('toast').textContent === t, 'There’s no My tablas share link in that — paste the whole link');
+    assert.equal(await sheetTitle(page), 'Settings');
+    // The whole message, as Messages would paste it: words before the link and a full stop after it.
+    await page.fill('#lnk', 'For game night 🎉 ' + link + '. See you there!');
+    await page.click('#lnkAdd');
+    assert.equal(await sheetTitle(page), 'Tablas from Mom\'s tablas');
+    assert.equal(await page.locator('#sheet .ims .tabla').count(), 2);
+    await page.click('#imOk');
+    assert.deepEqual((await saved(page, 'loteria.v1')).players.map(p => p.name + ':' + p.boards.map(b => b.cards[0]).join(',')), ['Ana:1,17', 'Mom\'s tablas:1,17']);
+    // A new device: Who's playing has a way to paste it too, as Settings can't be reached before someone is set up.
+    await page.evaluate(() => localStorage.clear());
+    await page.goto(base + 'board.html');
+    assert.equal(await sheetTitle(page), 'Who’s playing on this device?');
+    assert.equal(await page.textContent('#wPaste'), 'Got a share link? Paste it here');
+    await page.click('#wPaste');
+    await page.fill('#lnk', link);
+    await page.press('#lnk', 'Enter');
+    assert.equal(await sheetTitle(page), 'Tablas from Mom\'s tablas');
+    await page.fill('#imName', 'Lupe');
+    await page.click('#imOk');
+    assert.deepEqual((await saved(page, 'loteria.v1')).players.map(p => p.name + ':' + p.boards.length), ['Lupe:2']);
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('board: a share link carries a ~ in a name, and a broken link doesn’t stop the board', async () => {
   let url;
   for (const step of ['share', 'open', 'broken']) {
