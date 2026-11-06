@@ -2623,6 +2623,36 @@ check('board: Cantaron… on a phone shows four cards to a row, named once, by t
   }
 });
 
+check('search: Enter picks El Sol for “sol” and La Rana for “rana”, in Cantaron…, the checker and Make tablas', async () => {
+  // El Soldado holds "sol" and La Araña "rana", so each search finds two cards, the one it names first.
+  const ctx = await context(DESKTOP);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.v1': ANA });
+    await page.goto(base + 'board.html');
+    await page.click('#callBtn');
+    await page.fill('#pkq', 'sol');
+    assert.deepEqual(await page.$$eval('#pk .pk', ps => ps.map(p => p.getAttribute('aria-label'))), ['El Sol', 'El Soldado']);
+    await page.press('#pkq', 'Enter');
+    await page.fill('#pkq', 'rana'); await page.press('#pkq', 'Enter');
+    assert.deepEqual((await saved(page, 'loteria.game')).called, [46, 54], 'Cantaron…');
+    await seed(page, { 'loteria.cantor': { order: run(1, 54), pos: 54, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], juego: '', wins: [], settings: { speak: false, sound: false, check: true } } });
+    await page.goto(base + 'cantor.html');
+    await page.click('#lotBtn');
+    await page.fill('#vfQ', 'el sol'); await page.press('#vfQ', 'Enter');
+    await page.fill('#vfQ', 'rana'); await page.press('#vfQ', 'Enter');
+    assert.deepEqual(await page.$$eval('#vfChips .chip', bs => bs.map(b => b.textContent.split(' · ')[0])), ['El Sol', 'La Rana'], 'the checker');
+    await seed(page, { 'loteria.print': { tablas: [{ id: 't1', name: 'Tabla 1', cards: Array(16).fill(0) }] } });
+    await page.goto(base + 'print.html');
+    await page.fill('#q', 'rana');
+    assert.deepEqual(await page.$$eval('#dg .dk:not([hidden])', ds => ds.sort((a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top || a.getBoundingClientRect().left - b.getBoundingClientRect().left).map(d => d.getAttribute('aria-label'))), ['La Rana', 'La Araña']);
+    await page.press('#q', 'Enter');
+    await page.fill('#q', 'sol'); await page.press('#q', 'Enter');
+    assert.deepEqual((await saved(page, 'loteria.print')).tablas[0].cards.slice(0, 3), [54, 46, 0], 'Make tablas');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('board: a card picked again in Cantaron… stays called, and taking one back says so', async () => {
   const ctx = await context(PHONE);
   try {

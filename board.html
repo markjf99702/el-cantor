@@ -255,7 +255,7 @@ a{color:var(--teal);font-weight:700}
 <script>(function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
-  var L = window.Loteria, CARDS = L.CARDS, card = L.card, src = L.src, fold = L.fold;
+  var L = window.Loteria, CARDS = L.CARDS, card = L.card, src = L.src;
 
   // ---------- patterns ----------
   var PATS = L.PATS, ALL = L.ALL, CLASICO = L.CLASICO, pat = L.pat;
@@ -477,10 +477,8 @@ a{color:var(--teal);font-weight:700}
     sh.setAttribute('data-tall', ''); // the search box stays put as the cards narrow down
     var q = $('pkq'), grid = $('pk');
     function draw() {
-      var f = fold(q.value.trim()), num = parseInt(f, 10);
       grid.innerHTML = '';
-      CARDS.forEach(function (c) {
-        if (f && !(c.key.indexOf(f) >= 0 || (num && c.n === num))) return;
+      L.findCards(q.value).cards.forEach(function (c) { // the card the box names first: "sol" is El Sol before El Soldado
         var d = document.createElement('div'); d.className = 'pk' + (mode === 'call' && isCalled(c.n) ? ' called' : '') + (taken && taken.indexOf(c.n) >= 0 ? ' taken' : '');
         d.setAttribute('role', 'button'); d.tabIndex = 0; d.setAttribute('aria-label', mode === 'call' && isCalled(c.n) ? T('calledAria', { card: c.name }) : c.name); d.dataset.n = c.n;
         d.innerHTML = '<img src="' + src(c.n) + '" alt="" loading="lazy">';
@@ -498,7 +496,7 @@ a{color:var(--teal);font-weight:700}
     }
     q.addEventListener('input', draw);
     // Enter goes no further: a ¡Lotería! on a phone puts the focus on Cantaron…, which the same key would press again.
-    q.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); var first = grid.querySelector('.pk'); if (first && grid.querySelectorAll('.pk').length === 1) first.click(); } });
+    q.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); var first = grid.querySelector('.pk'); if (first && (grid.querySelectorAll('.pk').length === 1 || L.findCards(q.value).exact)) first.click(); } });
     $('pkx').addEventListener('click', closeSheet);
     draw();
     if (!('ontouchstart' in window)) q.focus();

@@ -55,7 +55,7 @@ Keyboard: Space starts or pauses · → next card · ← puts the last card back
 
 ### My tablas — playing along
 
-Someone calls the cards; you tap **Cantaron…**, pick the card, and it marks itself on every tabla where it appears. A card picked again stays marked. To take one back, tap its square or its name in the row of called cards, or ↶ for the last one.
+Someone calls the cards; you tap **Cantaron…**, pick the card, and it marks itself on every tabla where it appears. Its box finds a card by name or number, the card it names first, so “sol” and Enter is El Sol, not El Soldado, as in the checker and Make tablas. A card picked again stays marked. To take one back, tap its square or its name in the row of called cards, or ↶ for the last one.
 
 - Pick the game each round: Clásico, or a single shape, the same list El Cantor uses.
 - A win cheers, outlines the tabla and says what to tell the caller: *juego CANELA, tabla 7* for a tabla added with **+ A printed tabla**, so El Cantor can check it by number, or else the winning cards to read out (just "the cards with a bean" for a big shape like Tabla Llena). Its **New round** asks before it takes the beans off, as ↺ does.

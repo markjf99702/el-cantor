@@ -253,7 +253,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
 <script>(function () {
   'use strict';
   var $ = function (id) { return document.getElementById(id); };
-  var L = window.Loteria, CARDS = L.CARDS, card = L.card, src = L.src, fold = L.fold;
+  var L = window.Loteria, CARDS = L.CARDS, card = L.card, src = L.src;
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function uid() { return Math.random().toString(36).slice(2, 8); }
   function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
@@ -364,10 +364,11 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     var g = $('dg');
     g.innerHTML = CARDS.map(function (c) { return '<div class="dk" data-n="' + c.n + '" role="button" tabindex="0" aria-label="' + esc(c.name) + '"><img src="' + src(c.n) + '" alt="" draggable="false"><div class="n">' + c.name + '</div><span class="x" hidden></span></div>'; }).join('') + '<div class="dempty" hidden></div>';
   }
+  // The cards the box finds, the one it names first ("sol" is El Sol before El Soldado), in the deck's own order otherwise.
   function filterDeck() {
-    var f = fold(UI.q.trim()), num = parseInt(f, 10), shown = 0;
-    document.querySelectorAll('#dg .dk').forEach(function (d) { var c = card(+d.dataset.n), on = !f || c.key.indexOf(f) >= 0 || (num && c.n === num); d.hidden = !on; if (on) shown++; });
-    var e = document.querySelector('#dg .dempty'); e.hidden = shown > 0; e.textContent = T('noMatch', { q: UI.q });
+    var at = {}; L.findCards(UI.q).cards.forEach(function (c, i) { at[c.n] = i; });
+    document.querySelectorAll('#dg .dk').forEach(function (d) { var i = at[d.dataset.n]; d.hidden = i == null; d.style.order = i || 0; });
+    var e = document.querySelector('#dg .dempty'); e.hidden = Object.keys(at).length > 0; e.textContent = T('noMatch', { q: UI.q });
   }
   function paintDeck() {
     var to = tapTarget(), tb = to && to.tb, c = tb ? counts(tb) : {}, lim = limit();
@@ -461,7 +462,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   function scrollToTabla(id) { var el = document.querySelector('#tg .tb[data-t="' + id + '"]'); if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
   $('dg').addEventListener('click', function (e) { var d = e.target.closest('.dk'); if (d) tapCard(+d.dataset.n); });
   $('q').addEventListener('input', function () { UI.q = $('q').value; filterDeck(); });
-  $('q').addEventListener('keydown', function (e) { if (e.key !== 'Enter') return; var v = [].filter.call(document.querySelectorAll('#dg .dk'), function (d) { return !d.hidden; }); if (v.length === 1) { tapCard(+v[0].dataset.n); $('q').select(); } });
+  $('q').addEventListener('keydown', function (e) { if (e.key !== 'Enter') return; var f = L.findCards(UI.q); if (f.cards.length === 1 || f.exact) { tapCard(f.cards[0].n); $('q').select(); } });
 
   // ---------- drag and drop (mouse, touch and pen through pointer events) ----------
   var D = null, noClickUntil = 0, ghost = $('ghost'), overEl = null;

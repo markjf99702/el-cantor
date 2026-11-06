@@ -66,6 +66,20 @@
   ].map(function (c, i) { return { n: i + 1, f: c[0], name: c[1], verse: c[2], key: fold(c[1]) }; });
   var BYFILE = {}; CARDS.forEach(function (c) { BYFILE[c.f] = c.n; });
   function card(n) { return CARDS[n - 1]; }
+  // The cards a search finds, best first: the card the search names (its number, or its name with or without its El
+  // or La: "sol" is El Sol, though El Soldado holds it too, and "rana" La Rana, not La Araña), then names that start
+  // with it, then the rest that hold it. exact: the first is the card the search names, which Enter picks.
+  function findCards(q) {
+    var f = fold(String(q).trim()), num = parseInt(f, 10), out = [];
+    if (!f) return { cards: CARDS.slice(), exact: false };
+    CARDS.forEach(function (c) {
+      var bare = c.key.replace(/^(el|la|las|los) /, '');
+      var r = (num && c.n === num) || c.key === f || bare === f ? 0 : c.key.indexOf(f) === 0 || bare.indexOf(f) === 0 ? 1 : c.key.indexOf(f) >= 0 ? 2 : -1;
+      if (r >= 0) out.push({ c: c, r: r });
+    });
+    out.sort(function (a, b) { return a.r - b.r || a.c.n - b.c.n; });
+    return { cards: out.map(function (x) { return x.c; }), exact: !!out.length && out[0].r === 0 };
+  }
   function src(n) { return DIR + card(n).f + '.jpg'; }
 
   // ---------- Mark's four: the family's own tablas, each with one card twice, side by side ----------
@@ -227,7 +241,7 @@
   function randomJuego(not) { var w; do { w = WORDS[Math.floor(Math.random() * WORDS.length)]; } while (w === not); return w; }
 
   window.Loteria = {
-    CARDS: CARDS, BYFILE: BYFILE, card: card, src: src, fold: fold, originals: originals,
+    CARDS: CARDS, BYFILE: BYFILE, card: card, src: src, fold: fold, findCards: findCards, originals: originals,
     PATS: PATS, CLASICO: CLASICO, ALL: ALL, pat: pat, isClasico: isClasico, hasClasico: hasClasico, gameName: gameName, holdShape: holdShape, squaresNeeded: squaresNeeded, check: check, closest: closest,
     juegoName: juegoName, juego: juego, juegoTabla: juegoTabla, randomJuego: randomJuego
   };

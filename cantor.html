@@ -1122,7 +1122,7 @@ a.chip{text-decoration:none}
         $('vfBody').innerHTML = '<div class="stack"><div class="verdict" id="vfV"></div><div class="chips" id="vfChips"></div><input id="vfQ" type="search" enterkeyhint="search" placeholder="' + T('cantor.findCard') + '" autocomplete="off"><div class="pick" id="vfPick"></div></div>';
         $('vfQ').value = V.q;
         $('vfQ').addEventListener('input', function () { V.q = this.value; pickGrid(); });
-        $('vfQ').addEventListener('keydown', function (e) { if (e.key === 'Enter') { var only = $('vfPick').querySelectorAll('.pk'); if (only.length === 1) only[0].click(); } });
+        $('vfQ').addEventListener('keydown', function (e) { if (e.key === 'Enter') { var all = $('vfPick').querySelectorAll('.pk'); if (all.length === 1 || (all.length && L.findCards(V.q).exact)) all[0].click(); } });
         pickGrid(); cardsVerdict();
       }
     }
@@ -1160,9 +1160,8 @@ a.chip{text-decoration:none}
       if (over > 0) bd.scrollTop += over;
     }
     function pickGrid() {
-      var f = L.fold(V.q.trim()), num = parseInt(f, 10), host = $('vfPick'); host.innerHTML = '';
-      CARDS.forEach(function (c) {
-        if (f && !(c.key.indexOf(f) >= 0 || (num && c.n === num))) return;
+      var host = $('vfPick'); host.innerHTML = '';
+      L.findCards(V.q).cards.forEach(function (c) { // the card the box names first: "sol" is El Sol before El Soldado
         var sel = V.picked.indexOf(c.n) >= 0, o = orderOf(c.n);
         var d = document.createElement('button'); d.type = 'button'; d.className = 'pk' + (sel ? (o ? ' yes' : ' no') : '');
         d.setAttribute('aria-pressed', sel ? 'true' : 'false');

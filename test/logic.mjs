@@ -173,6 +173,25 @@ check('shapes: the fewest squares each game wins with, which card by card goes b
   assert.equal(L.squaresNeeded(['llena']), 16);
 });
 
+check('search: every card is found first by its name or number, with or without its El or La, for Enter to pick', () => {
+  // "sol" is in El Soldado and "rana" in La Araña: the card the search names comes first all the same.
+  const L = loadDeck();
+  for (const c of L.CARDS) {
+    const bare = c.name.replace(/^(El|La|Las|Los) /, '');
+    for (const q of [c.name, c.name.toLowerCase(), bare, bare.toUpperCase(), String(c.n), ' ' + bare + ' ']) {
+      const f = L.findCards(q);
+      assert.ok(f.exact && f.cards[0].n === c.n, `“${q}” finds ${f.cards.slice(0, 3).map(x => x.name).join(', ')} first, not ${c.name}`);
+    }
+  }
+  const names = q => plain(L.findCards(q).cards.map(c => c.name));
+  assert.deepEqual(names('sol'), ['El Sol', 'El Soldado']);
+  assert.deepEqual(names('rana'), ['La Rana', 'La Araña']);
+  assert.deepEqual(names('lu'), ['La Luna', 'La Chalupa']); // a name that starts with it first
+  assert.equal(L.findCards('la').exact, false, '“la” names no card');
+  assert.equal(L.findCards('').cards.length, 54);
+  assert.deepEqual(names('zz'), []);
+});
+
 // ---------------------------------------------------------------- when a printed tabla first won
 check('cantor: when a tabla first won is the card that finished its earliest shape, call by call', () => {
   const html = read('cantor.html'), L = loadDeck(), C = { order: [], pos: 0 };
