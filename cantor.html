@@ -271,6 +271,7 @@ a.chip{text-decoration:none}
 .cell .mk{position:absolute;left:50%;top:50%;z-index:4;width:74%;aspect-ratio:1;transform:translate(-50%,-50%) rotate(var(--rot,0deg));filter:drop-shadow(0 2px 3px rgba(0,0,0,.55))}
 .cell .mk svg{width:100%;height:100%;display:block}
 .vf{display:grid;grid-template-columns:minmax(0,210px) minmax(0,1fr);gap:18px;align-items:start}
+#vfTabla{position:sticky;top:0} /* beside a long Our tablas, the tabla checked stays in view as the list scrolls to its verdict */
 .vfin{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
 .vfin input#vfJ{width:9.5em;text-transform:uppercase;font-weight:800;letter-spacing:.06em}
 .verdict{border-radius:12px;padding:12px 14px;border:1px solid var(--line);background:var(--paper)}
@@ -415,6 +416,7 @@ a.chip{text-decoration:none}
   .bar{gap:8px}.lotb{font-size:20px;padding:0 15px;height:50px}
   .vf{grid-template-columns:1fr}.vf .grid{max-width:200px;margin:0 auto}
   .vf>.stack{order:-1} /* the boxes and the verdict above the tabla, so the verdict sits right under the number typed */
+  #vfTabla{position:static}
   .vfwin .card{grid-template-columns:minmax(0,1fr)}.vfwin .chips{grid-row:auto}
   .vfhd .seg{display:flex;width:100%}.vfhd .seg button{flex:1 1 auto;padding:7px 6px} /* the checker's three ways, across the phone */
   .cap{min-height:70px}

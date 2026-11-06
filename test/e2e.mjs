@@ -1928,6 +1928,21 @@ check('cantor: Our tablas lists everyone in My tablas on this device under their
     assert.deepEqual(await english(page), [], 'English in Our tablas');
     assert.deepEqual(problems, []);
   } finally { await ctx2.close(); }
+  // On a laptop with the whole family listed, the tabla tapped near the end stays in view beside the list, by its verdict.
+  const ctx3 = await context(DESKTOP);
+  try {
+    const page = await ctx3.newPage(), problems = watch(page);
+    const family = ['Abuela', 'Beto', 'Cora', 'Dani', 'Elena', 'Fer'].map((name, i) => ({ id: 'p' + i, name, boards: [0, 1, 2].map(k => ({ id: 't' + k, name: 'Tabla ' + (k + 1), cards: run(1 + i * 6 + k * 2) })) }));
+    family[5].boards[2].cards = BETO1;
+    await seed(page, { 'loteria.v1': { ...PEOPLE, players: family, current: 'p0' }, 'loteria.cantor': CANTOR({}) });
+    await page.goto(base + 'cantor.html');
+    await page.click('#lotBtn');
+    await page.click('#vfOurs .ot[aria-label="Fer’s Tabla 3"]');
+    assert.equal(await page.textContent('#vfV h3'), '¡Buena! Línea');
+    const r = await page.evaluate(() => { const g = document.querySelector('#vfTabla .grid').getBoundingClientRect(), bd = document.querySelector('.sheet .bd').getBoundingClientRect(), win = document.querySelector('.vfwin').getBoundingClientRect(), v = document.getElementById('vfV').getBoundingClientRect(); return { top: Math.round(g.top), bottom: Math.round(g.bottom), from: Math.round(bd.top), to: Math.round(win.top), verdict: Math.round(v.bottom), scrolled: document.querySelector('.sheet .bd').scrollTop }; });
+    assert.ok(r.scrolled > 0 && r.top >= r.from && r.bottom <= r.to && r.verdict <= r.to, `the tabla tapped isn’t in view beside its verdict: ${JSON.stringify(r)}`);
+    assert.deepEqual(problems, []);
+  } finally { await ctx3.close(); }
   // The caller's device has nobody in My tablas yet; another device on the same Google account adds Beto while the
   // checker is open, and he comes into Our tablas with the next sync.
   const g = fakeGoogle();
