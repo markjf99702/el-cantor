@@ -128,7 +128,7 @@ To put it online with GitHub Pages: **Settings → Pages → Build and deploymen
   - `voices.json` lists the voices and where each verse ends, so Adivinanza can stop before the name.
 - `tools/make_voices.py` — renders `audio/` with [Kokoro-82M](https://github.com/hexgrad/kokoro) (Apache-2.0), using espeak-ng's Latin American Spanish for pronunciation. Rerun it after changing a verse in `deck.js`; the usage is at the top of the script.
 - `tools/screenshots.mjs` — draws the pictures in `docs/`, with each tool opened on the same saved tablas every time. It saves them with 256 colours using upng-js, from `npm install`.
-- `test/e2e.mjs` — what `npm test` runs: El Cantor, My tablas and Make tablas used through the real pages in Chromium, two devices saving to a stand-in Google Drive (`test/fake-google.mjs`), every page offline, and the words: each one in English and Spanish, and the screens in Spanish swept for English left behind. It runs Chromium in US English, whatever the computer's language, and so does `tools/screenshots.mjs`.
+- `test/e2e.mjs` — what `npm test` runs: El Cantor, My tablas and Make tablas used through the real pages in Chromium, El Cantor's PDFs read back card by card, a recorded voice calling a round, two devices saving to a stand-in Google Drive (`test/fake-google.mjs`), the first visit bringing tablas from the old address, every page offline, and the words: each one in English and Spanish, and the screens in Spanish swept for English left behind. It runs Chromium in US English, whatever the computer's language, and so does `tools/screenshots.mjs`.
 
 ## License
 

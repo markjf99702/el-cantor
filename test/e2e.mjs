@@ -774,6 +774,42 @@ check('cantor: deals cards and keeps the round through a reload', async () => {
   } finally { await ctx.close(); }
 });
 
+check('cantor: a recorded voice reads each card, and a clip that won’t load falls back without holding up the round', async () => {
+  // Every voice in voices.json has its 54 card clips, the opening line and ¡Lotería!, and says where each verse ends.
+  const { voices } = JSON.parse(await readFile(join(root, 'audio/voices.json'), 'utf8'));
+  assert.ok(voices.length >= 1, 'voices.json lists no voices');
+  for (const v of voices) {
+    const clips = run(1, 54).map(n => String(n).padStart(2, '0')).concat(['open', 'loteria']);
+    const missing = clips.filter(c => !existsSync(join(root, 'audio', v.id, c + '.' + (v.ext || 'mp3'))));
+    assert.deepEqual(missing, [], v.id + ' has no clip for ' + missing.join(', '));
+    for (const n of run(1, 54)) assert.ok(v.cards[n] && v.cards[n][0] < v.cards[n][1], v.id + ' doesn’t say where card ' + n + '’s verse ends and its name starts');
+  }
+  // Dora reading names at the fast pace, with card 3's clip gone: card 3 is read by the device's voice, if it has one,
+  // and the round goes on.
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page), asked = new Set();
+    await page.addInitScript(() => {
+      window.__played = 0; // clips of a voice started, not the card's snap
+      const start = AudioBufferSourceNode.prototype.start;
+      AudioBufferSourceNode.prototype.start = function () { if (this.buffer && this.buffer.duration > 0.3) window.__played++; return start.apply(this, arguments); };
+    });
+    page.on('request', r => { const m = /audio\/dora\/(\w+)\.mp3$/.exec(r.url()); if (m) asked.add(m[1]); });
+    await ctx.route(base + 'audio/dora/03.mp3', r => r.fulfill({ status: 404, body: '' }));
+    await seed(page, { 'loteria.cantor': { order: run(1, 54), pos: 0, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], wins: [], settings: { speak: true, style: 'name', voice: 'pack:dora', rate: 1, pace: 'fast', sound: false, awake: false, check: false } } });
+    await page.goto(base + 'cantor.html');
+    const t0 = Date.now();
+    await page.click('#playBtn');
+    await until(page, () => JSON.parse(localStorage.getItem('loteria.cantor')).pos >= 5 && window.__played >= 5, null, 40000);
+    const took = Date.now() - t0;
+    assert.ok(took < 30000, 'five cards took ' + took + ' ms');
+    for (const c of ['open', '01', '02', '03', '04', '05']) assert.ok(asked.has(c), 'Dora’s ' + c + ' clip was never asked for');
+    // The opening line, then cards 1, 2, 4 and 5 from Dora's clips; card 3 from the device.
+    assert.equal(await page.evaluate(() => window.__played), 5);
+    assert.deepEqual(problems.filter(p => !/^404 .*audio\/dora\/03\.mp3$|^console: Failed to load resource: .* 404/.test(p)), []);
+  } finally { await ctx.close(); }
+});
+
 check('cantor: the card called is the card itself, edge to edge on its own cream paper, with no white mat round it', async () => {
   // The cards are drawn on cream (#FBF4E4) with their own rounded frame; a white mat round them made a second frame,
   // and the brightest thing on a dark screen.
@@ -1116,6 +1152,59 @@ check('cantor: Print tablas starts on Letter for a phone in plain or Latin Ameri
       assert.deepEqual(problems, []);
     } finally { await ctx.close(); }
   }
+});
+
+// A PDF from El Cantor's writer, read back: its pages' drawing (left uncompressed), in order, with the card pictures each
+// page draws, as card numbers, in the order drawn; and its page sizes.
+async function readPdf(file) {
+  const pdf = await readFile(file), text = pdf.toString('latin1');
+  const L = await loadDeck(), byBytes = new Map();
+  for (const c of L.CARDS) byBytes.set(createHash('sha1').update(await readFile(join(root, 'cards', c.f + '.jpg'))).digest('hex'), c.n);
+  const images = {};
+  for (const m of text.matchAll(/(\d+) 0 obj\n<< \/Type \/XObject \/Subtype \/Image [^>]*?\/Length (\d+) >>\nstream\n/g)) {
+    const at = m.index + m[0].length;
+    images['Im' + m[1]] = byBytes.get(createHash('sha1').update(pdf.subarray(at, at + Number(m[2]))).digest('hex')) || null;
+  }
+  const pages = [...text.matchAll(/<< \/Length \d+ >>\nstream\n([\s\S]*?)\nendstream/g)].map(m => m[1]);
+  return {
+    head: text.slice(0, 8),
+    pages,
+    cards: pages.map(p => [...p.matchAll(/\/(Im\d+) Do/g)].map(m => images[m[1]]).filter(n => n)),
+    sizes: [...text.matchAll(/\/Type \/Page \/Parent \d+ 0 R \/MediaBox \[0 0 ([\d.]+) ([\d.]+)\]/g)].map(m => m[1] + 'x' + m[2]),
+  };
+}
+
+check('cantor: Print tablas makes the PDF it says, with CANELA 7 square for square as the checker has it', async () => {
+  const ctx = await context(DESKTOP, { acceptDownloads: true });
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await page.goto(base + 'cantor.html');
+    await page.click('#printBtn');
+    await page.fill('#prName', 'CANELA');
+    await page.fill('#prCount', '12'); await page.press('#prCount', 'Tab');
+    await page.click('#prPer [data-v="1"]'); await page.click('#prPaper [data-v="letter"]');
+    assert.equal(await page.textContent('#prInfo'), '12 tablas from juego CANELA · 12 pages, Letter');
+    let [dl] = await Promise.all([page.waitForEvent('download'), page.click('#prGo')]);
+    assert.equal(dl.suggestedFilename(), 'loteria-canela-12.pdf');
+    await until(page, () => /^Downloaded — 12 tablas, [\d.]+ MB\. Keep the name CANELA\.$/.test(document.getElementById('toast').textContent));
+    let pdf = await readPdf(await dl.path());
+    assert.equal(pdf.head, '%PDF-1.4');
+    assert.deepEqual(pdf.sizes, Array(12).fill('612x792'), 'twelve Letter pages, upright');
+    pdf.pages.forEach((p, i) => assert.ok(p.includes('(JUEGO CANELA) Tj') && p.includes('(' + (i + 1) + ') Tj'), 'page ' + (i + 1) + ' is headed JUEGO CANELA No. ' + (i + 1)));
+    // The cards printed on tabla 7, in reading order, as test 'deck: the juego generator never changes' has them.
+    assert.deepEqual(pdf.cards[6], [21, 51, 23, 6, 16, 33, 8, 4, 14, 20, 9, 40, 29, 41, 13, 25]);
+    const L = await loadDeck();
+    assert.deepEqual(pdf.cards, plain(L.juego('CANELA', 12)), 'every printed tabla is the juego’s');
+    // Two per page on A4, three tablas: two pages turned sideways.
+    await page.fill('#prCount', '3'); await page.press('#prCount', 'Tab');
+    await page.click('#prPer [data-v="2"]'); await page.click('#prPaper [data-v="a4"]');
+    [dl] = await Promise.all([page.waitForEvent('download'), page.click('#prGo')]);
+    assert.equal(dl.suggestedFilename(), 'loteria-canela-3.pdf');
+    pdf = await readPdf(await dl.path());
+    assert.deepEqual(pdf.sizes, ['841.89x595.28', '841.89x595.28']);
+    assert.deepEqual(pdf.cards, [L.juego('CANELA', 3)[0].concat(L.juego('CANELA', 3)[1]), plain(L.juego('CANELA', 3)[2])].map(plain));
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
 });
 
 check('cantor: Print tablas at two per page draws the cut line between two tablas, and none beside a lone one', async () => {
@@ -2267,6 +2356,10 @@ check('print: Play these sends six full tablas at most, picked with Which tablas
     await until(page, () => (document.querySelector('#sheet h2') || {}).textContent === 'Tablas from Family');
     assert.deepEqual(await page.$$eval('#sheet .ims .k', ks => ks.map(k => k.textContent)), ['Tabla 8']);
     await noSideways(page, 'My tablas');
+    // Taken, it is Family's Tabla 8, square for square as Make tablas had it.
+    await page.click('#imOk');
+    assert.deepEqual((await saved(page, 'loteria.v1')).players.map(p => [p.name, p.boards.map(b => [b.name, b.cards])]), [['Family', [['Tabla 8', EIGHT[7].cards]]]]);
+    await until(page, () => document.querySelectorAll('#boards .cell img').length === 16);
     assert.deepEqual(problems, []);
   } finally { await ctx.close(); }
 });
@@ -3136,6 +3229,86 @@ check('drive: on a phone, a tap on ☁ or Sync now says what went wrong, in Engl
       assert.deepEqual(A.problems.filter(p => !/googleapis\.com|accounts\.google\.com|Failed to load resource/.test(p)), [], where);
     } finally { await ctx.close(); }
   }
+});
+
+// ---------------------------------------------------------------- the move from junkdrawer.works/el-cantor/
+// carry.js, with both addresses served here: el-cantor.junkdrawer.works from this folder, and junkdrawer.works with a
+// carry.html that answers as the real one does (junkdrawer.works/carry.html hands each project its own keys only).
+const CARRY_HTML = String.raw`<!doctype html><script>
+const PROJECTS = { 'el-cantor': { local: ['loteria.', 'junkdrawer.google'] }, 'patience': { local: ['patience.'] } };
+addEventListener('message', e => {
+  const m = /^https:\/\/([a-z0-9-]+)\.junkdrawer\.works$/.exec(e.origin), project = m && PROJECTS[m[1]];
+  if (!project || !e.data || e.data.carry !== true) return;
+  const local = {};
+  for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (project.local.some(p => k === p || (/[.:/]$/.test(p) && k.startsWith(p)))) local[k] = localStorage.getItem(k); }
+  e.source.postMessage({ carried: { local, idb: [] } }, e.origin);
+});
+</script>`;
+async function movedContext(carryPage = true) {
+  const ctx = await browser.newContext({ ...PHONE, locale: 'en-US', serviceWorkers: 'block' });
+  await ctx.route(() => true, async route => {
+    const url = new URL(route.request().url());
+    if (url.origin === 'https://junkdrawer.works') {
+      if (url.pathname === '/carry.html') return carryPage ? route.fulfill({ status: 200, contentType: 'text/html', body: CARRY_HTML }) : route.fulfill({ status: 404, contentType: 'text/html', body: 'Not found' });
+      return route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>blank</title>' });
+    }
+    if (url.origin === 'https://el-cantor.junkdrawer.works') {
+      if (url.pathname === '/__blank') return route.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>blank</title>' });
+      const file = url.pathname.endsWith('/') ? url.pathname + 'index.html' : url.pathname;
+      try { return route.fulfill({ status: 200, contentType: TYPES[extname(file)] || 'application/octet-stream', body: await readFile(join(root, decodeURIComponent(file))) }); } catch { return route.fulfill({ status: 404, body: '' }); }
+    }
+    return route.abort();
+  });
+  return ctx;
+}
+const loads = page => { const n = { count: 0 }; page.on('request', r => { if (r.isNavigationRequest() && r.frame() === page.mainFrame()) n.count++; }); return n; };
+
+check('carry: the first visit brings the tablas saved at junkdrawer.works/el-cantor/, and only El Cantor’s', async () => {
+  const OLD = 'https://junkdrawer.works/el-cantor/', NEW = 'https://el-cantor.junkdrawer.works/';
+  const errors = [];
+  const ctx = await movedContext();
+  try {
+    const page = await ctx.newPage();
+    page.on('pageerror', e => errors.push(e.message));
+    await page.goto(OLD);
+    await page.evaluate(a => {
+      localStorage.setItem('loteria.v1', JSON.stringify(a));
+      localStorage.setItem('loteria.lang', 'es');
+      localStorage.setItem('junkdrawer.google', JSON.stringify({ email: 'mark@gmail.com' }));
+      localStorage.setItem('patience.v1', '{"games":3}');
+    }, ANA);
+    // Something already saved at the new address stays as it is.
+    await page.goto(NEW + '__blank');
+    await page.evaluate(() => localStorage.setItem('loteria.lang', 'en'));
+    const n = loads(page);
+    await page.goto(NEW + 'board.html');
+    await until(page, () => [...document.querySelectorAll('#boards .cell img')].length > 0 && localStorage.getItem('junkdrawer.carried'), null, 15000);
+    assert.equal(n.count, 2, 'the first visit loads the page twice: stopped, then with the saves');
+    const got = await page.evaluate(() => Object.fromEntries(Object.keys(localStorage).map(k => [k, localStorage.getItem(k)])));
+    assert.deepEqual(JSON.parse(got['loteria.v1']).players.map(p => p.name), ['Ana'], 'Ana’s tablas came along');
+    assert.equal(got['loteria.lang'], 'en', 'a save already at the new address was written over');
+    assert.ok(got['junkdrawer.google'], 'the Google sign-in didn’t come along');
+    assert.ok(!('patience.v1' in got), 'another project’s save came along');
+    assert.match(await page.textContent('#boards'), /Mine 1/);
+    n.count = 0;
+    await page.reload();
+    await page.waitForSelector('#callBtn');
+    assert.equal(n.count, 1, 'a later visit loads once');
+  } finally { await ctx.close(); }
+  assert.deepEqual(errors, []);
+  // With carry.html not there, the page still opens, after a short wait, and tries again next time.
+  const gone = await movedContext(false);
+  try {
+    const page = await gone.newPage();
+    page.on('pageerror', e => errors.push(e.message));
+    const t0 = Date.now();
+    await page.goto(NEW + 'cantor.html');
+    await page.waitForSelector('#playBtn', { timeout: 15000 });
+    await until(page, () => localStorage.getItem('junkdrawer.carry-tries') === '1', null, 15000);
+    assert.ok(Date.now() - t0 < 10000, 'El Cantor took ' + (Date.now() - t0) + ' ms to open without carry.html');
+    assert.equal(await page.evaluate(() => localStorage.getItem('junkdrawer.carried')), null);
+    assert.deepEqual(errors, []);
+  } finally { await gone.close(); }
 });
 
 // ---------------------------------------------------------------- offline
