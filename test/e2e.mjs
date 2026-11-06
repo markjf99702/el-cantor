@@ -1017,8 +1017,8 @@ check('cantor: house rules: a late ¡Lotería! counts until Too late is chosen, 
   const CANELA7 = [21, 51, 23, 6, 16, 33, 8, 4, 14, 20, 9, 40, 29, 41, 13, 25], top = CANELA7.slice(0, 4);
   const order = top.concat(run(1, 54).filter(n => top.indexOf(n) < 0)); // CANELA 7's top row, done on the 4th card, La Sirena
   for (const lang of ['en', 'es']) {
-    const W = { en: { rules: 'House rules', late: 'A late ¡Lotería!', counts: 'Counts', strict: 'Too late after the next card', too: 'Too late', good: 'It was good on La Sirena, 2 cards ago.', cards: 'The last of their cards, La Sirena, was called 2 cards ago.', buena: '¡Buena! Línea', keep: 'Keep calling', anyway: 'Count it anyway' },
-      es: { rules: 'Reglas de la casa', late: 'Una ¡Lotería! tarde', counts: 'Cuenta', strict: 'Ya no cuenta después de la siguiente carta', too: 'Llegó tarde', good: 'Ya estaba completa con La Sirena, hace 2 cartas.', cards: 'La última de sus cartas, La Sirena, salió hace 2 cartas.', buena: '¡Buena! Línea', keep: 'Seguir cantando', anyway: 'Darla por buena' } }[lang];
+    const W = { en: { rules: 'House rules', two: 'Two ¡Lotería!s on the same card', late: 'A late ¡Lotería!', counts: 'Counts', strict: 'Too late after the next card', too: 'Too late', good: 'It was good on La Sirena, 2 cards ago.', cards: 'The last of their cards, La Sirena, was called 2 cards ago.', buena: '¡Buena! Línea', keep: 'Keep calling', anyway: 'Count it anyway' },
+      es: { rules: 'Reglas de la casa', two: 'Dos ¡Loterías! con la misma carta', late: 'Una ¡Lotería! tarde', counts: 'Cuenta', strict: 'Ya no cuenta después de la siguiente carta', too: 'Llegó tarde', good: 'Ya estaba completa con La Sirena, hace 2 cartas.', cards: 'La última de sus cartas, La Sirena, salió hace 2 cartas.', buena: '¡Buena! Línea', keep: 'Seguir cantando', anyway: 'Darla por buena' } }[lang];
     const ctx = await context(PHONE);
     try {
       const page = await ctx.newPage(), problems = watch(page);
@@ -1033,7 +1033,7 @@ check('cantor: house rules: a late ¡Lotería! counts until Too late is chosen, 
       // The house rules in Settings, Counts chosen, and Too late a tap away.
       await page.click('#setBtn');
       assert.equal(await page.textContent('#rulesCard .eyebrow'), W.rules);
-      assert.equal(await page.textContent('#rulesCard .rule > b'), W.late);
+      assert.deepEqual(await page.$$eval('#rulesCard .rule > b', bs => bs.map(b => b.textContent)), [W.two, W.late]);
       assert.deepEqual(await page.$$eval('#lateOpts .opt', bs => bs.map(b => b.querySelector('b').textContent + (b.classList.contains('on') ? ' (on)' : ''))), [W.counts + ' (on)', W.strict]);
       await page.click('#lateOpts [data-v=strict]');
       assert.equal((await saved(page, 'loteria.cantor')).settings.late, 'strict');
@@ -1069,6 +1069,186 @@ check('cantor: house rules: a late ¡Lotería! counts until Too late is chosen, 
       assert.deepEqual(problems, []);
     } finally { await ctx.close(); }
   }
+});
+
+// Two ¡Lotería!s on the card just called: CANELA 7's top row was done on the 4th card and CANELA 1's on the 8th. Then
+// El Gallo is on neither tabla, the 10th card on both, and the 11th on CANELA 1 only.
+const TIE = (() => { const top7 = [21, 51, 23, 6], top1 = [18, 24, 9, 36], next = [1, 41, 50]; const first = top7.concat(top1, next); return first.concat(run(1, 54).filter(n => first.indexOf(n) < 0)); })();
+const cantorSave = (extra = {}, settings = {}) => ({ order: TIE, pos: 8, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], juego: 'CANELA', wins: [], ...extra, settings: { speak: false, sound: false, check: false, ...settings } });
+
+check('cantor: two ¡Lotería!s on one card, checked: the next card decides by itself, from the tablas it was shown', async () => {
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.cantor': cantorSave({}, { check: true }) });
+    await page.goto(base + 'cantor.html');
+    const box = () => page.$eval('#winbox', b => b.hidden ? '' : b.querySelector('.winc > p').textContent);
+    const wins = async () => (await saved(page, 'loteria.cantor')).wins.map(w => [w.who, w.tabla]);
+    // The first ¡Buena! is saved at once, as ever, with Another winner on this card under it.
+    await page.click('#lotBtn');
+    await page.fill('#vfN', '7'); await page.fill('#vfWho', 'Ana'); await page.click('#vfWin');
+    assert.equal(await box(), 'Ana wins round 1 after 8 cards.');
+    assert.deepEqual(await wins(), [['Ana', 'CANELA 7']]);
+    await page.click('#celMore');
+    // Another winner: the checker opens again, saying who's in, and Ana waits for the house rule.
+    assert.equal(await page.textContent('#sheet .conote'), 'Another winner on this card, with Ana.');
+    assert.deepEqual(await wins(), [], 'Ana was saved before the house rule settled the round');
+    await page.fill('#vfN', '1'); await page.fill('#vfWho', 'Beto'); await page.click('#vfWin');
+    assert.equal(await box(), 'Ana and Beto are tied on round 1. The next card on one of their tablas wins it.');
+    assert.equal(await page.textContent('#celOk'), 'Keep calling — the next card decides');
+    await page.keyboard.press('Escape');
+    assert.ok(await page.evaluate(() => !document.getElementById('winbox').hidden), 'Escape put away a box whose winners aren’t saved');
+    await page.click('#celOk');
+    const bar = () => page.$eval('#tieBar', b => b.hidden ? '' : b.textContent);
+    assert.equal(await bar(), 'Ana and Beto are tied: the next card on their tablas wins');
+    assert.deepEqual(await wins(), []);
+    // The tie-break outlasts a reload.
+    await page.reload();
+    assert.equal(await bar(), 'Ana and Beto are tied: the next card on their tablas wins');
+    const upTo = n => until(page, n => JSON.parse(localStorage.getItem('loteria.cantor')).tie.upTo === n, n);
+    // ¡Lotería! with no card called since the tie says what's going on.
+    await page.click('#lotBtn');
+    await until(page, t => document.getElementById('toast').textContent === t, 'Ana and Beto are tied: the next card on their tablas wins');
+    // El Gallo is on neither tabla: El Cantor knows both, so it says nothing and the tie goes on.
+    await page.click('#nextBtn'); await upTo(9);
+    assert.equal(await box(), '');
+    // Someone shouts anyway: ¡Lotería! asks who has the card, with what El Cantor knows set (here, nobody).
+    await page.click('#lotBtn');
+    assert.deepEqual(await page.$$eval('#winbox .tied .chip', bs => bs.map(b => b.textContent + (b.classList.contains('on') ? ' (on)' : ''))), ['Ana', 'Beto']);
+    assert.equal(await page.textContent('#askOk'), 'Neither, keep calling');
+    await page.click('#askOk');
+    // The next card is on both: still tied.
+    await page.click('#nextBtn'); await upTo(10);
+    await until(page, t => document.getElementById('toast').textContent === t, (await page.evaluate(() => Loteria.card(41).name)) + ' is on Ana and Beto’s tablas — still tied');
+    assert.equal(await box(), '');
+    // The one after is on Beto's only: Beto wins, with his tabla.
+    await page.click('#nextBtn');
+    await until(page, () => !document.getElementById('winbox').hidden);
+    assert.equal(await box(), 'Beto had ' + await page.evaluate(() => Loteria.card(50).name) + ' and wins round 1.');
+    assert.deepEqual(await wins(), [['Beto', 'CANELA 1']]);
+    assert.equal(await bar(), '');
+    assert.equal((await saved(page, 'loteria.cantor')).tie, null);
+    await page.click('#celOk');
+    assert.equal(await sheetTitle(page), 'Round 2 — what are we playing?');
+    await noSideways(page, 'El Cantor after a tie-break');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
+check('cantor: two ¡Lotería!s on one card, taken on their word: it asks who has each card; or they share; or the first wins', async () => {
+  for (const lang of ['en', 'es']) {
+    const W = {
+      en: { more: '+ Another winner on this card', tieGo: 'Keep calling — the next card decides', bar: 'Ana and Beto are tied: the next card on their tablas wins', who: 'Who has El Gallo?', neither: 'Neither, keep calling', beto: 'Beto wins round 1', both: 'Ana and Beto: still tied, keep calling', won: c => 'Beto had ' + c + ' and wins round 1.', shareGo: 'They share it — shuffle for round 2', tonight: 'Ana 1 · Beto 1 tonight', row: 'Round 1Ana and Betoshared · Clásico · 8 cards' },
+      es: { more: '+ Otro ganador con esta carta', tieGo: 'Seguir cantando — decide la siguiente carta', bar: 'Empate entre Ana y Beto: gana el primero al que le salga una carta', who: '¿Quién tiene El Gallo?', neither: 'Ninguno, seguir cantando', beto: 'Beto gana la ronda 1', both: 'Ana y Beto: siguen empatados, seguir cantando', won: c => 'Beto tenía ' + c + ' y gana la ronda 1.', shareGo: 'Comparten — barajar para la ronda 2', tonight: 'Esta noche: Ana 1 · Beto 1', row: 'Ronda 1Ana y Betocompartida · Clásico · 8 cartas' }
+    }[lang];
+    const ctx = await context(PHONE);
+    try {
+      const page = await ctx.newPage(), problems = watch(page);
+      await seed(page, { 'loteria.lang': lang, 'loteria.cantor': cantorSave() });
+      await page.goto(base + 'cantor.html');
+      const wins = async () => (await saved(page, 'loteria.cantor')).wins.map(w => w.who + (w.share ? ' (shared)' : ''));
+      // Keep calling, the next card decides, the start: names typed one after the other.
+      await page.click('#lotBtn');
+      assert.ok(await page.isDisabled('#clMore'), lang + ': Another winner with no name typed');
+      await page.fill('#clWho', 'Ana'); await page.click('#clMore');
+      assert.equal(await page.textContent('#winbox .co .chip'), 'Ana ✕');
+      assert.equal(await page.inputValue('#clWho'), '');
+      assert.ok(await page.evaluate(() => document.getElementById('clBack').hidden), lang + ': Keep calling beside a winner in');
+      await page.fill('#clWho', 'Beto');
+      assert.equal(await page.textContent('#clNew'), W.tieGo);
+      await page.click('#clNew');
+      assert.equal(await page.$eval('#tieBar', b => b.textContent), W.bar);
+      // Store-bought tablas: El Cantor asks, card by card. Neither has El Gallo.
+      await page.click('#nextBtn');
+      await until(page, () => !!document.querySelector('#winbox:not([hidden]) #askOk'));
+      assert.equal(await page.textContent('#winbox h2'), W.who);
+      assert.deepEqual(await page.$$eval('#winbox .tied .chip', bs => bs.map(b => b.textContent)), ['Ana', 'Beto']);
+      assert.equal(await page.textContent('#askOk'), W.neither);
+      await page.keyboard.press('Escape');
+      assert.ok(await page.evaluate(() => !document.getElementById('winbox').hidden), lang + ': Escape put the question away');
+      await page.click('#askOk');
+      assert.deepEqual(await wins(), []);
+      // Both have the next one: they stay tied. Then Beto has the one after, and wins.
+      await page.click('#nextBtn');
+      await until(page, () => !!document.querySelector('#winbox:not([hidden]) #askOk'));
+      await page.click('#winbox .tied .chip >> nth=0'); await page.click('#winbox .tied .chip >> nth=1');
+      assert.equal(await page.textContent('#askOk'), W.both);
+      await page.click('#askOk');
+      assert.equal(await page.$eval('#tieBar', b => b.hidden ? '' : b.textContent), W.bar);
+      await page.click('#nextBtn');
+      await until(page, () => !!document.querySelector('#winbox:not([hidden]) #askOk'));
+      await page.click('#winbox .tied .chip >> nth=1');
+      assert.equal(await page.textContent('#askOk'), W.beto);
+      await page.click('#askOk');
+      assert.equal(await page.textContent('#winbox .winc > p'), W.won(await page.evaluate(() => Loteria.card(50).name)));
+      assert.deepEqual(await wins(), ['Beto']);
+      await noSideways(page, lang + ': the tie-break');
+      // They share the round: each gets it, and Settings lists the round once with both.
+      await page.evaluate(s => localStorage.setItem('loteria.cantor', JSON.stringify(s)), cantorSave({}, { two: 'share' }));
+      await page.reload();
+      await page.click('#lotBtn');
+      await page.fill('#clWho', 'Ana'); await page.click('#clMore'); await page.fill('#clWho', 'Beto');
+      assert.equal(await page.textContent('#clNew'), W.shareGo);
+      assert.equal(await page.textContent('#clTonight'), W.tonight);
+      await page.click('#clNew'); await page.click('#ptx');
+      assert.deepEqual(await wins(), ['Ana (shared)', 'Beto (shared)']);
+      await page.click('#setBtn');
+      assert.deepEqual(await page.$$eval('#winsCard .wins:not(.nights) div', ds => ds.map(d => d.textContent)), [W.row]);
+      assert.deepEqual(await page.$$eval('#twoOpts .opt', bs => bs.map(b => b.dataset.v + (b.classList.contains('on') ? ' (on)' : ''))), ['next', 'share (on)', 'first']);
+      // First to shout wins: one winner, as before, and no Another winner.
+      await page.click('#twoOpts [data-v=first]'); await page.click('#stx');
+      await page.click('#nextBtn'); await page.click('#lotBtn');
+      assert.equal(await page.$('#clMore'), null, lang + ': Another winner under First to shout wins');
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
+});
+
+check('cantor: a second check closed with no winner brings back the first, and Tabla Llena or the deck’s end shares a tie', async () => {
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.cantor': cantorSave({}, { check: true }) });
+    await page.goto(base + 'cantor.html');
+    const box = () => page.$eval('#winbox', b => b.hidden ? '' : b.querySelector('.winc > p').textContent);
+    const wins = async () => (await saved(page, 'loteria.cantor')).wins.map(w => w.who + (w.share ? ' (shared)' : ''));
+    await page.click('#lotBtn');
+    await page.fill('#vfN', '7'); await page.fill('#vfWho', 'Ana'); await page.click('#vfWin');
+    await page.click('#celMore');
+    await page.fill('#vfN', '2'); // not good
+    await page.click('#vfBack');
+    assert.equal(await box(), 'Ana wins round 1 after 8 cards.', 'the first winner’s box didn’t come back');
+    assert.deepEqual(await wins(), [], 'Ana is saved twice over, or not waiting');
+    await page.click('#celOk');
+    assert.deepEqual(await wins(), ['Ana']);
+    await page.click('#ptx');
+    // Tabla Llena: no card still to come can be on a full tabla, so a tie is shared.
+    await page.evaluate(s => localStorage.setItem('loteria.cantor', JSON.stringify(s)), cantorSave({ patterns: ['llena'], wins: [] }, { check: false }));
+    await page.reload();
+    await page.click('#lotBtn');
+    await page.fill('#clWho', 'Ana'); await page.click('#clMore'); await page.fill('#clWho', 'Beto');
+    assert.equal(await page.textContent('#clNew'), 'They share it — shuffle for round 2');
+    assert.ok(await page.isVisible('#clWhy'), 'Tabla Llena didn’t say why they share');
+    await page.click('#clNew'); await page.click('#ptx');
+    assert.deepEqual(await wins(), ['Ana (shared)', 'Beto (shared)']);
+    // The deck runs out under a tie-break: they share it.
+    await page.evaluate(s => localStorage.setItem('loteria.cantor', JSON.stringify(s)), cantorSave({ pos: 53, wins: [], tie: { round: 1, at: 53, upTo: 53, who: [{ who: 'Ana', cards: TIE.slice(0, 16) }, { who: 'Beto', cards: TIE.slice(0, 16) }] } }));
+    await page.reload();
+    await page.click('#nextBtn');
+    await until(page, () => !document.getElementById('winbox').hidden);
+    assert.equal(await box(), 'Ana and Beto share round 1 after 54 cards. No card left on their tablas can break the tie, so they share it.');
+    assert.deepEqual(await wins(), ['Ana (shared)', 'Beto (shared)']);
+    // Putting cards back past the tied card calls the tie off.
+    await page.evaluate(s => localStorage.setItem('loteria.cantor', JSON.stringify(s)), cantorSave({ pos: 9, wins: [], tie: { round: 1, at: 8, upTo: 9, who: [{ who: 'Ana' }, { who: 'Beto' }] } }));
+    await page.reload();
+    assert.ok(await page.isVisible('#tieBar'));
+    await page.click('#backBtn');
+    assert.ok(await page.isVisible('#tieBar'), 'back to the tied card called the tie off');
+    await page.click('#backBtn');
+    assert.ok(!(await page.isVisible('#tieBar')), 'back past the tied card kept the tie');
+    assert.equal((await saved(page, 'loteria.cantor')).tie, null);
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
 });
 
 check('cantor: on a short phone a printed tabla’s verdict shows above the winner row', async () => {
@@ -1233,9 +1413,10 @@ check('cantor: tonight’s standings under the winner in both ¡Lotería! boxes,
     await page.click('#stx');
     // A new night: El Cantor last used seven hours ago, on round 14 with ten cards out. The round shows as 1, and
     // shuffled before a card of it is called, the new one is round 1 too; the next is 2.
-    await page.evaluate(() => { const c = JSON.parse(localStorage.getItem('loteria.cantor')); c.round = 14; c.pos = 10; c.last = Date.now() - 7 * 3600e3; localStorage.setItem('loteria.cantor', JSON.stringify(c)); });
+    await page.evaluate(() => { const c = JSON.parse(localStorage.getItem('loteria.cantor')); c.round = 14; c.pos = 10; c.last = Date.now() - 7 * 3600e3; c.tie = { round: 14, at: 9, upTo: 10, who: [{ who: 'Ana' }, { who: 'Beto' }] }; localStorage.setItem('loteria.cantor', JSON.stringify(c)); });
     await page.reload();
     assert.equal(await page.textContent('#sub'), 'Round 1 · 10 of 54', 'a new night kept last night’s round');
+    assert.ok(!(await page.isVisible('#tieBar')), 'a tie-break left from last night is still on');
     await page.click('#newBtn'); await page.click('#nrOk'); await page.click('#ptx');
     assert.equal(await page.textContent('#sub'), 'Round 1 · 0 of 54', 'the first shuffle of the night made round 2');
     await page.click('#nextBtn');

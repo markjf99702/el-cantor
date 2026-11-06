@@ -100,6 +100,7 @@ a.chip{text-decoration:none}
 .back .seal{position:absolute;left:50%;top:50%;width:66%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:#FFF3D6;box-shadow:0 0 0 calc(var(--cw,220px)*.012) #E2B04A,0 0 0 calc(var(--cw,220px)*.03) #A92B27,0 0 0 calc(var(--cw,220px)*.037) #E2B04A;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#A92B27;text-align:center}
 .back .seal b{font:400 calc(var(--cw,220px)*.13)/1 var(--disp)}
 .back .seal span{font:800 calc(var(--cw,220px)*.036)/1 var(--body);letter-spacing:.22em;text-transform:uppercase;margin-top:calc(var(--cw,220px)*.035);color:#7C1E1B}
+.tiebar{flex:none;max-width:100%;background:var(--gold-soft);border:1px solid var(--gold);color:var(--ink);border-radius:999px;padding:5px 14px;font:800 13px/1.3 var(--body);text-align:center;text-wrap:balance}
 .cap{flex:none;text-align:center;max-width:34em;padding:0 8px;min-height:84px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start}
 .cap .no{font:800 11px var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--red);font-variant-numeric:tabular-nums}
 .cap h2{margin:3px 0 4px;font:400 clamp(28px,4.4vw,48px)/1.04 var(--disp);text-wrap:balance}
@@ -246,6 +247,7 @@ a.chip{text-decoration:none}
 .opt small{display:block;color:var(--ink2);font-size:12.5px;margin-top:1px}
 .opt.on{border-color:var(--teal);background:var(--teal-soft)}
 .rule{margin-top:10px}
+.rule+.rule{margin-top:16px}
 .rule>b{display:block;font-weight:800}
 .rule .styles{margin-top:6px}
 .wins{display:flex;flex-direction:column;gap:4px;margin-top:8px;font-size:13.5px}
@@ -266,6 +268,16 @@ a.chip{text-decoration:none}
 .winc p.tonight{margin:0;font:800 13.5px var(--body);color:var(--ink);font-variant-numeric:tabular-nums}
 .winc p.tonight:empty{display:none}
 .winc .who p.tonight{margin-top:-2px}
+.winc .chips.co{justify-content:center;align-items:center;margin-top:14px}
+.winc .chips.co .eyebrow{margin-right:2px}
+.winc .conote{margin-top:10px}
+.winc .linkb{display:block;margin:6px auto 0}
+.winc .linkb:disabled{opacity:.45}
+.winc .askc{display:block;width:64px;aspect-ratio:200/327;object-fit:cover;border-radius:6px;margin:0 auto 12px;box-shadow:var(--shadow)}
+.winc.ask h2{font-size:32px;line-height:1.1}
+.winc .chips.tied{justify-content:center;margin-top:16px}
+.winc .chips.tied .chip{padding:9px 16px;font-size:15px}
+.sheet .conote{margin:0;font-weight:800;color:var(--ink)}
 .linkb{background:none;border:0;padding:6px;margin-top:10px;color:var(--teal);font:700 13px var(--body);text-decoration:underline;text-underline-offset:3px}
 .toast{position:fixed;left:50%;width:max-content;bottom:calc(96px + var(--sab));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:8px 14px;border-radius:10px;font:700 13px var(--body);opacity:0;transition:.2s;pointer-events:none;z-index:80;max-width:90vw;text-align:center}
 .toast.show{opacity:1;transform:translateX(-50%)}
@@ -302,6 +314,7 @@ a.chip{text-decoration:none}
   </div>
   <div class="stage">
     <div class="deal">
+      <div class="tiebar" id="tieBar" role="status" hidden></div>
       <div class="cardarea" id="cardarea">
         <button class="flip" id="flip" type="button" aria-label="Start calling" data-t-aria="cantor.start">
           <span class="inner down" id="inner">
@@ -353,10 +366,11 @@ a.chip{text-decoration:none}
   // Letter where it's the paper in the shops: the Americas from Canada to Chile, and the Philippines. A phone set to
   // plain Spanish or Latin American Spanish (es, es-419) is most likely in Mexico or the US; only es-ES means Spain.
   function defaultPaper() { var ls = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || 'en-US']; return /-(US|CA|MX|PH|CL|CO|VE|CR|GT|SV|HN|NI|PA|PR|DO)$/i.test(ls[0]) || /^(en|es|es-419)$/i.test(ls[0]) ? 'letter' : 'a4'; }
-  // late: the house rule for a ¡Lotería! called late, 'counts' or 'strict' (too late after the next card).
-  function freshSettings() { return { speak: true, style: 'name', voice: '', rate: 1, pace: 'normal', sound: true, awake: true, check: false, late: 'counts' }; }
+  // The house rules: two, for two or more ¡Lotería!s on the same card, 'next' (the next card decides), 'share' or
+  // 'first' (first to shout wins); late, for a ¡Lotería! called late, 'counts' or 'strict' (too late after the next card).
+  function freshSettings() { return { speak: true, style: 'name', voice: '', rate: 1, pace: 'normal', sound: true, awake: true, check: false, two: 'next', late: 'counts' }; }
   function freshPrint() { return { name: '', count: 12, per: 1, deck: false, paper: defaultPaper() }; }
-  function fresh() { return { order: shuffled(), pos: 0, round: 1, patterns: L.CLASICO.slice(), juego: '', printed: {}, wins: [], print: freshPrint(), settings: freshSettings() }; }
+  function fresh() { return { order: shuffled(), pos: 0, round: 1, patterns: L.CLASICO.slice(), juego: '', printed: {}, wins: [], tie: null, print: freshPrint(), settings: freshSettings() }; }
   var C = fresh();
   function goodWins(w) { return Array.isArray(w) ? w.filter(function (x) { return x && typeof x === 'object'; }).map(function (x) { if (typeof x.t !== 'number') x.t = 0; return x; }) : []; } // a damaged save may hold nulls, or a win with no time
   // How many tablas El Cantor printed of each juego, {CANELA: 12}, so the checker can say a number past them is misheard.
@@ -375,6 +389,14 @@ a.chip{text-decoration:none}
     C.wins = goodWins(C.wins);
     C.printed = goodPrinted(C.printed);
     if (typeof C.juego !== 'string') C.juego = '';
+    C.tie = goodTie(C.tie);
+  }
+  // A tie-break under way: { round, at (the card the tied ¡Lotería!s were on), upTo (the last card looked at), who: [{ who, how, tabla, cards }] }.
+  function goodTie(t) {
+    if (!t || typeof t !== 'object' || !Array.isArray(t.who) || t.who.length < 2 || !(t.at > 0)) return null;
+    t.upTo = Math.max(t.at, t.upTo | 0);
+    t.who = t.who.filter(function (w) { return w && typeof w === 'object'; }).map(function (w) { return { who: String(w.who || ''), how: String(w.how || ''), tabla: String(w.tabla || ''), cards: Array.isArray(w.cards) && w.cards.length === 16 ? w.cards : null }; });
+    return t.who.length >= 2 ? t : null;
   }
   try {
     var raw = localStorage.getItem(LS), o = raw && JSON.parse(raw);
@@ -393,7 +415,7 @@ a.chip{text-decoration:none}
   // A new night starts the round numbers again at 1: the round left from the last night shows as round 1, and if it
   // is shuffled before a card of it is called tonight, the new one is round 1 instead.
   var NIGHT = 6 * 3600e3;
-  function newNight() { if (C.last && Date.now() - C.last >= NIGHT) { C.round = 1; R.stale = true; } }
+  function newNight() { if (C.last && Date.now() - C.last >= NIGHT) { C.round = 1; R.stale = true; C.tie = null; } } // a tie-break left from the last night is over
   function nights() { // oldest first: { start, end, wins }
     var out = [];
     C.wins.slice().sort(function (a, b) { return a.t - b.t; }).forEach(function (x) { var n = out[out.length - 1]; if (n && x.t - n.end < NIGHT) { n.wins.push(x); n.end = x.t; } else out.push({ start: x.t, end: x.t, wins: [x] }); });
@@ -406,6 +428,8 @@ a.chip{text-decoration:none}
     wins.forEach(function (x) { var k = nameKey(x.who); if (!(k in tally)) { tally[k] = 0; order.push(k); } tally[k]++; shown[k] = k ? String(x.who).trim() : T('cantor.unnamed'); });
     return order.sort(function (a, b) { return tally[b] - tally[a]; }).map(function (k) { return { name: shown[k], n: tally[k] }; });
   }
+  // The rounds won, a shared round once with all its winners.
+  function rounds(wins) { var out = []; wins.forEach(function (x) { var l = out[out.length - 1]; if (x.share && l && l.share === x.share) l.who.push(x); else out.push({ round: x.round, share: x.share, who: [x], how: x.how, tabla: x.tabla, at: x.at }); }); return out; }
   function standLine(wins) { return standings(wins).map(function (x) { return x.name + ' ' + x.n; }).join(' · '); }
   // The night's standings under the winner in a ¡Lotería! box: "Abuela 2 · Mark 1 tonight". more: a win not saved yet.
   function tonightHtml(more) { var w = tonight().concat(more || []); return w.length ? esc(T('cantor.tonight', { list: standLine(w) })) : ''; }
@@ -533,13 +557,14 @@ a.chip{text-decoration:none}
   }
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState !== 'visible') return;
-    if (!R.playing && C.last && Date.now() - C.last >= NIGHT) { newNight(); renderCaption(); renderAll(); } // left open since the last night
+    if (!R.playing && C.last && Date.now() - C.last >= NIGHT) { newNight(); renderTie(); renderCaption(); renderAll(); } // left open since the last night
     if (C.pos > 0 && C.pos < 54) wake(true);
   });
 
   // ---------- the call ----------
   function deal() {
     clearTimeout(R.timer); R.timer = 0; R.opening = false;
+    if (C.tie && tieCheck()) return; // a card turned before the last one was looked at for the tie-break
     if (C.pos >= 54) { finish(); return; }
     C.pos++; R.stale = false; save();
     var c = card(cur()), style = C.settings.style;
@@ -555,7 +580,7 @@ a.chip{text-decoration:none}
     }
     prefetch(C.order[C.pos]); preload(); renderAll();
   }
-  function afterCall() { R.phase = 'idle'; if (C.pos >= 54) { finish(); return; } if (R.playing) wait(); else renderBar(); }
+  function afterCall() { R.phase = 'idle'; if (C.tie && tieCheck()) return; if (C.pos >= 54) { finish(); return; } if (R.playing) wait(); else renderBar(); }
   function wait() {
     clearTimeout(R.timer);
     R.phase = 'waiting'; R.waitMs = PACE[C.settings.pace] || 4000; R.waitStart = performance.now();
@@ -581,14 +606,17 @@ a.chip{text-decoration:none}
   function back() {
     if (!C.pos) return;
     pause(); hush(); R.phase = 'idle'; R.opening = false;
-    C.pos--; save();
+    C.pos--;
+    // Under a tie-break, a card put back is looked at again when it's turned; back past the tied card, the tie is off.
+    if (C.tie) { if (C.pos < C.tie.at) C.tie = null; else C.tie.upTo = Math.min(C.tie.upTo, C.pos); }
+    save(); renderTie();
     showCard(false, true); renderAll();
     toast(C.pos ? T('cantor.putBack', { card: card(cur()).name }) : T('cantor.fullDeck'));
   }
   function finish() { R.playing = false; R.phase = 'idle'; clearTimeout(R.timer); wake(false); renderAll(); }
   function newRound() {
     hush(); pause(); R.phase = 'idle'; R.opening = false;
-    C.order = shuffled(); C.pos = 0; C.round = R.stale ? 1 : C.round + 1; R.stale = false; save();
+    C.order = shuffled(); C.pos = 0; C.round = R.stale ? 1 : C.round + 1; R.stale = false; C.tie = null; R.co = null; save(); renderTie();
     wake(false); showCard(false, true); renderAll();
   }
   function newRoundAsk() {
@@ -794,7 +822,7 @@ a.chip{text-decoration:none}
       '<div class="card"><div class="eyebrow">' + T('cantor.styleH') + '</div><div class="styles" id="styles"></div></div>' +
       '<div class="card"><div class="eyebrow">' + T('cantor.paceGroup') + '</div><div class="row" style="margin-top:8px"><div class="seg" id="paceSeg">' + ['slow', 'normal', 'fast'].map(paceOpt).join('') + '</div></div><p class="note" style="margin-top:8px">' + T('cantor.paceNote') + '</p></div>' +
       '<div class="card"><div class="eyebrow">' + T('cantor.shoutH') + '</div><div class="row" style="margin-top:8px"><div class="seg" id="chkSeg"><button type="button" data-v="trust">' + T('cantor.trust') + '</button><button type="button" data-v="check">' + T('cantor.check') + '</button></div></div><p class="note" style="margin-top:8px" id="chkNote"></p></div>' +
-      '<div class="card" id="rulesCard"><div class="eyebrow">' + T('cantor.rulesH') + '</div><div class="rule"><b>' + T('cantor.lateH') + '</b><div class="styles" id="lateOpts"></div></div></div>' +
+      '<div class="card" id="rulesCard"><div class="eyebrow">' + T('cantor.rulesH') + '</div><div class="rule"><b>' + T('cantor.twoH') + '</b><div class="styles" id="twoOpts"></div></div><div class="rule"><b>' + T('cantor.lateH') + '</b><div class="styles" id="lateOpts"></div></div></div>' +
       '<div class="card"><div class="row sp"><div><b>' + T('sounds') + '</b><p class="note">' + T('cantor.soundsNote') + '</p></div><button class="chip" type="button" id="sndBtn"></button></div></div>' +
       '<div class="card"><div class="row sp"><div><b>' + T('cantor.awake') + '</b><p class="note">' + T('cantor.awakeNote') + '</p></div><button class="chip" type="button" id="awBtn"></button></div></div>' +
       '<div class="card" id="winsCard"></div>' +
@@ -829,6 +857,7 @@ a.chip{text-decoration:none}
       $('rate').value = st.rate; $('rateV').textContent = rateWord();
       $('styles').innerHTML = STYLES.map(function (s) { return '<button type="button" class="opt' + (st.style === s[0] ? ' on' : '') + '" data-v="' + s[0] + '"><b>' + s[1] + '</b><small>' + s[2] + '</small></button>'; }).join('');
       $('styles').querySelectorAll('.opt').forEach(function (b) { b.addEventListener('click', function () { st.style = b.dataset.v; save(); draw(); }); });
+      options($('twoOpts'), [['next', T('cantor.two.next'), T('cantor.two.nextNote')], ['share', T('cantor.two.share'), T('cantor.two.shareNote')], ['first', T('cantor.two.first'), T('cantor.two.firstNote')]], rule2(), function (v) { st.two = v; });
       options($('lateOpts'), [['counts', T('cantor.late.counts'), T('cantor.late.countsNote')], ['strict', T('cantor.late.strict'), T('cantor.late.strictNote')]], st.late === 'strict' ? 'strict' : 'counts', function (v) { st.late = v; });
       document.querySelectorAll('#paceSeg button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === st.pace); });
       document.querySelectorAll('#chkSeg button').forEach(function (b) { b.classList.toggle('on', (b.dataset.v === 'check') === !!st.check); });
@@ -844,7 +873,7 @@ a.chip{text-decoration:none}
       var all = nights(), now = tonight(), before = now.length ? all.slice(0, -1) : all, year = new Date().getFullYear();
       function day(t) { if (!t) return '—'; var d = new Date(t); return d.toLocaleDateString(T.locale, d.getFullYear() === year ? { weekday: 'short', month: 'short', day: 'numeric' } : { year: 'numeric', month: 'short', day: 'numeric' }); }
       el.innerHTML = '<div class="row sp"><div class="eyebrow">' + T('cantor.winners') + ' · ' + T('cantor.tonightH') + '</div><button class="btn sec sm" type="button" id="wClr">' + T('cantor.clear') + '</button></div>' +
-        (now.length ? '<div class="chips" style="margin-top:8px">' + standings(now).map(function (x) { return '<span class="chip">' + esc(x.name) + ' · ' + x.n + '</span>'; }).join('') + '</div><div class="wins">' + now.slice(-8).reverse().map(function (x) { return '<div><span>' + T('cantor.round', { r: x.round }) + '</span><b>' + esc(x.who || T('cantor.unnamed')) + '</b><span>' + esc(x.how) + (x.tabla ? ' · ' + esc(x.tabla) : '') + ' · ' + T('cards', { n: x.at }) + '</span></div>'; }).join('') + '</div>'
+        (now.length ? '<div class="chips" style="margin-top:8px">' + standings(now).map(function (x) { return '<span class="chip">' + esc(x.name) + ' · ' + x.n + '</span>'; }).join('') + '</div><div class="wins">' + rounds(now).slice(-8).reverse().map(function (x) { return '<div><span>' + T('cantor.round', { r: x.round }) + '</span><b>' + esc(names(x.who)) + '</b><span>' + (x.share ? T('cantor.shared') + ' · ' : '') + esc(x.how) + (x.tabla && !x.share ? ' · ' + esc(x.tabla) : '') + ' · ' + T('cards', { n: x.at }) + '</span></div>'; }).join('') + '</div>'
           : '<p class="note" style="margin-top:6px">' + T('cantor.tonightNone') + '</p>') +
         (before.length ? '<div class="eyebrow" style="margin-top:14px">' + T('cantor.earlierH') + '</div><div class="wins nights">' + before.slice(-10).reverse().map(function (n) { return '<div><span>' + esc(day(n.start)) + '</span><b>' + esc(standLine(n.wins)) + '</b></div>'; }).join('') + '</div>' : '') +
         '<p class="note" style="margin-top:10px">' + T('cantor.nightsNote') + '</p>';
@@ -903,7 +932,12 @@ a.chip{text-decoration:none}
     renderBar();
   }
   // A ¡Lotería! with nothing called yet is a slip of the finger: no cheer, and nothing for the winners.
-  function shout() { if (!C.pos) { toast(T('cantor.noCardsYet')); return; } if (C.settings.check) verifySheet(); else claim(); }
+  function shout() {
+    if (!C.pos) { toast(T('cantor.noCardsYet')); return; }
+    // Under a tie-break, ¡Lotería! asks who of the tied has the card just called (and can put El Cantor right).
+    if (C.tie) { if (C.pos > C.tie.at) tieAsk(C.pos, holders(C.order[C.pos - 1])); else toast(T('cantor.tieBar', { list: names(C.tie.who) })); return; }
+    if (C.settings.check) verifySheet(); else claim();
+  }
 
   // ---------- winners' names ----------
   // One person whatever the capitals: "Abuela" and "abuela " are the same winner.
@@ -935,34 +969,45 @@ a.chip{text-decoration:none}
   function shuffleNext() { newRound(); patternSheet(T('cantor.roundWhat', { r: C.round })); }
 
   // Take their word: straight to the celebration, with the winner's name and the next round.
-  function claim() {
-    var was = R.playing; stopCalling(); cheer();
-    var box = $('winbox'), r = C.round;
-    box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p>' + esc(T('cantor.roundGame', { r: r, game: L.gameName(C.patterns) })) + ' · ' + T('cantor.cardsCalled', { n: C.pos }) + '</p>' +
+  function claim() { var was = R.playing; stopCalling(); cheer(); claimBox(was, ''); }
+  function claimBox(was, typed) {
+    var box = $('winbox'), r = C.round, list = co(), more = rule2() !== 'first';
+    box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p>' + esc(T('cantor.roundGame', { r: r, game: L.gameName(C.patterns) })) + ' · ' + T('cantor.cardsCalled', { n: C.pos }) + '</p>' + coHtml(list) +
       '<div class="who"><input id="clWho" placeholder="' + T('cantor.whoWon') + '" autocomplete="off" autocapitalize="words" enterkeyhint="go" maxlength="30" aria-label="' + T('cantor.whoWonAria') + '">' + namesHtml('clNames') + '<p class="tonight" id="clTonight"></p></div>' +
-      '<div class="row"><button class="btn red" type="button" id="clNew">' + T('cantor.shuffleFor', { r: r + 1 }) + '</button><button class="btn sec" type="button" id="clBack">' + T('cantor.keepCalling') + '</button></div>' +
+      '<p class="note conote" id="clWhy" hidden>' + T('cantor.tieNoCard') + '</p>' +
+      '<div class="row"><button class="btn red" type="button" id="clNew"></button><button class="btn sec" type="button" id="clBack"' + (list.length ? ' hidden' : '') + '>' + T('cantor.keepCalling') + '</button></div>' +
+      (more ? '<button type="button" class="linkb" id="clMore">' + T('cantor.another') + '</button>' : '') +
       '<button type="button" class="linkb" id="clCheck">' + T('cantor.checkFirst') + '</button></div></div>';
-    box.hidden = false;
-    // Tonight's standings follow the name typed, as they will be once the win is counted.
-    wireNames('clNames', $('clWho'), function () { var w = winnerName($('clWho').value); $('clTonight').innerHTML = tonightHtml(w ? [{ who: w }] : []); });
-    $('clWho').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); $('clNew').click(); } });
-    $('clNew').addEventListener('click', function () {
-      C.wins.push({ round: r, who: winnerName($('clWho').value), how: L.gameName(C.patterns), tabla: '', at: C.pos, t: stamp() }); save();
-      box.hidden = true; shuffleNext();
+    box.dataset.esc = list.length ? 'stay' : 'back'; box.hidden = false;
+    $('clWho').value = typed || '';
+    function all() { var w = winnerName($('clWho').value); return list.concat(w ? [{ who: w }] : []); }
+    // The main button and tonight's standings follow the names, as they will be once the round is settled.
+    wireNames('clNames', $('clWho'), function () {
+      var a = all(), m = mode(a);
+      $('clNew').textContent = m === 'tie' ? T('cantor.tieGo') : m === 'one' ? T('cantor.shuffleFor', { r: r + 1 }) : T('cantor.shareGo', { r: r + 1 });
+      $('clTonight').innerHTML = tonightHtml(m === 'tie' ? [] : a);
+      $('clWhy').hidden = m !== 'nocard';
+      if (more) $('clMore').disabled = !$('clWho').value.trim();
     });
-    $('clBack').addEventListener('click', function () { box.hidden = true; UI.cheered = 0; if (was) play(); });
+    $('clWho').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); $('clNew').click(); } });
+    $('clNew').addEventListener('click', function () { box.hidden = true; settle(all().length ? all() : [{ who: '' }], was); });
+    $('clBack').addEventListener('click', function () { box.hidden = true; UI.cheered = 0; R.co = null; if (was) play(); });
+    if (more) $('clMore').addEventListener('click', function () { var w = winnerName($('clWho').value); if (!w) return; list.push({ who: w }); claimBox(was, ''); $('clWho').focus(); });
+    wireCo(list, function () { claimBox(was, $('clWho').value); });
     $('clCheck').addEventListener('click', function () { box.hidden = true; verifySheet(was, $('clWho').value.trim()); });
     $('clNew').focus();
   }
   function cheer() { if (UI.cheered === C.round) return; UI.cheered = C.round; fanfare(); if (voiceOn()) say([{ clip: 'loteria', text: '¡Lotería!' }], null); }
   function verifySheet(resume, who) {
     var was = arguments.length ? resume : R.playing; stopCalling();
-    var V = { mode: C.juego ? 'printed' : 'cards', picked: [], how: '', tabla: '', q: '' };
+    var V = { mode: C.juego ? 'printed' : 'cards', picked: [], how: '', tabla: '', cards: null, q: '' };
     openSheet('<div class="hd wrap"><h2>' + T('cantor.checkIt') + '</h2><button class="btn sec sm" type="button" id="vfx">' + T('cantor.keepCalling') + '</button></div><div class="bd stack">' +
+      (co().length ? '<p class="note conote">' + esc(T('cantor.coCheck', { list: names(co()) })) + '</p>' : '') +
       '<div class="row sp" style="flex-wrap:wrap"><div class="seg" id="vfSeg"><button type="button" data-v="printed">' + T('cantor.printedTabla') + '</button><button type="button" data-v="cards">' + T('cantor.cardByCard') + '</button></div><span class="note">' + esc(L.gameName(C.patterns)) + ' · ' + T('cantor.cardsCalled', { n: C.pos }) + '</span></div>' +
       '<div id="vfBody"></div>' +
       '<div class="vfwin"><div class="card"><input id="vfWho" placeholder="' + T('cantor.whoWon') + '" autocomplete="off" autocapitalize="words" enterkeyhint="go" maxlength="30" aria-label="' + T('cantor.whoWonAria') + '">' + namesHtml('vfNames') + '<div class="btns"><button class="btn red" type="button" id="vfBack" hidden>' + T('cantor.keepCalling') + '</button><button class="btn red" type="button" id="vfWin">' + T('cantor.buenaNew') + '</button></div></div></div></div>');
-    UI.onClose = function () { if (!UI.won) { UI.cheered = 0; if (was) play(); } UI.won = false; };
+    // Closed with no winner: calling goes on, unless winners are already in on this card; then their box comes back.
+    UI.onClose = function () { if (!UI.won) { if (co().length) celebrate(null, was); else { UI.cheered = 0; if (was) play(); } } UI.won = false; };
     $('vfWho').value = who || ''; wireNames('vfNames', $('vfWho'));
     // Enter is ¡Buena! New round; on a Not yet it only puts the keyboard away, so the caller sees both buttons.
     $('vfWho').addEventListener('keydown', function (e) { if (e.key !== 'Enter') return; e.preventDefault(); if ($('vfBack').hidden) $('vfWin').click(); else this.blur(); });
@@ -992,7 +1037,7 @@ a.chip{text-decoration:none}
     }
     function printed() {
       var name = L.juegoName($('vfJ').value), k = parseInt($('vfN').value, 10), v = $('vfV'), host = $('vfTabla');
-      V.how = ''; V.tabla = ''; winRow(false);
+      V.how = ''; V.tabla = ''; V.cards = null; winRow(false);
       if (!name) { host.innerHTML = ''; v.className = 'verdict'; v.innerHTML = '<p class="note" style="margin:0">' + (C.juego ? T('cantor.typeJuegoHave') : T.html('cantor.typeJuego_html')) + '</p>'; return; }
       if (!(k >= 1 && k <= 999)) { host.innerHTML = ''; v.className = 'verdict'; v.innerHTML = '<p class="note" style="margin:0">' + T('cantor.typeNumber') + '</p>'; return; }
       var t = L.juegoTabla(name, k), hit = {}, need = {}, best = null;
@@ -1000,7 +1045,7 @@ a.chip{text-decoration:none}
       if (C.juego !== name) { C.juego = name; save(); }
       C.patterns.forEach(function (pid) { var p = L.pat(pid); if (!p) return; var w = wonAt(t, p); if (w && (!best || w.when < best.when)) best = { when: w.when, cells: w.cells, pat: p }; });
       if (best) {
-        best.cells.forEach(function (c) { hit[c] = 1; }); V.how = best.pat.name; V.tabla = name + ' ' + k; // a win counted anyway has no tabla, unless it was good and only late
+        best.cells.forEach(function (c) { hit[c] = 1; }); V.how = best.pat.name; V.tabla = name + ' ' + k; V.cards = t; // a win counted anyway has no tabla, unless it was good and only late
         if (tooLate(best.when)) { winRow(true); v.className = 'verdict no'; v.innerHTML = '<h3>' + T('cantor.tooLate') + '</h3><p>' + esc(T('cantor.lateGood', { card: card(C.order[best.when - 1]).name, n: C.pos - best.when })) + '</p>'; }
         else { v.className = 'verdict ok'; v.innerHTML = '<h3>¡Buena! ' + esc(best.pat.name) + '</h3><p>' + esc(T('cantor.goodLine', { juego: name, k: k, when: whenText(best.when) })) + '</p>'; }
       } else {
@@ -1034,7 +1079,7 @@ a.chip{text-decoration:none}
     }
     function cardsVerdict() {
       var v = $('vfV'), out = V.picked.filter(isOut), not = V.picked.filter(function (n) { return !isOut(n); });
-      V.how = ''; V.tabla = ''; winRow(not.length > 0);
+      V.how = ''; V.tabla = ''; V.cards = null; winRow(not.length > 0);
       $('vfChips').innerHTML = V.picked.map(function (n) { return '<button type="button" class="chip ' + (isOut(n) ? 'ok' : 'bad') + '" data-n="' + n + '" aria-label="' + esc(T('cantor.takeOff', { card: card(n).name })) + '">' + esc(card(n).name) + (isOut(n) ? ' · ' + nth(orderOf(n)) : T('cantor.notYetChip')) + ' <span aria-hidden="true">✕</span></button>'; }).join('');
       $('vfChips').querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () { var i = V.picked.indexOf(+b.dataset.n); if (i >= 0) V.picked.splice(i, 1); pickGrid(); cardsVerdict(); }); });
       if (!V.picked.length) { v.className = 'verdict'; v.innerHTML = '<p class="note" style="margin:0">' + T('cantor.readOut') + '</p>'; return; }
@@ -1049,23 +1094,120 @@ a.chip{text-decoration:none}
     $('vfx').addEventListener('click', closeSheet);
     $('vfBack').addEventListener('click', closeSheet);
     $('vfWin').addEventListener('click', function () {
-      var who = winnerName($('vfWho').value);
-      C.wins.push({ round: C.round, who: who, how: V.how || L.gameName(C.patterns), tabla: V.tabla, at: C.pos, t: stamp() });
-      save(); UI.won = true; closeSheet(); celebrate(who);
+      var e = { who: winnerName($('vfWho').value), how: V.how || L.gameName(C.patterns), tabla: V.tabla, cards: V.cards };
+      if (!co().length) { e.t = record(e).t; save(); } // a lone winner is saved at once; two or more wait for the house rule
+      UI.won = true; closeSheet(); celebrate(e, was);
     });
     body();
   }
-  function celebrate(who) {
-    var box = $('winbox'), r = C.round, first = UI.cheered !== r;
+  // After ¡Buena!: the winner, or the winners on this card as the house rule has them. entry: the one just checked, saved
+  // already (it has a t) when it's the only one; null when a check for another winner was closed without one.
+  function celebrate(entry, was) {
+    var box = $('winbox'), r = C.round, n = C.pos, list = co(), all = list.concat(entry ? [entry] : []), m = mode(all), first = UI.cheered !== r, more = rule2() !== 'first';
     if (first) { UI.cheered = r; fanfare(); }
-    var n = C.pos; // the cards called
-    box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p>' + (who ? T.html('cantor.won_html', { who: who, r: r, n: n }) : esc(T('cantor.wonNobody', { r: r, n: n }))) + '</p><p class="tonight">' + tonightHtml() + '</p><div class="row"><button class="btn red" type="button" id="celOk">' + T('cantor.shuffleFor', { r: r + 1 }) + '</button></div></div></div>';
-    box.hidden = false;
-    var lines = (first ? [{ clip: 'loteria', text: '¡Lotería!', gap: 200 }] : []).concat(who && !choice().pack ? [{ text: 'Felicidades, ' + who + '.' }] : []);
+    var who = all.length === 1 ? all[0].who : '';
+    var p = m === 'one' ? (who ? T.html('cantor.won_html', { who: who, r: r, n: n }) : esc(T('cantor.wonNobody', { r: r, n: n })))
+      : m === 'tie' ? T.html('cantor.tied_html', { who: names(all), r: r })
+      : T.html('cantor.shared_html', { who: names(all), r: r, n: n }) + (m === 'nocard' ? ' ' + esc(T('cantor.tieNoCard')) : '');
+    box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p>' + p + '</p><p class="tonight">' + tonightHtml(m === 'tie' ? [] : all.filter(function (w) { return !w.t; })) + '</p>' +
+      '<div class="row"><button class="btn red" type="button" id="celOk">' + (m === 'tie' ? T('cantor.tieGo') : m === 'one' ? T('cantor.shuffleFor', { r: r + 1 }) : T('cantor.shareGo', { r: r + 1 })) + '</button></div>' +
+      (more ? '<button type="button" class="linkb" id="celMore">' + T('cantor.another') + '</button>' : '') + '</div></div>';
+    box.dataset.esc = m === 'one' && all[0].t ? 'hide' : 'stay'; box.hidden = false; // Escape doesn't lose a winner not saved yet
+    var lines = (first ? [{ clip: 'loteria', text: '¡Lotería!', gap: 200 }] : []).concat(m === 'one' && who && !choice().pack ? [{ text: 'Felicidades, ' + who + '.' }] : []);
     if (voiceOn() && lines.length) say(lines, null);
+    $('celOk').addEventListener('click', function () { box.hidden = true; settle(all, was); });
+    // Another winner on this card: the one saved alone waits with them, and the checker opens for the next.
+    if (more) $('celMore').addEventListener('click', function () {
+      box.hidden = true;
+      if (entry) { if (entry.t) { var t = entry.t; C.wins = C.wins.filter(function (x) { return x.t !== t; }); delete entry.t; save(); } list.push(entry); }
+      verifySheet(was, '');
+    });
+    $('celOk').focus();
+  }
+
+  // ---------- two ¡Lotería!s on one card ----------
+  // The house rule (settings.two): 'next', the start, as Mark's family plays: the tied players keep playing, and the
+  // first of them to have a card called on their tabla wins. 'share': each gets the round. 'first': one winner, the
+  // first to shout. R.co holds the winners already in on this card while another is checked: nothing of theirs is
+  // saved until the round is settled.
+  function rule2() { var v = C.settings.two; return v === 'share' || v === 'first' ? v : 'next'; }
+  function co() { if (!R.co || R.co.pos !== C.pos || R.co.round !== C.round) R.co = { pos: C.pos, round: C.round, list: [] }; return R.co.list; }
+  function names(list) { return T.list(list.map(function (w) { return w.who || T('cantor.unnamed'); })); }
+  function record(w, extra) { var x = Object.assign({ round: C.round, who: w.who || '', how: w.how || L.gameName(C.patterns), tabla: w.tabla || '', at: C.pos, t: stamp() }, extra || {}); C.wins.push(x); return x; }
+  // No card still to come can be on a tied tabla: Tabla Llena, the deck's end, or every card of the tablas El Cantor knows is out.
+  function undecidable(list) { return C.pos >= 54 || (C.patterns.length === 1 && C.patterns[0] === 'llena') || list.every(function (w) { return w.cards && w.cards.every(isOut); }); }
+  function mode(list) { return list.length < 2 ? 'one' : rule2() === 'share' ? 'share' : rule2() === 'next' && !undecidable(list) ? 'tie' : 'nocard'; }
+  // The round settled from a ¡Lotería! box: one winner, or the house rule's way with two or more.
+  function settle(list, was) {
+    var m = mode(list); R.co = null;
+    if (m === 'one') { if (!list[0].t) record(list[0]); save(); shuffleNext(); return; }
+    if (m !== 'tie') { var g = stamp(); list.forEach(function (w) { record(w, { share: g }); }); save(); shuffleNext(); return; }
+    C.tie = { round: C.round, at: C.pos, upTo: C.pos, who: list.map(function (w) { return { who: w.who || '', how: w.how || '', tabla: w.tabla || '', cards: w.cards || null }; }) };
+    save(); renderTie(); if (was) play();
+  }
+  // The winners already in on this card, each with a ✕ to take them off.
+  function coHtml(list) { return list.length ? '<div class="chips co"><span class="eyebrow">' + T('cantor.coIn') + '</span>' + list.map(function (w, i) { return '<button type="button" class="chip on" data-i="' + i + '" aria-label="' + esc(T('cantor.coOff', { who: w.who || T('cantor.unnamed') })) + '">' + esc(w.who || T('cantor.unnamed')) + ' <span aria-hidden="true">✕</span></button>'; }).join('') + '</div>' : ''; }
+  function wireCo(list, then) { document.querySelectorAll('#winbox .co .chip').forEach(function (b) { b.addEventListener('click', function () { list.splice(+b.dataset.i, 1); then(); }); }); }
+
+  // The tie-break: each card called since the tie, in order, until one is on a tied tabla. El Cantor decides by itself
+  // when it knows every tied tabla (a printed one it checked); otherwise it asks who has the card.
+  function holders(n) { return C.tie.who.filter(function (w) { return w.cards && w.cards.indexOf(n) >= 0; }); }
+  function tieCheck() {
+    var t = C.tie; if (!t) return false;
+    if (t.round !== C.round || C.pos < t.at) { C.tie = null; save(); renderTie(); return false; }
+    while (C.tie && t.upTo < C.pos) {
+      var p = t.upTo + 1;
+      if (t.who.some(function (w) { return !w.cards; })) { tieAsk(p, holders(C.order[p - 1])); return true; }
+      tieAnswer(p, holders(C.order[p - 1]));
+    }
+    if (!C.tie) return true; // won
+    if (C.pos >= 54) { tieEnd(); return true; }
+    return false;
+  }
+  function tieAnswer(p, has) {
+    var t = C.tie, n = C.order[p - 1]; t.upTo = p;
+    if (has.length === 1) { tieWon(has[0], n); return; }
+    if (has.length > 1) { t.who = has; toast(T('cantor.stillTiedToast', { card: card(n).name, list: names(has) }), 4000); } // the others are out of it
+    save(); renderTie();
+  }
+  // Who has El Gallo? A button for each tied player, those whose tabla El Cantor knows set already.
+  function tieAsk(p, has) {
+    var was = R.playing; stopCalling();
+    var t = C.tie, n = C.order[p - 1], sel = has.slice(), box = $('winbox');
+    (function draw() {
+      var main = !sel.length ? T(t.who.length === 2 ? 'cantor.neither' : 'cantor.nobody') : sel.length === 1 ? T('cantor.tieWins', { who: sel[0].who || T('cantor.unnamed'), r: C.round }) : T('cantor.stillTied', { list: names(sel) });
+      box.innerHTML = '<div class="winbg"><div class="winc ask"><img class="askc" src="' + src(n) + '" alt=""><h2>' + esc(T('cantor.whoHas', { card: card(n).name })) + '</h2><p>' + esc(T('cantor.whoHasNote', { list: names(t.who) })) + '</p>' +
+        '<div class="chips tied">' + t.who.map(function (w, i) { var on = sel.indexOf(w) >= 0; return '<button type="button" class="chip' + (on ? ' on' : '') + '" data-i="' + i + '" aria-pressed="' + on + '">' + esc(w.who || T('cantor.unnamed')) + '</button>'; }).join('') + '</div>' +
+        '<div class="row"><button class="btn red" type="button" id="askOk">' + esc(main) + '</button></div></div></div>';
+      box.dataset.esc = 'stay'; box.hidden = false;
+      box.querySelectorAll('.tied .chip').forEach(function (b) { b.addEventListener('click', function () { var w = t.who[+b.dataset.i], i = sel.indexOf(w); if (i >= 0) sel.splice(i, 1); else sel.push(w); draw(); box.querySelector('.tied .chip[data-i="' + b.dataset.i + '"]').focus(); }); });
+      $('askOk').addEventListener('click', function () {
+        box.hidden = true; tieAnswer(p, t.who.filter(function (w) { return sel.indexOf(w) >= 0; }));
+        if (C.tie && !tieCheck() && was) play();
+      });
+    })();
+    $('askOk').focus();
+  }
+  function tieWon(w, n) {
+    stopCalling();
+    var r = C.round, box = $('winbox'); C.tie = null; record(w); save(); renderTie();
+    UI.cheered = 0; cheer();
+    box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p>' + T.html('cantor.tieWon_html', { who: w.who || T('cantor.unnamed'), card: card(n).name, r: r }) + '</p><p class="tonight">' + tonightHtml() + '</p><div class="row"><button class="btn red" type="button" id="celOk">' + T('cantor.shuffleFor', { r: r + 1 }) + '</button></div></div></div>';
+    box.dataset.esc = 'hide'; box.hidden = false;
     $('celOk').addEventListener('click', function () { box.hidden = true; shuffleNext(); });
     $('celOk').focus();
   }
+  // The deck ran out with no card on a tied tabla: they share the round.
+  function tieEnd() {
+    stopCalling(); wake(false);
+    var list = C.tie.who, r = C.round, box = $('winbox'), g = stamp(); C.tie = null;
+    list.forEach(function (w) { record(w, { share: g }); }); save(); renderTie(); renderAll();
+    box.innerHTML = '<div class="winbg"><div class="winc"><h2>¡Lotería!</h2><p>' + T.html('cantor.shared_html', { who: names(list), r: r, n: C.pos }) + ' ' + esc(T('cantor.tieNoCard')) + '</p><p class="tonight">' + tonightHtml() + '</p><div class="row"><button class="btn red" type="button" id="celOk">' + T('cantor.shuffleFor', { r: r + 1 }) + '</button></div></div></div>';
+    box.dataset.esc = 'hide'; box.hidden = false;
+    $('celOk').addEventListener('click', function () { box.hidden = true; shuffleNext(); });
+    $('celOk').focus();
+  }
+  function renderTie() { var b = $('tieBar'); b.hidden = !C.tie; b.textContent = C.tie ? T('cantor.tieBar', { list: names(C.tie.who) }) : ''; }
 
   // ---------- printing ----------
   var DL = null;
@@ -1350,7 +1492,7 @@ a.chip{text-decoration:none}
       showCard(false, true);
       if (busy) toast(T('cantor.otherWindow'));
     }
-    renderCaption(); renderAll();
+    renderTie(); renderCaption(); renderAll();
   }
   window.addEventListener('storage', function (e) { if (e.key === LS && e.newValue) follow(e.newValue); });
   window.addEventListener('pageshow', function (e) { if (e.persisted) try { follow(localStorage.getItem(LS)); } catch (x) { } }); // back from the browser's history, which missed the saves made meanwhile
@@ -1374,7 +1516,8 @@ a.chip{text-decoration:none}
   $('setBtn').addEventListener('click', settingsSheet);
   document.querySelectorAll('#paceBar button').forEach(function (b) { b.addEventListener('click', function () { setPace(b.dataset.v); }); });
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { closeSheet(); if (!$('winbox').hidden && $('clBack')) $('clBack').click(); else $('winbox').hidden = true; return; } // the ¡Lotería! box goes the way Keep calling does
+    // Escape closes a sheet; on a ¡Lotería! box it goes the way Keep calling does, and leaves up a box whose winners aren't saved yet.
+    if (e.key === 'Escape') { var wb = $('winbox'); if (!$('sheet').hidden) closeSheet(); else if (!wb.hidden) { if (wb.dataset.esc === 'back') $('clBack').click(); else if (wb.dataset.esc !== 'stay') wb.hidden = true; } return; }
     var tag = (e.target && e.target.tagName) || '';
     if (!$('sheet').hidden || !$('winbox').hidden || /INPUT|SELECT|TEXTAREA/.test(tag) || e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.key === ' ' && tag !== 'BUTTON') { e.preventDefault(); $('playBtn').click(); }
@@ -1387,7 +1530,8 @@ a.chip{text-decoration:none}
   if (window.visualViewport) window.visualViewport.addEventListener('resize', relayout);
   if (window.ResizeObserver) new ResizeObserver(fitCard).observe($('cardarea'));
   loadVoices();
-  showCard(false, true); renderAll(); picado(); layout();
+  showCard(false, true); renderAll(); renderTie(); picado(); layout();
+  if (C.tie && C.tie.upTo < C.pos) tieCheck(); // a card turned under a tie-break before the page was closed
   function fromHash() { if (location.hash === '#print') { history.replaceState(null, '', location.pathname + location.search); printSheet(); } } // cantor.html#print, from Make tablas
   fromHash(); window.addEventListener('hashchange', fromHash);
   // Back from a change of language in Settings (strings.js reloads the page): Settings again, the switch under the finger.
