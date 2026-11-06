@@ -690,6 +690,13 @@ a{color:var(--teal);font-weight:700}
     history.replaceState(null, '', location.pathname + location.search);
     importSheet(imp);
   }
+  // In a Safari tab on an iPhone or iPad, the offer says how to take the link to El Cantor on the Home Screen, which
+  // keeps its own tablas: copy it here and paste it there (Settings, or Who's playing on its first visit).
+  function homeHint(imp) {
+    if (!(window.LoteriaSync && LoteriaSync.safariTab())) return '';
+    var url = location.href.split('#')[0] + (imp.link || encodeShare(imp));
+    return '<div class="card"><p class="note" style="margin:0">' + T('board.homeHint') + '</p><div class="row" style="margin-top:8px"><button class="btn sec sm" type="button" id="imCopy">' + T('copyLink') + '</button><input id="imUrl" readonly hidden value="' + esc(url) + '" aria-label="' + esc(T('copyLink')) + '" style="flex:1"></div></div>';
+  }
   // The language switch at the foot of a first-visit sheet: someone who reads the other language may land here first,
   // and the sheet waits for a choice before Settings can be reached.
   function langRow() { return '<div class="row" style="margin-top:4px"><span class="eyebrow">' + T('lang.label') + '</span><div id="shLang"></div></div>'; }
@@ -707,7 +714,7 @@ a{color:var(--teal);font-weight:700}
     function have() { var n = who().toLowerCase(); return firstRun ? null : S.players.filter(function (p) { return p.name.toLowerCase() === n; })[0]; }
     openSheet('<div class="hd"><h2>' + esc(T('board.importH', { name: imp.name })) + '</h2></div><div class="bd stack"><p class="note" id="imNote"></p>' +
       (imp.ask ? '<div><input id="imName" value="' + esc(imp.typed) + '" placeholder="' + esc(imp.name) + '" aria-label="' + esc(T('board.yourName')) + '" autocomplete="off" autocapitalize="words" enterkeyhint="go" style="width:100%"><p class="note" style="margin:6px 0 0">' + T('board.importYours', { n: imp.boards.length }) + '</p></div>' : '') +
-      '<div class="row" id="imBtns"></div><div class="edb ims">' + imp.boards.map(preview).join('') + '</div>' + (first ? langRow() : '') + '</div>');
+      '<div class="row" id="imBtns"></div>' + homeHint(imp) + '<div class="edb ims">' + imp.boards.map(preview).join('') + '</div>' + (first ? langRow() : '') + '</div>');
     if (first) { UI.welcome = true; UI.blank = true; render(); } // waits for a choice, like Who's playing, over no tablas
     // A new language reloads the page: the link goes back in the address first, so the same tablas are offered again.
     if (first) T.switch($('shLang'), null, function () {
@@ -742,6 +749,7 @@ a{color:var(--teal);font-weight:700}
       });
     }
     draw();
+    if ($('imCopy')) $('imCopy').addEventListener('click', function () { copyLink($('imUrl').value, $('imUrl')); });
     if (imp.ask) {
       $('imName').addEventListener('input', function () { imp.typed = this.value; draw(); });
       $('imName').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); $('imOk').click(); } });

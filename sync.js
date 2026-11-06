@@ -530,6 +530,7 @@
     ready: !!CLIENT_ID,
     isOn: function () { return !!CLIENT_ID && st.on; },
     connect: start, now: now, changed: changed, chip: chip, card: card, keep: keep,
+    safariTab: safariTab, // a Safari tab on an iPhone or iPad, not the Home Screen app
     onUpdate: function (f) { ups.push(f); }, // f(keys): synced data landed in these localStorage keys
     onNote: function (f) { says.push(f); }, // f(text): what went wrong after a tap, to show for a few seconds
     onWait: function (f) { waits.push(f); }, // f(): something was saved here after the hour, and waits for a tap to go to Drive

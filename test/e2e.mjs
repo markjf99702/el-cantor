@@ -1563,6 +1563,41 @@ check('board: a share link pasted in Settings, or the whole message it came in, 
   } finally { await ctx.close(); }
 });
 
+check('safari: in a Safari tab, a shared link’s offer says how to take it to El Cantor on the Home Screen, with Copy link', async () => {
+  const hash = '#t=Mam%C3%A1~Tabla%201:' + run(1).map(n => n.toString(36)).join('.');
+  const HINT = {
+    en: 'Playing from El Cantor on your Home Screen? It keeps its own tablas — copy this link, open El Cantor there, and paste it in My tablas under ⋯.',
+    es: '¿Juegas desde El Cantor en tu pantalla de inicio? Guarda sus propias tablas aparte — copia esta liga, abre El Cantor desde ahí y pégala en Mis tablas, en ⋯.'
+  };
+  const hint = page => page.evaluate(() => { const b = document.getElementById('imCopy'); return b ? b.closest('.card').querySelector('.note').textContent : null; });
+  for (const [what, extra, data] of [['a new phone', {}, {}], ['a phone with Ana', {}, { 'loteria.v1': ANA }], ['en español', { locale: 'es-MX' }, {}]]) {
+    const ctx = await context(PHONE, { userAgent: SAFARI, ...extra });
+    try {
+      const page = await ctx.newPage(), problems = watch(page);
+      await seed(page, data);
+      await page.goto(base + 'board.html' + hash);
+      assert.equal(await hint(page), HINT[extra.locale ? 'es' : 'en'], what);
+      if (extra.locale) assert.deepEqual(await english(page), [], 'English in the offer');
+      await page.evaluate(() => { window.__copied = null; Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: t => { window.__copied = t; return Promise.resolve(); } } }); });
+      await page.click('#imCopy');
+      assert.equal(await page.evaluate(() => window.__copied), base + 'board.html' + hash, what + ': Copy link copied something else');
+      await until(page, t => document.getElementById('toast').textContent === t, extra.locale ? 'Liga copiada' : 'Link copied');
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
+  // Not in the Home Screen app itself, nor on a computer.
+  for (const [extra, init] of [[{ userAgent: SAFARI }, () => { Object.defineProperty(navigator, 'standalone', { value: true }); }], [{}]]) {
+    const ctx = await context(PHONE, extra);
+    try {
+      if (init) await ctx.addInitScript(init);
+      const page = await ctx.newPage();
+      await page.goto(base + 'board.html' + hash);
+      assert.equal(await sheetTitle(page), 'Tablas from Mamá');
+      assert.equal(await hint(page), null, 'the hint shows outside a Safari tab');
+    } finally { await ctx.close(); }
+  }
+});
+
 check('board: a share link carries a ~ in a name, and a broken link doesn’t stop the board', async () => {
   let url;
   for (const step of ['share', 'open', 'broken']) {
