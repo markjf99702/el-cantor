@@ -2677,6 +2677,42 @@ check('drive: the dot turns red when the hour runs out with a page open, and a c
   } finally { await B.ctx.close(); }
 });
 
+check('drive: Stop saving during a sync leaves nothing of it behind, and turning it on again asks which Google account', async () => {
+  const g = fakeGoogle();
+  const A = await driveDevice(g, { 'loteria.v1': ANA });
+  const { page, ctx } = A;
+  try {
+    await page.goto(base + 'board.html'); await synced(page);
+    // Drive holds its answer to the next sync's read until Stop has been tapped twice.
+    let answer; const held = new Promise(r => { answer = r; });
+    await ctx.route('https://www.googleapis.com/drive/v3/files/*', async route => { if (route.request().url().includes('alt=media')) await held; await route.fallback(); });
+    await page.click('#setBtn');
+    await page.click('#syncCard [data-a="now"]');
+    await until(page, () => document.getElementById('syncBtn').dataset.s === 'busy');
+    await page.click('#syncCard [data-a="off"]'); await page.click('#syncCard [data-a="off"]');
+    const read = page.waitForResponse(r => r.url().includes('alt=media'));
+    answer(); await read;
+    await page.waitForTimeout(1500); // what that sync would have done next
+    assert.deepEqual(await saved(page, 'loteria.sync'), { on: false, email: '', name: '', last: 0, pick: true }, 'Stop kept the sync’s history');
+    assert.equal(await saved(page, 'loteria.sync.base'), null, 'the Drive copy as last synced stayed');
+    assert.equal(await saved(page, 'loteria.sync.seen'), null, 'what this device last synced stayed');
+    assert.ok(await page.evaluate(() => document.getElementById('syncBtn').hidden), 'the ☁ button is still up');
+    assert.equal(await page.textContent('#syncCard [data-a="on"]'), 'Save to Google Drive');
+    // On again, with the sign-in from before still good for the hour: Google asks which account, and Lupe's is picked.
+    await page.evaluate(() => localStorage.setItem('__who', 'lupe'));
+    await page.click('#syncCard [data-a="on"]');
+    await synced(page);
+    assert.deepEqual(await page.evaluate(() => window.__prompts), [{ prompt: 'select_account' }], 'no account chooser, or it was told whose account to use');
+    assert.equal((await saved(page, 'loteria.sync')).email, 'lupe@gmail.com');
+    const files = g.files().filter(f => (f.appProperties || {}).loteria === 'sync');
+    assert.deepEqual(files.map(f => f.owner).sort(), ['lupe', 'mark']);
+    assert.deepEqual(Object.values(JSON.parse(files.find(f => f.owner === 'lupe').body).cols.boards.items).map(i => i.v.name).sort(), ['Mine 1', 'Mine 2'], 'the tablas didn’t go to Lupe’s Drive');
+    // The next sign-in on this device remembers Lupe's account.
+    assert.equal(await saved(page, 'junkdrawer.google').then(t => t.email), 'lupe@gmail.com');
+    assert.deepEqual(A.problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('drive: a shared link on a new phone that saves to Drive asks again once the Drive tablas land', async () => {
   const g = fakeGoogle();
   const A = await driveDevice(g, { 'loteria.v1': ANA });

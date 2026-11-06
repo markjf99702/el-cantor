@@ -22,7 +22,7 @@
   var FILE = { name: 'Lotería tablas.json', mimeType: 'application/json', appProperties: { loteria: 'sync' } };
   // KT is the key every junkdrawer.works app keeps its sign-in under: good for an hour, and it remembers the account.
   var KS = 'loteria.sync', KT = 'junkdrawer.google', KB = 'loteria.sync.base', KN = 'loteria.sync.seen';
-  var KEEP_GONE = 180 * 864e5, RETRY = { retry: true }, NEWER = { newer: true };
+  var KEEP_GONE = 180 * 864e5, RETRY = { retry: true }, NEWER = { newer: true }, STOPPED = { stopped: true };
   var VERSION = 1; // the Drive file's shape; a file with a higher v was saved by a newer El Cantor
 
   function get(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
@@ -211,7 +211,7 @@
   // ---------- Google Drive ----------
   var st = Object.assign({ on: false, email: '', name: '', last: 0 }, get(KS) || {}), tok = get(KT);
   var status = 'off', note = '', busy = null, again = false, client = null, gisLoading = false, gisFailed = false, pushT = null, ups = [], watchers = [], says = [];
-  var asked = false, busyT = null, busyTried = false;
+  var asked = false, busyT = null, busyTried = false, era = 0; // era: one more each Stop, so a sync begun before it writes nothing
   function saveSt() { put(KS, st); }
   function live() { return !!(tok && tok.token && tok.exp - 60000 > Date.now() && String(tok.scope || '').indexOf(SCOPE) >= 0); }
   // note is a key in strings.js, so it's said in the language the page is in when it's drawn. When a tap (☁, Sync
@@ -283,11 +283,13 @@
   }
 
   function run(tries) {
+    var mine = era;
+    function still(x) { if (mine !== era) throw STOPPED; return x; } // Stop was tapped meanwhile: this sync goes no further
     track();
     var seen = get(KN) || {}, base = get(KB), L = readLocal(), Lc = canon(L), L0 = JSON.parse(Lc), file; // L0: untouched, to see what changed
-    return findFile().then(function (f) {
+    return findFile().then(still).then(function (f) {
       file = f; return f ? api('GET', 'drive/v3/files/' + f.id + '?alt=media', null, null, true) : null;
-    }).then(function (text) {
+    }).then(still).then(function (text) {
       var got = file ? readDrive(text) : { file: null, damaged: false }, remote = got.file;
       if (got.newer) throw NEWER; // nothing read, nothing written over: the newer El Cantor saved it
       // The first sync on this device — or the Drive file is new, was deleted or was damaged — merges without a
@@ -298,8 +300,8 @@
       var M = { v: VERSION, gen: !file || got.damaged ? newGen() : remote.gen, at: Date.now(), cols: {} };
       if (first) samePeople(L, colOf(remote, 'people'));
       NAMES.forEach(function (n) { M.cols[n] = mergeCol(COLS[n], L[n], colOf(remote, n), first ? null : colOf(base, n), seen[n] && seen[n].t || {}, first); });
-      var up = file && !got.damaged && eq(M.cols, remote.cols) ? Promise.resolve(file) : upload(file, M);
-      return up.then(function (f2) {
+      var up = file && !got.damaged && eq(M.cols, remote.cols) ? Promise.resolve(file) : upload(file, M).then(still);
+      return up.then(still).then(function (f2) {
         if (canon(readLocal()) !== Lc) throw RETRY; // changed here meanwhile: merge again
         var objs = {}, changed = [];
         NAMES.forEach(function (n) {
@@ -332,7 +334,7 @@
       if (changed.length) ups.forEach(function (f) { try { f(changed); } catch (e) { if (window.console) console.error("Loteria sync: applying synced data failed", e); } });
       return changed;
     }, function (e) {
-      failed(e);
+      if (e !== STOPPED) failed(e);
       return [];
     }).then(function (changed) {
       busy = null;
@@ -364,15 +366,16 @@
   }
   function gotToken(r) {
     if (!r || r.error || !google.accounts.oauth2.hasGrantedAllScopes(r, SCOPE)) { setStatus(st.on ? 'tap' : 'off', 'sync.denied'); return; }
-    tok = { token: r.access_token, exp: Date.now() + (+r.expires_in || 3600) * 1000, scope: r.scope || SCOPE, email: st.email || (tok && tok.email) || '' }; put(KT, tok);
-    st.on = true; saveSt();
+    var picked = st.pick; // the account may be another one: who it is comes from Drive
+    tok = { token: r.access_token, exp: Date.now() + (+r.expires_in || 3600) * 1000, scope: r.scope || SCOPE, email: picked ? '' : st.email || (tok && tok.email) || '' }; put(KT, tok);
+    st.on = true; delete st.pick; saveSt();
     (st.email ? Promise.resolve() : whoami()).then(sync);
   }
   // Turn it on. With a sign-in from any junkdrawer.works app still good, no Google window at all.
   function start() {
     if (!CLIENT_ID) return;
     asked = true;
-    if (!live()) { signIn(); return; }
+    if (!live() || st.pick) { signIn(); return; }
     st.on = true; if (!st.email && tok.email) st.email = tok.email; saveSt();
     (st.email ? Promise.resolve() : whoami()).then(sync);
   }
@@ -381,13 +384,16 @@
     if (!CLIENT_ID) return;
     // Not loaded yet: it's still on its way, or it didn't come at all (and is asked for again).
     if (!client) { var lost = gisFailed; loadGis(); setStatus(status, lost ? 'sync.gisLoad' : 'sync.stillLoading'); return; }
-    var hint = st.email || (tok && tok.email) || '', o = { prompt: hint ? '' : 'select_account' }; if (hint) o.login_hint = hint;
+    // After Stop saving, Google asks which account, so a family tablet can move to someone else's Drive.
+    var hint = st.pick ? '' : st.email || (tok && tok.email) || '', o = { prompt: hint ? '' : 'select_account' }; if (hint) o.login_hint = hint;
     client.requestAccessToken(o);
   }
   // Stop on this device. The shared sign-in stays for the other apps, and nothing is revoked:
   // revoking cancels Google's permission for every app on this client.
+  // A sync still under way stops where it is and leaves nothing behind, and turning it on again asks which account.
   function disconnect() {
-    st = { on: false, email: '', name: '', last: 0 };
+    era++; clearTimeout(pushT); pushT = null; clearTimeout(busyT); busyT = null; busyTried = false; clearTimeout(lapseT); lapseT = null;
+    st = { on: false, email: '', name: '', last: 0, pick: true };
     put(KB, null); put(KN, null); saveSt(); setStatus('off');
   }
 

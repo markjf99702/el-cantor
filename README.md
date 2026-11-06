@@ -72,7 +72,7 @@ Anyone can turn this on from the home screen, from Settings in My tablas or El C
 - **The one-hour rule:** Google lets a website with no server of its own use Drive for an hour after signing in. After that, the ☁ button in My tablas and Make tablas shows a red dot, as soon as the hour runs out on a page left open. Tap it once to sync again; it usually goes by without asking anything.
 - **When something goes wrong,** the ☁ button's dot turns red, and a tap on it, or on **Sync now**, says what happened for a few seconds, in the language chosen: no connection (the tablas are kept on the device and sync once it's back online), a full Google Drive (nothing new is saved there until some space is freed), Drive busy (it tries again by itself a minute later), or Google's sign-in not loading. The Google Drive card in Settings says the same, with **Sync now** to try again.
 - **A damaged Drive copy** (emptied, cut short, or missing a part) is put right by the first device to sync, from what can still be read and what that device has. Every other device then merges with it once as it did when it joined, so a tabla the damage hid comes back from whichever device has it. A copy saved by a newer El Cantor is left as it is, and the device says to close El Cantor and open it again to update.
-- **Stop saving on this device** turns it off here. The tablas stay on the device and in Drive.
+- **Stop saving on this device** turns it off here, even in the middle of a sync, which then goes no further. The tablas stay on the device and in Drive. Turning it on again opens Google's account chooser, so a family tablet can move to someone else's Drive.
 
 ### Setting it up
 
