@@ -1239,15 +1239,17 @@ a.chip{text-decoration:none}
       return '<div class="cell' + (out ? ' marked' : '') + (hit[i] ? ' hit' : '') + (need[i] ? ' need' : '') + '"><img src="' + src(n) + '" alt="' + esc(out ? T('calledAria', { card: card(n).name }) : card(n).name) + '" draggable="false">' + (out ? '<div class="mk" style="--rot:' + (((i * 53) % 70) - 35) + 'deg">' + BEAN + '</div>' : '') + '</div>';
     }).join('') + '</div>';
   }
-  // Our tablas, for the checker: the caller's own when they play too, Mark's four, and every full tabla in Make tablas on this device, those Google Drive
-  // brought from another device too; each once, the first time its cards come. key: where it's from and which it is;
-  // name: under its picture; full: its name with whose it is, for the verdict and the tally.
+  // Our tablas, for the checker: the caller's own when they play too, Mark's four, and every full tabla in Make tablas
+  // on this device, those Google Drive brought from another device too; each once, the first time its cards come. The
+  // caller's own are theirs and leave the rest listed: a caller playing Mark's four in My tablas still finds Mark's
+  // four, for a player holding one of them. key: where it's from and which it is; name: under its picture; full: its
+  // name with whose it is, for the verdict and the tally.
   function realCard(n) { return n === (n | 0) && n >= 1 && n <= 54; }
   function ourTablas() {
-    var out = [], seen = {};
+    var out = [], seen = {}, mine = {};
     function add(group, head, list, whose) {
       list.forEach(function (t) {
-        var k = t.cards.join('.'); if (seen[k]) return; seen[k] = 1;
+        var k = t.cards.join('.'), s = group === 'me' ? mine : seen; if (s[k]) return; s[k] = 1;
         out.push({ key: group + ':' + t.id, group: group, head: head, name: t.name, full: whose ? T('cantor.ours.whose', { who: whose, tabla: t.name }) : t.name, cards: t.cards });
       });
     }

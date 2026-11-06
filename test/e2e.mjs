@@ -1636,6 +1636,20 @@ check('cantor: I’m playing too: the caller’s tablas mark themselves, and a w
     assert.deepEqual(await beans(page, '#mineRow'), [4, 0]);
     assert.deepEqual(problems, []);
   } finally { await ctx3.close(); }
+  // A caller playing Mark's Tabla 1 in My tablas: Our tablas lists it as hers, and Mark's four stay listed too, for a
+  // player holding one of them.
+  const ctx5 = await context(PHONE);
+  try {
+    const page = await ctx5.newPage(), problems = watch(page);
+    const MARKS1 = [11, 24, 43, 33, 16, 51, 29, 52, 26, 31, 31, 49, 22, 19, 44, 50];
+    await seed(page, { ...ROUND(3, { check: true, me: 'ana', meName: 'Ana' }), 'loteria.v1': { ...PEOPLE, players: [{ id: 'ana', name: 'Ana', boards: [{ id: 'm1', name: 'Tabla 1', cards: MARKS1 }] }] } });
+    await page.goto(base + 'cantor.html');
+    await page.click('#lotBtn');
+    await page.click('#vfSeg [data-v="ours"]');
+    assert.deepEqual(await page.$$eval('#vfOurs .otg', gs => gs.map(g => [g.querySelector('.eyebrow').textContent, [...g.querySelectorAll('.ot')].map(b => b.getAttribute('aria-label'))])),
+      [['Ana’s tablas', ['Ana’s Tabla 1']], ['Mark’s four', ['Mark’s Tabla 1', 'Mark’s Tabla 2', 'Mark’s Tabla 3', 'Mark’s Tabla 4']]]);
+    assert.deepEqual(problems, []);
+  } finally { await ctx5.close(); }
   // In Spanish.
   const ctx4 = await context(PHONE, { locale: 'es-MX' });
   try {
