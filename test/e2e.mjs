@@ -3324,11 +3324,15 @@ check('print: on a phone a tapped card goes to the tabla in view, and on past a 
     await page.locator('#dg .dk[data-n="40"]').tap();
     assert.deepEqual((await cards(2)).slice(0, 3), [30, 31, 40], 'the card didn’t go on Tabla 3, the one on the screen');
     assert.equal((await cards(0))[15], 0, 'the card went on Tabla 1, off the screen');
-    // Opened again with Tabla 1 and 2 full, a tap fills Tabla 3, the first with a square to fill.
+    // Opened again with Tabla 1 and 2 full, a tap fills Tabla 3, the first with a square to fill, and brings it into
+    // view: on a phone it opens below Tabla 1 and 2.
     await seed(page, tablas([full, run(17), part(2, 30)]));
     await page.goto(base + 'print.html');
+    const shown = () => page.evaluate(() => { const p = document.getElementById('tablas').getBoundingClientRect(), r = document.querySelector('.tb[data-t="t3"]').getBoundingClientRect(); return Math.max(0, Math.min(r.bottom, p.bottom) - Math.max(r.top, p.top)) / r.height; });
+    assert.ok(await shown() < 0.5, 'Tabla 3 is in view as the page opens, so this proves nothing');
     await page.locator('#dg .dk[data-n="40"]').tap();
     assert.equal((await cards(2))[2], 40);
+    await until(page, () => { const p = document.getElementById('tablas').getBoundingClientRect(), r = document.querySelector('.tb[data-t="t3"]').getBoundingClientRect(); return r.top >= p.top - 1 && r.bottom <= p.bottom + 1; }, null, 3000).catch(async () => assert.fail(`the card went on Tabla 3 out of view: ${(await shown()).toFixed(2)} of it shows`));
     assert.deepEqual(problems, []);
   } finally { await ctx.close(); }
 });

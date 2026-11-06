@@ -411,7 +411,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     if (moved) UI.active = tb.id;
     if (r.same) { UI.sel = nextEmpty(tb, i); paintSel(); return; }
     edit(function () { place(tb, n, i, r); if (UI.sel != null) UI.sel = nextEmpty(tb, i); UI.flash = { t: tb.id, i: i }; });
-    if (moved) scrollToTabla(tb.id); // on to the next tabla, into view
+    if (moved || seen(tb.id) < 0.5) scrollToTabla(tb.id); // on to the next tabla, or one out of view as the page opens: into view
   }
   function presetList() {
     var out = [{ label: T('print.marks'), boards: MARK }];
@@ -455,15 +455,17 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     clearTimeout(scrollT);
     scrollT = setTimeout(function () {
       if (D || UI.sel != null) return;
-      var pane = $('tablas').getBoundingClientRect(), best = null, most = 0, cur = 0;
+      var best = null, most = 0, cur = 0;
       document.querySelectorAll('#tg .tb').forEach(function (w) {
-        var r = w.getBoundingClientRect(), v = Math.max(0, Math.min(r.bottom, pane.bottom) - Math.max(r.top, pane.top)) / (r.height || 1);
+        var v = seen(w.dataset.t);
         if (w.dataset.t === UI.active) cur = v;
         if (v > most + 0.01) { most = v; best = w; }
       });
       if (best && cur < 0.5 && best.dataset.t !== UI.active) { UI.active = best.dataset.t; paintSel(); }
     }, 150);
   }, { passive: true });
+  // How much of a tabla is in view in the tablas pane, from 0 to 1.
+  function seen(id) { var w = document.querySelector('#tg .tb[data-t="' + id + '"]'); if (!w) return 1; var p = $('tablas').getBoundingClientRect(), r = w.getBoundingClientRect(); return Math.max(0, Math.min(r.bottom, p.bottom) - Math.max(r.top, p.top)) / (r.height || 1); }
   function scrollToTabla(id) { var el = document.querySelector('#tg .tb[data-t="' + id + '"]'); if (el && el.scrollIntoView) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
   $('dg').addEventListener('click', function (e) { var d = e.target.closest('.dk'); if (d) tapCard(+d.dataset.n); });
   $('q').addEventListener('input', function () { UI.q = $('q').value; filterDeck(); });
