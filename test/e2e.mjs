@@ -542,7 +542,7 @@ check('espanol: Make tablas in Spanish, with Print… and Play these in My tabla
       // Print…: the sizes in pulgadas, and each Sí / No on the right of its row, even when its label wraps.
       await page.click('#printBtn');
       assert.equal(await page.textContent('#dlg h2'), 'Imprimir tablas');
-      assert.match(await page.textContent('#pers .per.on small'), /^Normal\u00a0· de lado\u00a0· \d\.\d\d\u00a0×\u00a0\d\.\d\d\u00a0pulg\.$/);
+      assert.match(await page.textContent('#pers .per.on small'), /^Normal\u00a0· de lado\u00a0· \d\.\d\d\u00a0× \d\.\d\d\u00a0pulg\.$/);
       assert.equal(await page.textContent('#pwarn'), 'Todavía no está llena; sus casillas vacías salen en blanco: Tabla 2 (faltan\u00a07)');
       const right = await page.$$eval('#paperSeg, #nameSeg', ss => ss.map(s => Math.round(s.getBoundingClientRect().right)));
       assert.equal(right[0], right[1], 'Sí / No isn’t on the right of its row');
@@ -3750,6 +3750,20 @@ check('print: Print… shows page 1 as it will print, says two per page turn sid
     await noSideways(page, 'Print…');
     assert.deepEqual(problems, []);
   } finally { await ctx.close(); }
+  // Its three tiles stay inside their card on a narrow phone, in Spanish on Letter too, the longest sizes: there the
+  // size may break after its ×. From 380 px it stays on one line.
+  for (const [width, lang] of [[320, 'en'], [320, 'es'], [360, 'es'], [390, 'es']]) {
+    const c = await context({ ...PHONE, viewport: { width, height: 740 } });
+    try {
+      const page = await c.newPage();
+      await seed(page, { 'loteria.lang': lang, 'loteria.print': { tablas: three, set: { doubles: true, per: 2, paper: 'letter', names: true, who: '' } } });
+      await page.goto(base + 'print.html');
+      await page.click('#printBtn');
+      const t = await page.evaluate(() => { const box = document.getElementById('pers').getBoundingClientRect(); return { right: box.right, tiles: [...document.querySelectorAll('#pers .per')].map(b => b.getBoundingClientRect().right), sizes: [...document.querySelectorAll('#pers .per .sz')].map(s => s.getClientRects().length) }; });
+      assert.ok(t.tiles.every(r => r <= t.right + 0.5), width + ' px, ' + lang + ': a tile runs past its card: ' + JSON.stringify(t));
+      if (width >= 380) assert.deepEqual(t.sizes, [1, 1, 1], width + ' px: a size broke across lines');
+    } finally { await c.close(); }
+  }
   // A first visit starts on the paper in the shops there, as El Cantor's Print tablas does.
   for (const [locale, paper] of [['en-US', 'letter'], ['es-MX', 'letter'], ['es', 'letter'], ['en-GB', 'a4'], ['es-ES', 'a4']]) {
     const c = await context(DESKTOP, { locale });
