@@ -52,7 +52,7 @@ for i, (a, r) in enumerate([(-290, 22), (-262, 26), (-234, 30), (-206, 34), (-17
 tx, ty = pol(200, 312, 100, -300)
 legs30 = ''.join(f'<path d="M{pol(200, 312, 70, a)[0]:.0f},{pol(200, 312, 70, a)[1]:.0f} L{pol(200, 312, 40, a + 8)[0]:.0f},{pol(200, 312, 40, a + 8)[1]:.0f}"/>' for a in (-250, -220, -190, -160, -130))
 hx, hy = pol(200, 312, 100, -92)
-ART[30] = ('El Camarón', TEAL2, f'''
+ART[30] = ('El Camarón', '#22304F', f'''
   <g stroke="#E8663F" stroke-width="3" fill="none" stroke-linecap="round">
     <path d="M{hx + 10:.0f},{hy - 20:.0f} C200,90 110,70 50,120"/><path d="M{hx + 16:.0f},{hy - 14:.0f} C230,80 170,40 90,58"/>
   </g>

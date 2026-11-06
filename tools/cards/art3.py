@@ -136,7 +136,7 @@ ART[20] = ('El Pájaro', '#CFE3C5', f'''
   <circle cx="142" cy="250" r="8" fill="{CREAM}"/><circle cx="140" cy="250" r="4" fill="{INK}"/>
 ''')
 
-ART[21] = ('La Mano', TEAL2, f'''
+ART[21] = ('La Mano', '#22304F', f'''
   <g stroke="{SKIN2}" stroke-linecap="round" fill="none" filter="url(#cut)">
     <path d="M160,290 L148,150" stroke-width="38"/><path d="M198,284 L198,120" stroke-width="40"/>
     <path d="M236,290 L246,146" stroke-width="38"/><path d="M266,312 L290,200" stroke-width="32"/>

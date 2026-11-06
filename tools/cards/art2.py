@@ -76,8 +76,8 @@ ART[8] = ('La Botella', '#D9CFE8', f'''
 ''')
 
 hoops = ''.join(f'<path d="M113,{y} C170,{y + 14} 230,{y + 14} 287,{y}"/>' for y in (198, 228, 410, 440))
-ART[9] = ('El Barril', TEAL2, f'''
-  <path d="M0,480 L400,480 L400,560 L0,560 Z" fill="#2F7F7B"/>
+ART[9] = ('El Barril', '#F6E3B4', f'''
+  <path d="M0,480 L400,480 L400,560 L0,560 Z" fill="#E6CC8F"/>
   <ellipse cx="200" cy="484" rx="104" ry="13" fill="{INK}" opacity=".22"/>
   <g filter="url(#cut)">
     <path d="M120,160 C104,260 104,380 120,480 L280,480 C296,380 296,260 280,160 Z" fill="#A0673A"/>
@@ -103,8 +103,8 @@ seeds = ''.join(
     f'<ellipse cx="{200 + dx:.1f}" cy="{300 + dy:.1f}" rx="6" ry="3.2" transform="rotate({r} {200 + dx:.1f} {300 + dy:.1f})" fill="{CREAM}"/>'
     for dx, dy, r in [(-40, -6, 10), (-24, 8, -20), (-8, -10, 30), (8, 9, -10), (24, -8, 20), (40, 5, -30), (-30, -14, 40), (30, 14, 10), (-12, 14, 0), (14, -14, -35)])
 net = ''.join(f'<path d="M{200 + 140 * math.cos(a):.0f},300 Q{200 + 60 * math.cos(a):.0f},420 {200 + 20 * math.cos(a):.0f},450"/>' for a in [0.3, 0.8, 1.3, 1.8, 2.3, 2.8])
-ART[11] = ('El Melón', '#9BCFCB', f'''
-  <path d="M0,480 L400,480 L400,560 L0,560 Z" fill="#7FB9B4"/>
+ART[11] = ('El Melón', TEAL, f'''
+  <path d="M0,480 L400,480 L400,560 L0,560 Z" fill="#185A58"/>
   <ellipse cx="200" cy="452" rx="120" ry="14" fill="{INK}" opacity=".2"/>
   <g filter="url(#cut)">
     <path d="M58,300 C58,396 124,452 200,452 C276,452 342,396 342,300 Z" fill="#C2B070"/>

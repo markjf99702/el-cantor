@@ -45,7 +45,7 @@ ART[42] = ('La Calavera', TEAL2, f'''
 ''')
 
 # ---- 43 La Campana
-ART[43] = ('La Campana', '#D9CFE8', f'''
+ART[43] = ('La Campana', '#22304F', f'''
   <rect x="50" y="96" width="300" height="20" rx="4" fill="#7A5230" filter="url(#cut)"/>
   <g stroke="{CREAM}" stroke-width="5" fill="none" stroke-linecap="round" opacity=".9">
     <path d="M62,286 C50,310 50,340 62,364"/><path d="M40,270 C24,306 24,346 40,382"/><path d="M338,286 C350,310 350,340 338,364"/><path d="M360,270 C376,306 376,346 360,382"/>
@@ -103,7 +103,7 @@ ART[45] = ('El Venado', '#F6E3B4', f'''
 # ---- 46 El Sol
 rays46 = ''.join(f'<path d="M{pol(200, 276, 112, a - 8)[0]:.1f},{pol(200, 276, 112, a - 8)[1]:.1f} L{pol(200, 276, 176 if i % 2 == 0 else 150, a)[0]:.1f},{pol(200, 276, 176 if i % 2 == 0 else 150, a)[1]:.1f} L{pol(200, 276, 112, a + 8)[0]:.1f},{pol(200, 276, 112, a + 8)[1]:.1f} Z" fill="{GOLD if i % 2 else "#F29A55"}"/>'
                  for i, a in enumerate(range(0, 360, 22)))
-ART[46] = ('El Sol', '#BFD9E8', f'''
+ART[46] = ('El Sol', TEAL, f'''
   <g filter="url(#cut)">{rays46}</g>
   <g filter="url(#cut)"><circle cx="200" cy="276" r="120" fill="{GOLD2}"/></g>
   <circle cx="200" cy="276" r="96" fill="#F0C667"/>
