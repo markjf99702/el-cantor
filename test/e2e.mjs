@@ -2609,6 +2609,33 @@ check('play along: El Cantor’s link opens My tablas on its game and juego, on 
     assert.equal(await page.evaluate(() => window.__copied[window.__copied.length - 1]), base + 'board.html#g=clasico.siete');
     assert.deepEqual(problems, []);
   } finally { await ctx.close(); }
+  // A phone on its side whose clipboard refuses: the link is left selected in its box, beside Share… and Copy link in
+  // place of their words, and Ready when you are stays clear of the top bar, in both languages.
+  for (const locale of ['en-US', 'es-MX']) {
+    const ctxS = await context({ ...PHONE, viewport: { width: 844, height: 390 } }, { locale });
+    try {
+      const page = await ctxS.newPage(), problems = watch(page);
+      await page.addInitScript(() => {
+        navigator.share = () => Promise.resolve();
+        Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: () => Promise.reject(new Error('not allowed')) } });
+        document.execCommand = () => false;
+      });
+      await seed(page, { 'loteria.cantor': { order: run(1, 54), pos: 0, round: 1, patterns: ['linea', 'esquinas', 'cuadro', 'siete'], juego: 'CANELA', wins: [], settings: { speak: false, sound: false } } });
+      await page.goto(base + 'cantor.html');
+      await page.click('#capAlong [data-a="copy"]');
+      await until(page, () => !document.querySelector('#capAlong input').hidden);
+      const fit = await page.evaluate(() => {
+        const box = document.querySelector('#capAlong input'), r = e => e.getBoundingClientRect();
+        return { value: box.value, picked: box.selectionEnd - box.selectionStart, line: Math.abs(r(box).top + r(box).height / 2 - (r(document.querySelector('#capAlong [data-a="copy"]')).top + r(document.querySelector('#capAlong [data-a="copy"]')).height / 2)) < 4, top: r(document.querySelector('#cap .gm')).top, bar: r(document.getElementById('patBtn')).bottom, bottom: r(document.getElementById('cap')).bottom, deal: r(document.querySelector('.deal')).bottom };
+      });
+      const at = locale + ': ';
+      assert.equal(fit.value, base + 'board.html#g=clasico.siete&j=CANELA');
+      assert.equal(fit.picked, fit.value.length, at + 'the link isn’t selected');
+      assert.ok(fit.line, at + 'the link’s box went under its buttons');
+      assert.ok(fit.top >= fit.bar && fit.bottom <= fit.deal + 1, at + `Ready when you are runs from ${fit.top} to ${fit.bottom}, past the top bar (${fit.bar}) or the bottom (${fit.deal})`);
+      assert.deepEqual(problems, []);
+    } finally { await ctxS.close(); }
+  }
   // My tablas on a phone set up already: the game button matches, it says so, and + A printed tabla starts on the
   // juego, over the one El Cantor printed earlier on this phone. A full stop after the link, from a sentence, is fine.
   const ctx2 = await context(PHONE);

@@ -127,6 +127,12 @@ a.chip{text-decoration:none}
 .app.side .cap>#startBtn,.app.side .cap>.along{flex-basis:auto}
 .app.side .cap>.gm{justify-content:center}
 .app.side.tight .cap>p.ready{display:none} /* short of room for them still, they take the place of the line under Ready */
+.along input{width:100%}
+/* on its side, the link's box (when the clipboard can't take it) takes the place of the row's words, as tall as its
+   buttons, so the row stays one line and the screen's height holds it */
+.app.side .cap .along:has(input:not([hidden])){flex-wrap:nowrap}
+.app.side .cap .along:has(input:not([hidden]))>span:first-child{display:none}
+.app.side .cap .along input{width:160px;flex:0 1 160px;padding-block:5px}
 .card .along{margin-top:10px}
 /* the game being played, with its little diagram: over Ready when you are, and beside Sábana */
 .gm{display:flex;align-items:center;gap:10px;text-align:left;max-width:100%}
@@ -979,7 +985,7 @@ a.chip{text-decoration:none}
   // Share… is the phone's own share sheet, where there is one; Copy link always. The link's box shows only when the
   // clipboard can't take it, selected for the phone's own Copy.
   function alongHtml(id) {
-    return '<div class="along" id="' + id + '"><span>' + T('cantor.alongGo') + '</span><span class="row">' + (navigator.share ? '<button class="btn sec sm" type="button" data-a="share">' + T('cantor.share') + '</button>' : '') + '<button class="btn sec sm" type="button" data-a="copy">' + T('copyLink') + '</button></span><input readonly hidden aria-label="' + esc(T('copyLink')) + '" style="width:100%"></div>';
+    return '<div class="along" id="' + id + '"><span>' + T('cantor.alongGo') + '</span><span class="row">' + (navigator.share ? '<button class="btn sec sm" type="button" data-a="share">' + T('cantor.share') + '</button>' : '') + '<button class="btn sec sm" type="button" data-a="copy">' + T('copyLink') + '</button></span><input readonly hidden aria-label="' + esc(T('copyLink')) + '"></div>';
   }
   function wireAlong(host) {
     var box = host.querySelector('input'), sh = host.querySelector('[data-a="share"]');
@@ -992,7 +998,7 @@ a.chip{text-decoration:none}
   // It says the link is copied once it is. Where the clipboard refuses, the browser's older copy command has a go;
   // if that can't either, the link is left selected in its box, shown, for the phone's own Copy. (As My tablas' Share.)
   function copyLink(url, box) {
-    function pick() { box.hidden = false; box.focus({ preventScroll: true }); box.select(); box.setSelectionRange(0, box.value.length); }
+    function pick() { var was = box.hidden; box.hidden = false; if (was) fitCap(); box.focus({ preventScroll: true }); box.select(); box.setSelectionRange(0, box.value.length); }
     function old() { pick(); var ok = false; try { ok = document.execCommand('copy'); } catch (e) { } if (!ok) pick(); toast(T(ok ? 'linkCopied' : 'selectCopy')); }
     if (!box.hidden) pick();
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(function () { toast(T('linkCopied')); }, old);
