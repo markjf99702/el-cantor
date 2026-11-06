@@ -697,7 +697,7 @@ a{color:var(--teal);font-weight:700}
   function wirePaste() {
     $('lnkAdd').addEventListener('click', function () {
       // The link ends at a space or a quote; a full stop or bracket after it isn't part of it (it ends in a card).
-      var m = /#t=[^\s<>"\u201c\u201d\u2018\u2019\u00ab\u00bb]+/.exec($('lnk').value), h = m && m[0].replace(/[^0-9a-z]+$/i, ''), imp = h && decodeShare(h);
+      var m = /#t=[^\s<>"\u201c\u201d\u2018\u2019\u00ab\u00bb]+/.exec($('lnk').value), h = m && m[0].replace(/[^0-9a-z]+$/i, ''), imp = h && readLink(h);
       if (!imp) { toast(T('board.pasteBad'), 4000); $('lnk').focus(); return; }
       imp.link = h; importSheet(imp);
     });
@@ -710,10 +710,20 @@ a{color:var(--teal);font-weight:700}
     $('shCopy').addEventListener('click', function () { copyLink(url, $('shUrl')); });
     var nb = $('shNative'); if (nb) nb.addEventListener('click', function () { navigator.share({ title: T('board.shareTitle'), text: T('board.shareText', { name: p.name }), url: url }).catch(function () { }); });
   }
+  // A link as it may arrive from a chat or mail app: whole; with a full stop or bracket after it from the end of a
+  // sentence (it ends in a card); or with each ~ turned into %7E, when a name with its own ~ can't be told apart.
+  function readLink(h) {
+    var imp = decodeShare(h), bare = h.replace(/[^0-9a-z]+$/i, '');
+    if (!imp && bare !== h) imp = decodeShare(bare);
+    if (!imp && /%7E/i.test(bare)) imp = decodeShare(bare.replace(/%7E/gi, '~'));
+    return imp;
+  }
   function maybeImport() {
-    var imp = decodeShare(location.hash); if (!imp) return;
-    imp.link = location.hash; // as it came, to put back if the page reloads in another language
+    var h = location.hash; if (!/^#t=/.test(h)) return;
+    var imp = readLink(h);
     history.replaceState(null, '', location.pathname + location.search);
+    if (!imp) { toast(T('board.linkCut'), 5000); return; } // cut short on the way: it says so, rather than nothing
+    imp.link = h; // as it came, to put back if the page reloads in another language
     importSheet(imp);
   }
   // In a Safari tab on an iPhone or iPad, the offer says how to take the link to El Cantor on the Home Screen, which
@@ -873,7 +883,8 @@ a{color:var(--teal);font-weight:700}
   keyboardFit();
   render();
   if (!firstRun) save();
-  if (firstRun && !decodeShare(location.hash)) welcomeSheet(); else maybeImport();
+  if (firstRun && !(/^#t=/.test(location.hash) && readLink(location.hash))) welcomeSheet();
+  maybeImport(); // a link cut short says so, over Who's playing on a first visit
   // Back from a change of language in Settings (strings.js reloads the page): Settings again, the switch under the finger.
   try { if (sessionStorage.getItem('loteria.reopen') === 'settings') { sessionStorage.removeItem('loteria.reopen'); if ($('sheet').hidden) settingsSheet(); } } catch (e) { }
   window.addEventListener('hashchange', maybeImport);

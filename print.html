@@ -705,7 +705,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
     }
     function link() {
       var who = $('apName').value.trim() || T('print.family'); P.set.who = $('apName').value.trim(); save();
-      var enc = function (s) { return encodeURIComponent(String(s).replace(/~/g, '-')); };
+      var enc = function (s) { return encodeURIComponent(String(s)).replace(/~/g, '%7E'); }; // ~ separates the person and the tablas, as in My tablas' Share
       return new URL('board.html', location.href).href + '#t=' + enc(who) + '~' + chosen().map(function (t) { return enc(t.name) + ':' + t.cards.map(function (n) { return n.toString(36); }).join('.'); }).join('~');
     }
     $('apx').addEventListener('click', closeDlg);

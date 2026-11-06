@@ -2553,6 +2553,44 @@ check('board: a share link carries a ~ in a name, and a broken link doesn’t st
   }
 });
 
+check('board: a share link with a full stop after it, or its ~ turned to %7E, still opens; one cut short says so', async () => {
+  const good = '#t=Ana~Tabla%201:' + run(1).map(n => n.toString(36)).join('.') + '~Tabla%202:' + run(17).map(n => n.toString(36)).join('.');
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.v1': people([{ id: 'm1', name: 'Mine 1', cards: run(30, 16) }]) });
+    // As chat and mail apps pass them on: the end of a sentence after it, a bracket, and every ~ as %7E.
+    for (const h of [good + '.', good + ').', good.replace(/~/g, '%7E')]) {
+      await page.goto(base + '__blank'); // a fresh page each time, not a change of the address's #
+      await page.goto(base + 'board.html' + h);
+      assert.equal(await sheetTitle(page), 'Tablas from Ana', h.slice(-12) + ': the link didn’t open');
+      assert.equal(await page.locator('#sheet .edb.ims .tabla').count(), 2);
+    }
+    // Cut 9 characters short: it says so, and the address loses the broken link.
+    await page.goto(base + '__blank');
+    await page.goto(base + 'board.html' + good.slice(0, -9));
+    await until(page, () => document.getElementById('toast').classList.contains('show'));
+    assert.equal(await page.textContent('#toast'), 'This link didn’t come through whole — ask for it to be sent again.');
+    assert.equal(await page.evaluate(() => location.hash), '');
+    assert.equal(await sheetTitle(page), null, 'a sheet opened for a broken link');
+    // And on a new phone, over Who's playing.
+    const fresh = await ctx.newPage();
+    await fresh.goto(base + '__blank'); await fresh.evaluate(() => localStorage.clear());
+    await fresh.goto(base + 'board.html' + good.slice(0, -9));
+    assert.equal(await sheetTitle(fresh), 'Who’s playing on this device?');
+    await until(fresh, () => document.getElementById('toast').textContent.indexOf('didn’t come through whole') >= 0);
+    // Make tablas' Play these in My tablas… keeps a ~ in a name, as My tablas' Share does.
+    await seed(page, { 'loteria.print': { tablas: [{ id: 't1', name: 'Mía ~ la buena', cards: run(1) }], set: { doubles: true, per: 2, paper: 'letter', names: true, who: '' } } });
+    await page.goto(base + 'print.html');
+    await page.click('#appBtn');
+    await page.fill('#apName', 'Tía ~ Lupe');
+    await page.click('#apOpen');
+    await until(page, () => (document.querySelector('#sheet h2') || {}).textContent === 'Tablas from Tía ~ Lupe');
+    assert.equal(await page.textContent('#sheet .edb.ims .tabla .k'), 'Mía ~ la buena');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('board: Share’s Copy link says “Link copied” only when it copied, and leaves the link selected when it couldn’t', async () => {
   const ctx = await context(PHONE);
   try {
