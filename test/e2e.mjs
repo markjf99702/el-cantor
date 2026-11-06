@@ -1128,6 +1128,176 @@ check('cantor: a tap on the card’s name, or R, says it again and then waits it
   } finally { await ctx.close(); }
 });
 
+check('cantor: Record a voice, one card at a time: kept on this device, El Cantor calls with it, and this device’s voice reads what isn’t recorded', async () => {
+  // Chromium's stand-in microphone (it beeps), with the permission to use it already given.
+  const mic = await pw.chromium.launch({ args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'] });
+  try {
+    const ctx = await mic.newContext({ ...PHONE, locale: 'en-US', serviceWorkers: 'block' });
+    await ctx.route(url => !url.href.startsWith(base), route => route.abort());
+    const page = await ctx.newPage(), problems = watch(page), dora = [];
+    page.on('request', r => { if (/audio\/dora\//.test(r.url())) dora.push(r.url()); });
+    await page.addInitScript(FAKE_TTS);
+    await page.addInitScript(DEALS);
+    await page.addInitScript(() => {
+      window.__played = [];
+      const start = AudioBufferSourceNode.prototype.start;
+      AudioBufferSourceNode.prototype.start = function () { if (this.buffer && this.buffer.duration > 0.3) window.__played.push(performance.now()); return start.apply(this, arguments); };
+      navigator.audioSession = { type: 'auto' }; // an iPhone's, as Safari 17 has it
+    });
+    const state = () => page.textContent('#rcState .t');
+    const recording = () => until(page, () => document.getElementById('rcGo').classList.contains('on'));
+    const take = async () => { // Record, a second and a half of the microphone, Stop
+      await page.click('#rcGo'); await recording();
+      await page.waitForTimeout(1500);
+      await page.click('#rcGo');
+      await until(page, () => document.querySelector('#rcState .t').textContent === 'Recorded');
+    };
+    const idb = () => page.evaluate(() => new Promise((ok, bad) => {
+      const q = indexedDB.open('loteria.voices');
+      q.onerror = () => bad(q.error);
+      q.onsuccess = () => {
+        const t = q.result.transaction(['voices', 'clips']), out = {};
+        t.objectStore('voices').getAll().onsuccess = e => { out.voices = e.target.result; };
+        t.objectStore('clips').getAll().onsuccess = e => { out.clips = e.target.result.map(c => [c.k, c.type, c.buf.byteLength]); };
+        t.oncomplete = () => { q.result.close(); ok(out); };
+      };
+    }));
+    const CANTOR = style => ({ order: run(1, 54), pos: 0, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], wins: [], settings: { speak: true, style, voice: 'pack:dora', rate: 1, pace: 'fast', sound: false, awake: false, check: false } });
+    await seed(page, { 'loteria.cantor': CANTOR('name') });
+    await page.goto(base + 'cantor.html');
+    await page.click('#setBtn');
+    await page.click('#recNew');
+    assert.equal(await sheetTitle(page), 'Record a voice');
+    assert.deepEqual([await page.textContent('#rcStage .eyebrow'), await page.textContent('#rcStage .rcline'), await state()], ['To start the round', '¡Se va y se corre, con la vieja en el coche!', 'Not recorded yet']);
+    assert.equal(await page.$eval('#rcName', i => [i.type, i.getAttribute('autocapitalize'), i.getAttribute('enterkeyhint')].join(' ')), 'text words done');
+    // Whose voice it is comes first.
+    await page.click('#rcGo');
+    assert.equal(await page.textContent('#toast'), 'First, type whose voice it is.');
+    assert.equal(await page.evaluate(() => document.activeElement.id), 'rcName');
+    await page.fill('#rcName', 'Abuela');
+    // The opening line: recorded in play-and-record, which an iPhone records in, and played back in playback, out loud.
+    await page.click('#rcGo'); await recording();
+    assert.equal(await page.evaluate(() => navigator.audioSession.type), 'play-and-record');
+    assert.match(await state(), /^Recording · \d s$/);
+    await page.waitForTimeout(1500);
+    await page.click('#rcGo');
+    await until(page, () => document.querySelector('#rcState .t').textContent === 'Recorded');
+    assert.deepEqual([await page.textContent('#rcGo .t'), await page.textContent('#rcPart [data-v="names"]')], ['Record again', 'Names 1/56']);
+    await page.click('#rcPlay');
+    await until(page, () => window.__played.length === 1);
+    assert.equal(await page.evaluate(() => navigator.audioSession.type), 'playback');
+    // Then El Gallo and El Diablito, one big card at a time.
+    await page.click('#rcNext');
+    assert.deepEqual([await page.textContent('#rcStage .eyebrow'), await page.textContent('#rcStage h3'), await page.getAttribute('#rcStage img', 'src'), await state()], ['Card 1 of 54 · its name', 'El Gallo', 'cards/ElGallo.jpg', 'Not recorded yet']);
+    await take();
+    await page.click('#rcNext');
+    await take();
+    // Kept in this browser's IndexedDB as recorded: audio/mp4 where the browser makes it, as Safari on an iPhone does.
+    let kept = await idb();
+    assert.deepEqual(kept.voices.map(v => v.name), ['Abuela']);
+    const id = kept.voices[0].id;
+    assert.deepEqual(kept.clips.map(c => c[0]).sort(), [id + '/n01', id + '/n02', id + '/open']);
+    for (const c of kept.clips) { assert.match(c[1], /^audio\/mp4/, c[0]); assert.ok(c[2] > 1000, c[0] + ' is ' + c[2] + ' bytes'); }
+    // Back in Settings, Abuela is the voice, recorded here, and it says what this device's voice still reads.
+    await page.click('#rcx');
+    assert.equal(await sheetTitle(page), 'Settings');
+    assert.equal(await page.inputValue('#vSel'), 'rec:' + id);
+    assert.equal(await page.$eval('#vSel option:checked', o => o.textContent), 'Abuela · recorded here');
+    assert.equal(await page.textContent('#vNote'), 'Recorded on this device: it stays here, and isn’t saved to Google Drive. 3 of 56 recorded so far: this device’s voice says the rest.');
+    assert.equal(await page.textContent('#recEdit'), 'Abuela’s recordings…');
+    // After a reload Abuela calls the round: her opening line, El Gallo and El Diablito. La Dama, not recorded, is read
+    // by this device's voice at once, with no note about a voice not loading, and nothing of Dora's is asked for.
+    await page.keyboard.press('Escape');
+    await page.reload();
+    await page.click('#setBtn');
+    await until(page, v => document.getElementById('vSel').value === v, 'rec:' + id);
+    await page.click('#stx');
+    await page.evaluate(() => { window.__played = []; window.__said = []; window.__dealt = []; window.__toasts = []; });
+    await page.click('#playBtn');
+    await until(page, () => window.__said.length >= 1 && window.__dealt.length >= 3, null, 40000);
+    await page.click('#playBtn'); // pause
+    let r = await page.evaluate(() => ({ said: window.__said, dealt: window.__dealt, played: window.__played, toasts: window.__toasts }));
+    assert.deepEqual(r.dealt.slice(0, 3).map(d => d.name), ['El Gallo', 'El Diablito', 'La Dama']);
+    const between = (a, b) => r.played.filter(t => t > a && t < b).length;
+    assert.deepEqual([between(0, r.dealt[0].at), between(r.dealt[0].at, r.dealt[1].at), between(r.dealt[1].at, r.dealt[2].at)], [1, 1, 1], 'Abuela’s opening line, El Gallo and El Diablito');
+    assert.equal(r.said[0].text, 'La Dama');
+    assert.ok(r.said[0].at - r.dealt[2].at < 800, 'La Dama waited ' + Math.round(r.said[0].at - r.dealt[2].at) + ' ms for a clip that was never recorded');
+    assert.deepEqual(r.toasts.filter(t => /isn’t loading/.test(t)), []);
+    assert.deepEqual(dora, [], 'Dora’s clips were asked for');
+    // Verse, then name: this device's voice reads El Gallo's verse, which isn't recorded, then Abuela says El Gallo.
+    await seed(page, { 'loteria.cantor': { ...CANTOR('verse'), settings: { ...CANTOR('verse').settings, voice: 'rec:' + id } } });
+    await page.goto(base + 'cantor.html');
+    await page.click('#setBtn');
+    await until(page, v => document.getElementById('vSel').value === v, 'rec:' + id);
+    await page.click('#stx');
+    await page.click('#nextBtn');
+    await until(page, () => window.__said.length === 1 && window.__played.length === 1);
+    r = await page.evaluate(() => ({ said: window.__said, played: window.__played }));
+    assert.equal(r.said[0].text, 'El que le cantó a San Pedro no le volverá a cantar.');
+    assert.ok(r.played[0] > r.said[0].at, 'Abuela said El Gallo before its verse');
+    // Her recordings open where she left off, at La Dama; El Gallo's verse recorded too, and R says it all in her voice.
+    await page.click('#setBtn');
+    await page.click('#recEdit');
+    assert.deepEqual([await page.inputValue('#rcName'), await page.textContent('#rcStage .eyebrow'), await page.textContent('#rcStage h3')], ['Abuela', 'Card 3 of 54 · its name', 'La Dama']);
+    await page.click('#rcPart [data-v="verses"]');
+    assert.deepEqual([await page.textContent('#rcStage .eyebrow'), await page.textContent('#rcStage .verse')], ['Card 1 of 54 · the verse only', 'El que le cantó a San Pedro no le volverá a cantar.']);
+    await take();
+    assert.equal(await page.textContent('#rcPart [data-v="verses"]'), 'Verses 1/54');
+    // A microphone the page isn't allowed, a take with nothing in it, and the screen going off mid-take: none is kept.
+    await page.click('#rcNext');
+    await page.evaluate(() => { const md = navigator.mediaDevices; window.__gum = md.getUserMedia.bind(md); md.getUserMedia = () => Promise.reject(new DOMException('no', 'NotAllowedError')); });
+    await page.click('#rcGo');
+    await until(page, () => /allowed the microphone/.test(document.getElementById('toast').textContent));
+    assert.equal(await page.textContent('#toast'), 'This page isn’t allowed the microphone. Allow it in the browser’s settings for this site, then try again.');
+    assert.deepEqual([await state(), await page.textContent('#rcGo .t')], ['Not recorded yet', 'Record']);
+    await page.evaluate(() => { navigator.mediaDevices.getUserMedia = () => { const ac = new AudioContext(), to = ac.createMediaStreamDestination(), hush = ac.createConstantSource(); hush.offset.value = 0; hush.connect(to); hush.start(); return ac.resume().then(() => to.stream); }; }); // a microphone that hears nothing
+    await page.click('#rcGo'); await recording();
+    await page.waitForTimeout(1200);
+    await page.click('#rcGo');
+    await until(page, () => /Nothing was heard/.test(document.getElementById('toast').textContent));
+    assert.equal(await page.textContent('#toast'), 'Nothing was heard in that take — try again.');
+    await page.evaluate(() => { navigator.mediaDevices.getUserMedia = window.__gum; });
+    await page.click('#rcGo'); await recording();
+    await page.waitForTimeout(1000);
+    await seen(page, false); await seen(page, true);
+    await until(page, () => !document.getElementById('rcGo').classList.contains('on') && document.querySelector('#rcState .t').textContent === 'Not recorded yet');
+    await page.waitForTimeout(300);
+    assert.equal(await page.textContent('#rcPart [data-v="verses"]'), 'Verses 1/54');
+    kept = await idb();
+    assert.deepEqual(kept.clips.map(c => c[0]).sort(), [id + '/n01', id + '/n02', id + '/open', id + '/v01']);
+    await page.click('#rcx');
+    await page.click('#stx');
+    await page.evaluate(() => { window.__played = []; window.__said = []; });
+    await page.keyboard.press('r');
+    await until(page, () => window.__played.length === 2);
+    assert.deepEqual(await page.evaluate(() => window.__said), [], 'this device’s voice read part of a card Abuela recorded whole');
+    // In Spanish: grabada aquí, and the recorder with no English left in it.
+    await page.evaluate(() => localStorage.setItem('loteria.lang', 'es'));
+    await page.reload();
+    await page.click('#setBtn');
+    await until(page, v => document.getElementById('vSel').value === v, 'rec:' + id);
+    assert.deepEqual([await page.$eval('#vSel option:checked', o => o.textContent), await page.textContent('#recNew'), await page.textContent('#recEdit')], ['Abuela · grabada aquí', 'Grabar una voz…', 'Grabaciones de Abuela…']);
+    assert.match(await page.textContent('#vNote'), /^Grabada en este dispositivo: se queda aquí y no se guarda en Google Drive\. Llevas 3 de 56: /);
+    assert.deepEqual(await english(page), [], 'English in Settings');
+    await page.click('#recEdit');
+    assert.equal(await sheetTitle(page), 'Grabar una voz');
+    assert.deepEqual([await page.textContent('#rcStage .eyebrow'), await state(), await page.textContent('#rcGo .t')], ['Carta 3 de 54 · su nombre', 'Todavía sin grabar', 'Grabar']);
+    assert.deepEqual(await english(page), [], 'English in Grabar una voz');
+    await noSideways(page, 'Grabar una voz');
+    // Borrar esta voz asks for a second tap, then her recordings are gone and Dora calls again.
+    await page.click('#rcDel');
+    assert.equal(await page.textContent('#rcDel'), 'Toca otra vez para borrar todas las grabaciones de Abuela');
+    await page.click('#rcDel');
+    assert.equal(await sheetTitle(page), 'Ajustes');
+    assert.equal(await page.$eval('#vSel option:checked', o => o.textContent), 'Dora · voz de mujer');
+    assert.ok(!(await page.$$eval('#vSel option', os => os.map(o => o.textContent))).some(t => /Abuela/.test(t)), 'Abuela is still in the list');
+    assert.equal((await saved(page, 'loteria.cantor')).settings.voice, '');
+    await until(page, () => new Promise(ok => { const q = indexedDB.open('loteria.voices'); q.onsuccess = () => { const t = q.result.transaction(['clips']); t.objectStore('clips').count().onsuccess = e => { q.result.close(); ok(e.target.result === 0); }; }; }));
+    assert.deepEqual((await idb()).voices, []);
+    assert.deepEqual(problems, []);
+  } finally { await mic.close(); }
+});
+
 // A stand-in for Screen Wake Lock: window.__held is how many screen locks the page holds. refuse: every request fails,
 // as a browser that won't keep the screen on does.
 const FAKE_WAKE = refuse => {

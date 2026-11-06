@@ -338,6 +338,33 @@ a.chip{text-decoration:none}
 .wins div b{color:var(--ink);font-weight:800}
 .wins.nights div{flex-wrap:wrap;column-gap:10px;row-gap:0}
 .wins.nights div span{min-width:7.5em}
+/* Record a voice: one line at a time, the card as big as the sheet leaves room for, and the buttons under it */
+.rec .seg{align-self:center}
+.rcstage{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center}
+.rcstage img,.rcline{height:clamp(140px,calc(100vh - 520px),300px);height:clamp(140px,calc(100dvh - 520px),300px);aspect-ratio:200/327;border-radius:10px;box-shadow:var(--lift)}
+.rcstage img{object-fit:cover;background:#FBF4E4;display:block}
+.rcline{display:flex;align-items:center;justify-content:center;padding:14px;background:var(--paper);border:1px solid var(--line2);font:400 21px/1.2 var(--disp);text-wrap:balance}
+.rcline.win{color:var(--red);font-size:28px}
+.rcstage h3{margin:2px 0 0;font:400 26px/1.1 var(--disp);text-wrap:balance}
+.rcstage .verse{margin:2px 0 0;font-style:italic;font-size:17px;line-height:1.35;max-width:26em;text-wrap:balance}
+.rcstate{display:flex;align-items:center;justify-content:center;gap:8px;min-height:20px;font:800 12.5px var(--body);color:var(--ink2)}
+.rcstate.on{color:var(--red)}
+.rcstate .lv{width:72px;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.rcstate .lv i{display:block;height:100%;background:var(--red);transform-origin:0 50%;transform:scaleX(0)}
+.rcdone{display:flex;flex-direction:column;align-items:center;gap:8px;padding:18px 0 6px}
+.rcdone b{font:400 24px/1.15 var(--disp);text-wrap:balance}
+.rcctl{display:grid;grid-template-columns:1fr auto auto 1fr;align-items:start;gap:14px}
+.rcctl>.btn{align-self:center}
+.rcctl>.btn:first-child{justify-self:start}
+.rcctl>.btn:last-child{justify-self:end}
+.rcbig{display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;padding:0;font:800 12px var(--body);color:var(--ink2);min-width:64px}
+.rcbig .dot{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--red);color:var(--red-ink);box-shadow:var(--shadow)}
+.rcbig .dot svg{width:24px;height:24px}
+.rcbig.on .dot{background:var(--ink);color:var(--bg);animation:rcpulse 1.2s ease-in-out infinite}
+.rcbig.play .dot{width:48px;height:48px;margin:8px 0;background:var(--paper);color:var(--ink);border:1px solid var(--line2)}
+.rcbig.play .dot svg{width:18px;height:18px}
+@keyframes rcpulse{0%,100%{box-shadow:0 0 0 0 rgba(183,51,47,.45)}50%{box-shadow:0 0 0 10px rgba(183,51,47,0)}}
+@media (prefers-reduced-motion:reduce){.rcbig.on .dot{animation:none}}
 /* overlays */
 .winbg{position:fixed;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100%);z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(30,20,14,.55);padding:20px max(20px,var(--sar)) 20px max(20px,var(--sal))}
 .winc{background:var(--paper);border:3px solid var(--gold);border-radius:22px;padding:26px 28px 22px;text-align:center;max-width:420px;width:100%;box-shadow:0 30px 60px -20px rgba(0,0,0,.6);animation:pop .35s cubic-bezier(.2,.9,.3,1.2)}
@@ -559,11 +586,12 @@ a.chip{text-decoration:none}
   var toastT; function toast(m, ms) { var t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove('show'); }, ms || 2400); }
 
   // ---------- sound ----------
-  var AC = null;
+  var AC = null, MIC = { on: false }; // MIC.on while Record a voice has the microphone
   // Every sound starts here, and most of them from a tap: it sets an iPhone to play through the ring switch on silent,
   // and lets the sound start, or start again after the screen was off, which leaves an iPhone's audio 'interrupted'.
+  // While a voice is being recorded the session is play-and-record instead, which a microphone needs.
   function ctx() {
-    try { if (navigator.audioSession && navigator.audioSession.type !== 'playback') navigator.audioSession.type = 'playback'; } catch (e) { }
+    try { var want = MIC.on ? 'play-and-record' : 'playback'; if (navigator.audioSession && navigator.audioSession.type !== want) navigator.audioSession.type = want; } catch (e) { }
     try {
       if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
       if (AC.state !== 'running' && AC.state !== 'closed') { var q = AC.resume(); if (q && q.catch) q.catch(function () { }); }
@@ -586,7 +614,9 @@ a.chip{text-decoration:none}
   // Recorded voices listed in audio/voices.json sound right on every device. Each card has one
   // clip — verse, a breath, name — and the manifest says where the verse ends and the name
   // starts, so Adivinanza can stop between them. The device's own speech engine is the fallback.
-  var PACKS = [], TTS = window.speechSynthesis || null, VOICES = [];
+  // A voice recorded on this device (RECS, see Record a voice below) plays the same way, a clip a line.
+  var PACKS = [], RECS = [], TTS = window.speechSynthesis || null, VOICES = [];
+  var OPENING = '¡Se va y se corre, con la vieja en el coche!';
   var UI = { onVoices: null, sheet: null };
   function rank(v) { var l = String(v.lang || '').replace('_', '-').toLowerCase(); return l === 'es-mx' ? 0 : l === 'es-us' ? 1 : l === 'es-419' ? 2 : (l === 'es' || l.indexOf('es-') === 0) ? 3 : 9; }
   function loadVoices() {
@@ -600,25 +630,46 @@ a.chip{text-decoration:none}
     if (UI.onVoices) UI.onVoices();
     renderBar();
   }).catch(function () { });
+  if ((C.settings.voice || '').indexOf('rec:') === 0) loadRecs(); // Settings loads them too, for its list
   function choice() {
     var v = C.settings.voice || '';
+    if (v.indexOf('rec:') === 0) { var r = RECS.filter(function (x) { return 'rec:' + x.id === v; })[0]; if (r) return { pack: r }; v = ''; } // not here (yet): the first recorded voice
     if (!v || v.indexOf('pack:') === 0) { var p = PACKS.filter(function (x) { return 'pack:' + x.id === v; })[0] || PACKS[0]; if (p) return { pack: p }; }
     var want = v.indexOf('dev:') === 0 ? v.slice(4) : v;
     return { dev: VOICES.filter(function (x) { return x.voiceURI === want; })[0] || VOICES[0] || null };
   }
-  function voiceOn() { return C.settings.speak && (PACKS.length > 0 || !!TTS); }
+  function voiceOn() { return C.settings.speak && (PACKS.length > 0 || RECS.length > 0 || !!TTS); }
   function pad2(n) { return (n < 10 ? '0' : '') + n; }
-  function clipUrl(p, ln) { return 'audio/' + p.id + '/' + (ln.n ? pad2(ln.n) : ln.clip) + '.' + (p.ext || 'mp3'); }
+  // A recorded voice's clip for a line: 'open', 'loteria', n01–n54 for the names and v01–v54 for the verses.
+  function recKey(ln) { return ln.n ? (ln.part === 'verse' ? 'v' : 'n') + pad2(ln.n) : ln.clip; }
+  function clipUrl(p, ln) { return p.rec ? 'rec:' + p.id + '/' + recKey(ln) : 'audio/' + p.id + '/' + (ln.n ? pad2(ln.n) : ln.clip) + '.' + (p.ext || 'mp3'); }
+  function bytes(url) {
+    if (url.indexOf('rec:') === 0) return recClip(url.slice(4)).then(function (c) { if (!c || !c.buf) throw new Error('not recorded'); return c.buf; });
+    return fetch(url).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); });
+  }
   var BUF = {}, READY = {}, BUFQ = [], SRC = null;
   function buffer(url) {
     if (BUF[url]) return BUF[url];
     var a = ctx(); if (!a || !window.fetch) return Promise.reject(new Error('no audio'));
-    var pr = BUF[url] = fetch(url).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.arrayBuffer(); }).then(function (b) {
+    var pr = BUF[url] = bytes(url).then(function (b) {
       return new Promise(function (ok, bad) { var q = a.decodeAudioData(b, ok, bad); if (q && q.then) q.then(ok, bad); });
     });
     pr.then(function () { if (BUF[url] === pr) READY[url] = true; }, function () { if (BUF[url] === pr) delete BUF[url]; });
     BUFQ.push(url); while (BUFQ.length > 10) { var old = BUFQ.shift(); delete BUF[old]; delete READY[old]; }
     return pr;
+  }
+  function forget(url) { delete BUF[url]; delete READY[url]; } // a line recorded again
+  // Where the sound is in a take recorded here, so the quiet before and after it doesn't hold up the round.
+  var SPAN = window.WeakMap ? new WeakMap() : null;
+  function heard(buf) {
+    var got = SPAN && SPAN.get(buf); if (got) return got;
+    var d = buf.getChannelData(0), peak = 0, i, a = -1, z = -1;
+    for (i = 0; i < d.length; i++) if (Math.abs(d[i]) > peak) peak = Math.abs(d[i]);
+    var th = Math.max(0.02, peak * 0.08);
+    for (i = 0; i < d.length; i++) if (Math.abs(d[i]) > th) { if (a < 0) a = i; z = i; }
+    got = a < 0 ? [0, buf.duration, 0] : [Math.max(0, a / buf.sampleRate - 0.08), Math.min(buf.duration, z / buf.sampleRate + 0.15), peak];
+    if (SPAN) SPAN.set(buf, got);
+    return got;
   }
   function prefetch(n) { var p = C.settings.speak && choice().pack; if (p && n) buffer(clipUrl(p, { n: n })).catch(function () { }); }
   // A clip that hasn't come in 3 seconds is read by this device's voice instead. From then until the round is over,
@@ -633,15 +684,17 @@ a.chip{text-decoration:none}
   // One line: { text } plus { n, part: 'verse' | 'name' | 'all' } for a card, or { clip } for the other clips.
   function playClip(p, ln, token, next) {
     var url = clipUrl(p, ln);
+    if (p.rec && !p.have[recKey(ln)]) { device(ln.text, token, next); return; } // a line not recorded here: this device's voice
     if (R.slow === p.id && !READY[url]) { buffer(url).catch(function () { }); device(ln.text, token, next); return; } // here for a later card, maybe
     var done = false, fb = setTimeout(miss, CLIP_WAIT);
     function ok() { if (done) return; done = true; clearTimeout(fb); next(); }
-    function miss() { if (done) return; done = true; clearTimeout(fb); if (token !== R.token) return; slowVoice(p); device(ln.text, token, next); }
+    function miss() { if (done) return; done = true; clearTimeout(fb); if (token !== R.token) return; if (!p.rec) slowVoice(p); device(ln.text, token, next); }
     buffer(url).then(function (buf) {
       if (done || token !== R.token) return;
-      var a = ctx(), k = ln.n && p.cards[ln.n], from = 0, to = buf.duration;
+      var a = ctx(), k = !p.rec && ln.n && p.cards[ln.n], from = 0, to = buf.duration;
       if (k && ln.part === 'verse') to = Math.min(buf.duration, k[0] + 0.15);
       if (k && ln.part === 'name') from = Math.max(0, k[1] - 0.05);
+      if (p.rec) { var h = heard(buf); from = h[0]; to = h[1]; }
       var s = a.createBufferSource(); s.buffer = buf; s.connect(a.destination);
       s.onended = function () { if (SRC === s) SRC = null; if (token === R.token) ok(); };
       clearTimeout(fb); fb = setTimeout(ok, (to - from) * 1000 + 1500);
@@ -661,7 +714,9 @@ a.chip{text-decoration:none}
     try { if (TTS.speaking || TTS.pending) TTS.cancel(); TTS.speak(u); } catch (e) { done(); }
   }
   function say(lines, done) {
-    var token = ++R.token, i = 0;
+    var token = ++R.token, i = 0, rp = C.settings.speak && choice().pack;
+    // A voice recorded here has the verse and the name as two clips, the verse only if it was recorded too.
+    if (rp && rp.rec) lines = [].concat.apply([], lines.map(function (ln) { var c = ln.part === 'all' && card(ln.n); return c ? [{ n: c.n, part: 'verse', text: c.verse, gap: 250 }, { n: c.n, part: 'name', text: c.name }] : [ln]; }));
     ctx();
     (function step() {
       if (token !== R.token) return;
@@ -683,7 +738,7 @@ a.chip{text-decoration:none}
   var FILLED = {};
   function fillVoice() {
     var p = C.settings.speak && choice().pack, sw = navigator.serviceWorker, cn = navigator.connection;
-    if (!p || FILLED[p.id] || !window.fetch || !window.caches || !sw || !sw.controller || navigator.onLine === false || (cn && cn.saveData)) return;
+    if (!p || p.rec || FILLED[p.id] || !window.fetch || !window.caches || !sw || !sw.controller || navigator.onLine === false || (cn && cn.saveData)) return;
     FILLED[p.id] = true;
     var todo = [{ clip: 'loteria' }].concat(C.order.slice(C.pos).concat(C.order.slice(0, C.pos)).map(function (n) { return { n: n }; }), [{ clip: 'open' }]).map(function (ln) { return clipUrl(p, ln); });
     (function step() {
@@ -707,6 +762,7 @@ a.chip{text-decoration:none}
   // says so, and the tap on the card that keeps calling brings an iPhone's sound back too.
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState !== 'visible') {
+      if (UI.rec) UI.rec.halt(); // a take cut off mid-word isn't kept
       if (R.playing || R.opening) { stopCalling(); R.hid = true; } else if (R.phase === 'speaking') stopCalling();
       return;
     }
@@ -762,7 +818,7 @@ a.chip{text-decoration:none}
   function begin() {
     R.phase = 'speaking'; R.opening = true; renderCaption(); renderBar();
     prefetch(C.order[0]);
-    say([{ clip: 'open', text: '¡Se va y se corre, con la vieja en el coche!' }], function () {
+    say([{ clip: 'open', text: OPENING }], function () {
       if (R.playing) { deal(); return; }
       R.opening = false; R.phase = 'idle'; renderCaption(); renderBar();
     });
@@ -1141,6 +1197,7 @@ a.chip{text-decoration:none}
       '<div class="card"><div class="eyebrow">' + T('lang.label') + '</div><div id="langSw" style="margin-top:8px"></div></div>' +
       '<div class="card stack"><div class="row sp"><div><b>' + T('cantor.readAloud') + '</b><p class="note" id="vNote"></p></div><button class="chip" type="button" id="spBtn"></button></div>' +
       '<div class="row" id="vRow" style="align-items:flex-end;flex-wrap:nowrap"><label class="fld" style="flex:1"><span>' + T('cantor.voice') + '</span><select id="vSel"></select></label><button class="btn sec" type="button" id="vTest">' + T('cantor.tryIt') + '</button></div>' +
+      '<div class="row" id="recRow"><button class="btn sec sm" type="button" id="recNew">' + T('rec.new') + '</button><button class="btn sec sm" type="button" id="recEdit"></button></div>' +
       '<label class="fld" id="rRow"><span>' + T('cantor.rate') + ' · <b id="rateV"></b></span><input type="range" id="rate" min="0.7" max="1.3" step="0.05"></label></div>' +
       '<div class="card"><div class="eyebrow">' + T('cantor.styleH') + '</div><div class="styles" id="styles"></div></div>' +
       '<div class="card"><div class="eyebrow">' + T('cantor.paceGroup') + '</div><div class="row" style="margin-top:8px"><div class="seg" id="paceSeg">' + ['slow', 'normal', 'fast'].map(paceOpt).join('') + '</div></div><p class="note" style="margin-top:8px">' + T('cantor.paceNote') + '</p></div>' +
@@ -1168,15 +1225,24 @@ a.chip{text-decoration:none}
     }
     function onOff(b, on) { b.textContent = T(on ? 'on' : 'off'); b.classList.toggle('on', on); }
     function rateWord() { return T(st.rate === 1 ? 'cantor.rate.normal' : st.rate < 1 ? 'cantor.rate.slower' : 'cantor.rate.faster'); }
-    // A recorded voice is described in the chosen language (voices.json's own words are English).
-    function about(p) { var k = 'voice.' + p.id, t = T('voice.' + p.id); return t !== k ? t : p.about || ''; }
+    // A recorded voice is described in the chosen language (voices.json's own words are English); one recorded on
+    // this device is "recorded here".
+    function about(p) { if (p.rec) return T('rec.here'); var k = 'voice.' + p.id, t = T('voice.' + p.id); return t !== k ? t : p.about || ''; }
     function draw() {
-      var has = !!TTS || PACKS.length > 0, ch = choice();
+      var has = !!TTS || PACKS.length > 0 || RECS.length > 0, ch = choice(), mine = ch.pack && ch.pack.rec ? ch.pack : null;
       onOff($('spBtn'), st.speak && has); $('spBtn').disabled = !has;
-      $('vNote').textContent = T(!has ? 'cantor.v.cant' : !st.speak ? 'cantor.v.off' : ch.pack ? 'cantor.v.pack' : VOICES.length ? 'cantor.v.device' : 'cantor.v.none');
+      $('vNote').textContent = T(!has ? 'cantor.v.cant' : !st.speak ? 'cantor.v.off' : mine ? 'cantor.v.rec' : ch.pack ? 'cantor.v.pack' : VOICES.length ? 'cantor.v.device' : 'cantor.v.none');
+      // A voice recorded here says what this device's voice still reads: the lines not recorded, and the verses.
+      if (st.speak && mine) {
+        var got = recCount(mine, 'names');
+        if (got < 56) $('vNote').textContent += ' ' + T('cantor.v.recSome', { n: got, of: 56 });
+        else if (st.style !== 'name' && recCount(mine, 'verses') < 54) $('vNote').textContent += ' ' + T('cantor.v.recVerses');
+      }
       $('vRow').hidden = !(has && st.speak); $('rRow').hidden = !(has && st.speak && !ch.pack);
+      $('recRow').hidden = !(has && st.speak && canRecord());
+      $('recEdit').hidden = !mine; if (mine) $('recEdit').textContent = T('rec.edit', { name: mine.name });
       // The recorded voices and this device's own, each under its heading, so a line is short enough for a phone.
-      var packs = PACKS.map(function (p) { var a = about(p); return '<option value="pack:' + esc(p.id) + '"' + (ch.pack === p ? ' selected' : '') + '>' + esc(p.name) + (a ? ' · ' + esc(a) : '') + '</option>'; });
+      var packs = PACKS.concat(RECS).map(function (p) { var a = about(p); return '<option value="' + (p.rec ? 'rec:' : 'pack:') + esc(p.id) + '"' + (ch.pack === p ? ' selected' : '') + '>' + esc(p.name) + (a ? ' · ' + esc(a) : '') + '</option>'; });
       var devs = VOICES.map(function (v) { return '<option value="dev:' + esc(v.voiceURI) + '"' + (ch.dev === v ? ' selected' : '') + '>' + esc(v.name) + ' · ' + esc(v.lang) + '</option>'; });
       $('vSel').innerHTML = packs.length || devs.length ? (packs.length ? '<optgroup label="' + esc(T('cantor.v.groupPack')) + '">' + packs.join('') + '</optgroup>' : '') + (devs.length ? '<optgroup label="' + esc(T('cantor.v.groupDevice')) + '">' + devs.join('') + '</optgroup>' : '') : '<option value="">' + T('cantor.v.default') + '</option>';
       $('rate').value = st.rate; $('rateV').textContent = rateWord();
@@ -1214,6 +1280,8 @@ a.chip{text-decoration:none}
       draw();
     });
     $('vSel').addEventListener('change', function () { st.voice = this.value; save(); draw(); });
+    $('recNew').addEventListener('click', function () { recSheet(null); });
+    $('recEdit').addEventListener('click', function () { var p = choice().pack; recSheet(p && p.rec ? p : null); });
     $('vTest').addEventListener('click', function () {
       if (R.phase === 'speaking') { toast(T('cantor.tryBetween')); return; }
       unlock(); say([st.style === 'name' ? { n: 23, part: 'name', text: 'La Luna' } : { n: 23, part: 'all', text: 'El farol de los enamorados. La Luna.' }], null);
@@ -1226,10 +1294,235 @@ a.chip{text-decoration:none}
     if ($('fsBtn')) $('fsBtn').addEventListener('click', function () { fullScreen(!fsOn()); });
     wireAlong($('setAlong'));
     $('stx').addEventListener('click', closeSheet);
-    UI.onVoices = draw; UI.onFull = draw; loadVoices(); draw();
+    UI.onVoices = draw; UI.onFull = draw; loadVoices(); loadRecs(); draw();
     if (window.LoteriaSync) LoteriaSync.card($('syncCard'), true);
   }
   function setPace(v) { C.settings.pace = v; save(); if (R.phase === 'waiting' && R.playing) wait(); else renderBar(); }
+
+  // ---------- Record a voice ----------
+  // Settings › Record a voice…: someone in the family reads the cards for El Cantor, one line at a time. Names first:
+  // the opening line, the 54 names in the deck's order and ¡Lotería!; then, if wanted, the 54 verses, for Verse, then
+  // name and Adivinanza. A line not recorded is read by this device's voice. The voice stays on this device, in
+  // IndexedDB 'loteria.voices' (Google Drive doesn't carry it): voices holds { id, name, made } and clips
+  // { k: id + '/' + key, buf, type, t }, the key as recKey() makes it. Settings' voice is then 'rec:' + id.
+  var VDB = null;
+  function vdb() {
+    if (!VDB) {
+      VDB = new Promise(function (ok, bad) {
+        var q; try { q = indexedDB.open('loteria.voices', 1); } catch (e) { bad(e); return; }
+        q.onupgradeneeded = function () { var d = q.result; if (!d.objectStoreNames.contains('voices')) d.createObjectStore('voices', { keyPath: 'id' }); if (!d.objectStoreNames.contains('clips')) d.createObjectStore('clips', { keyPath: 'k' }); };
+        q.onsuccess = function () { ok(q.result); };
+        q.onerror = function () { bad(q.error); };
+      });
+      VDB.catch(function () { MIC.noDb = true; VDB = null; if (UI.onVoices) UI.onVoices(); }); // a browser that keeps nothing: nothing to record into
+    }
+    return VDB;
+  }
+  // fn(transaction, set) asks; the promise is what set() was given, once the transaction is done.
+  function vtx(stores, mode, fn) {
+    return vdb().then(function (d) {
+      return new Promise(function (ok, bad) {
+        var t = d.transaction(stores, mode), out;
+        t.oncomplete = function () { ok(out); }; t.onerror = t.onabort = function () { bad(t.error || new Error('not kept')); };
+        fn(t, function (v) { out = v; });
+      });
+    });
+  }
+  function got(r, set) { r.onsuccess = function () { set(r.result); }; }
+  function recClip(k) { return vtx(['clips'], 'readonly', function (t, set) { got(t.objectStore('clips').get(k), set); }); }
+  function recRow(v) { return { id: v.id, name: v.name, made: v.made }; }
+  function loadRecs() {
+    if (!window.indexedDB) return;
+    vtx(['voices', 'clips'], 'readonly', function (t, set) {
+      var vs = null, ks = null;
+      function both() { if (vs && ks) set({ vs: vs, ks: ks }); }
+      got(t.objectStore('voices').getAll(), function (r) { vs = r; both(); });
+      got(t.objectStore('clips').getAllKeys(), function (r) { ks = r; both(); });
+    }).then(function (o) {
+      RECS = o.vs.filter(function (v) { return v && v.id; }).sort(function (a, b) { return a.made - b.made; }).map(function (v) {
+        var have = {}; o.ks.forEach(function (k) { k = String(k); if (k.indexOf(v.id + '/') === 0) have[k.slice(v.id.length + 1)] = true; });
+        return { id: v.id, name: v.name || '?', made: v.made || 0, rec: true, have: have };
+      });
+      if (UI.onVoices) UI.onVoices();
+      renderBar();
+    }, function () { });
+  }
+  function canRecord() { return !!(window.MediaRecorder && navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.indexedDB && !MIC.noDb); }
+  // audio/mp4 first, which Safari on an iPhone records, then what the browser has.
+  function recType() { var all = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus']; for (var i = 0; i < all.length; i++) try { if (MediaRecorder.isTypeSupported(all[i])) return all[i]; } catch (e) { } return ''; }
+  function recSteps(part) {
+    if (part === 'verses') return CARDS.map(function (c) { return { key: 'v' + pad2(c.n), n: c.n, part: 'verse', text: c.verse }; });
+    return [{ key: 'open', clip: 'open', text: OPENING }].concat(CARDS.map(function (c) { return { key: 'n' + pad2(c.n), n: c.n, part: 'name', text: c.name }; }), [{ key: 'loteria', clip: 'loteria', text: '¡Lotería!' }]);
+  }
+  function recCount(v, part) { return v ? recSteps(part).filter(function (s) { return v.have[s.key]; }).length : 0; }
+  function readBlob(b) {
+    if (b.arrayBuffer) return b.arrayBuffer();
+    return new Promise(function (ok, bad) { var f = new FileReader(); f.onload = function () { ok(f.result); }; f.onerror = function () { bad(f.error); }; f.readAsArrayBuffer(b); });
+  }
+  var MIC_IC = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="currentColor"/></svg>', STOP_IC = '<svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2.5" fill="currentColor"/></svg>', PLAY_IC = '<svg viewBox="0 0 24 24"><path d="M7 4.5v15l12.5-7.5z" fill="currentColor"/></svg>';
+  // The sheet: v, the voice to add to or redo, or null for a new one. It opens where the recording left off. The
+  // microphone is on only while a take is being recorded, so a phone plays the takes back out loud, not quietly
+  // through its earpiece. Each take is kept as soon as Stop is tapped; Record again replaces it.
+  function recSheet(v) {
+    if (R.playing || R.phase !== 'idle' || R.opening) stopCalling(); // El Cantor isn't calling over the microphone
+    var S = { v: v, part: 'names', i: 0, state: 'idle', armed: false };
+    function first(part) { var all = recSteps(part); for (var i = 0; i < all.length; i++) if (!v || !v.have[all[i].key]) return i; return -1; }
+    if (v) { var a = first('names'), b = first('verses'); if (a < 0 && b >= 0) { S.part = 'verses'; S.i = b; } else S.i = Math.max(0, a); }
+    var safari = window.LoteriaSync && LoteriaSync.safariTab();
+    openSheet('<div class="hd"><h2>' + T('rec.title') + '</h2><button class="btn sec sm" type="button" id="rcx">' + T('done') + '</button></div><div class="bd stack rec">' +
+      '<label class="fld"><span>' + T('rec.who') + '</span><input id="rcName" type="text" maxlength="30" autocomplete="off" autocapitalize="words" enterkeyhint="done" placeholder="' + esc(T('rec.whoPh')) + '"></label>' +
+      '<div class="seg" id="rcPart"><button type="button" data-v="names"></button><button type="button" data-v="verses"></button></div>' +
+      '<div class="rcstage" id="rcStage"></div>' +
+      '<div class="rcctl"><button class="btn sec" type="button" id="rcBack">' + T('rec.back') + '</button>' +
+      '<button class="rcbig" type="button" id="rcGo"><span class="dot"></span><span class="t"></span></button>' +
+      '<button class="rcbig play" type="button" id="rcPlay"><span class="dot">' + PLAY_IC + '</span><span class="t">' + T('rec.play') + '</span></button>' +
+      '<button class="btn sec" type="button" id="rcNext">' + T('rec.next') + '</button></div>' +
+      '<p class="note">' + T('rec.intro') + '</p>' + (safari ? '<p class="note conote">' + T('rec.safari') + '</p>' : '') +
+      '<div class="row" id="rcDelRow"><button class="btn sec sm" type="button" id="rcDel">' + T('rec.delete') + '</button></div></div>');
+    UI.rec = S; UI.onVoices = null; UI.onFull = null; // Settings' own, from before
+    $('rcName').value = v ? v.name : '';
+    function steps() { return recSteps(S.part); }
+    function step() { return steps()[S.i] || null; }
+    function has(s) { return !!(S.v && s && S.v.have[s.key]); }
+    // The line to say, as big as the room allows; past the last one, how far it got: all of them, and what that does
+    // now, or how many, and that this device's voice says the rest.
+    function stage() {
+      var s = step(), host = $('rcStage'), part = S.part === 'names', of = part ? 56 : 54, n = recCount(S.v, S.part);
+      if (!s) {
+        var all = n === of, count = esc(T('rec.doneCount', { n: n, of: of }));
+        host.innerHTML = '<div class="rcdone">' + (all ? '<b>' + esc(T(part ? 'rec.doneNames' : 'rec.doneVerses', { name: S.v.name })) + '</b><p class="note">' + count + '</p>' : '<b>' + count + '</b><p class="note">' + T('rec.doneRest') + '</p>') +
+          (part ? '<button class="btn" type="button" id="rcVerses">' + T('rec.versesToo') + '</button><p class="note">' + T('rec.versesNote') + '</p>' : '') + '</div>';
+        if (part) $('rcVerses').addEventListener('click', function () { S.part = 'verses'; S.i = Math.max(0, first('verses')); draw(); });
+        return;
+      }
+      var verse = s.part === 'verse', top = s.clip === 'open' ? T('rec.stepOpen') : s.clip === 'loteria' ? T('rec.stepWin') : T(verse ? 'rec.stepVerse' : 'rec.stepCard', { n: s.n });
+      host.innerHTML = '<div class="eyebrow">' + esc(top) + '</div>' +
+        (s.n ? '<img src="' + src(s.n) + '" alt="' + esc(card(s.n).name) + '">' : '<div class="rcline' + (s.clip === 'loteria' ? ' win' : '') + '">' + esc(s.text) + '</div>') +
+        (s.n ? (verse ? '<p class="verse">' + esc(s.text) + '</p>' : '<h3>' + esc(s.text) + '</h3>') : '') +
+        '<div class="rcstate" id="rcState" aria-live="polite"><span class="t"></span><span class="lv" hidden><i></i></span></div>';
+    }
+    // The buttons and the line under the card, for where the recording is.
+    function controls() {
+      var s = step(), on = S.state === 'recording', busy = S.state !== 'idle', go = $('rcGo');
+      go.classList.toggle('on', on); go.disabled = !s || S.state === 'starting' || S.state === 'saving'; go.hidden = !s;
+      go.querySelector('.dot').innerHTML = on ? STOP_IC : MIC_IC;
+      go.querySelector('.t').textContent = T(on ? 'rec.stop' : has(s) ? 'rec.again' : 'rec.record');
+      $('rcPlay').hidden = !s; $('rcPlay').disabled = busy || !has(s);
+      $('rcBack').disabled = busy || S.i === 0;
+      $('rcNext').disabled = busy; $('rcNext').hidden = !s; $('rcNext').className = 'btn' + (has(s) ? '' : ' sec');
+      var parts = $('rcPart').querySelectorAll('button');
+      parts[0].textContent = T('rec.names', { n: recCount(S.v, 'names'), of: 56 }); parts[1].textContent = T('rec.verses', { n: recCount(S.v, 'verses'), of: 54 });
+      parts.forEach(function (b) { b.classList.toggle('on', b.dataset.v === S.part); b.disabled = busy; });
+      $('rcDelRow').hidden = !S.v;
+      var st = $('rcState'); if (!st) return;
+      st.classList.toggle('on', on || S.state === 'starting');
+      st.querySelector('.t').textContent = on ? T('rec.on', { s: Math.floor((Date.now() - S.t0) / 1000) }) : S.state === 'starting' ? T('rec.starting') : S.state === 'saving' ? T('rec.saving') : T(has(s) ? 'rec.has' : 'rec.none');
+      st.querySelector('.lv').hidden = !on;
+    }
+    function draw() { if (UI.rec !== S) return; stage(); controls(); }
+    // The microphone off again, and the audio session back to playing.
+    function micOff() {
+      clearInterval(S.tick); cancelAnimationFrame(S.raf);
+      if (S.src) try { S.src.disconnect(); } catch (e) { }
+      if (S.stream) S.stream.getTracks().forEach(function (t) { t.stop(); });
+      S.src = S.stream = S.mr = null; MIC.on = false;
+    }
+    // How loud it's hearing, on the bar beside Recording.
+    function meter(stream) {
+      var a = ctx(); if (!a || !a.createMediaStreamSource) return;
+      try {
+        var an = a.createAnalyser(), d = new Float32Array(512); an.fftSize = 512;
+        S.src = a.createMediaStreamSource(stream); S.src.connect(an);
+        (function loop() {
+          if (S.state !== 'recording') return;
+          an.getFloatTimeDomainData(d); var m = 0; for (var i = 0; i < d.length; i++) if (Math.abs(d[i]) > m) m = Math.abs(d[i]);
+          var bar = document.querySelector('#rcState .lv i'); if (bar) bar.style.transform = 'scaleX(' + Math.min(1, m * 1.6).toFixed(3) + ')';
+          S.raf = requestAnimationFrame(loop);
+        })();
+      } catch (e) { }
+    }
+    function record() {
+      if (S.state === 'recording') { stop(true); return; }
+      var s = step(); if (S.state !== 'idle' || !s) return;
+      S.who = $('rcName').value.trim();
+      if (!S.v && !S.who) { toast(T('rec.whoFirst')); $('rcName').focus(); return; }
+      hush(); S.state = 'starting'; S.keep = false; controls();
+      MIC.on = true; ctx(); // play-and-record, before the microphone is asked for
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+        S.stream = stream;
+        if (UI.rec !== S || S.state !== 'starting') { micOff(); return; } // closed meanwhile
+        var type = recType(), mr, parts = [];
+        try { mr = new MediaRecorder(stream, type ? { mimeType: type } : {}); } catch (e) { mr = new MediaRecorder(stream); }
+        mr.ondataavailable = function (e) { if (e.data && e.data.size) parts.push(e.data); };
+        mr.onstop = function () { var keep = S.keep; micOff(); if (keep) take(new Blob(parts, { type: mr.mimeType || type || 'audio/mp4' }), s); else { S.state = 'idle'; draw(); } };
+        S.mr = mr; mr.start(); S.state = 'recording'; S.t0 = Date.now(); meter(stream);
+        S.tick = setInterval(function () { if (Date.now() - S.t0 >= 20000) stop(true); else controls(); }, 250); // 20 seconds at most
+        controls();
+      }, function (e) {
+        var refused = !!e && /^(NotAllowed|Security)Error$/.test(e.name); // the person, or the browser's settings, said no
+        micOff(); S.state = 'idle'; draw();
+        toast(T(refused ? 'rec.noMic' : 'rec.micFail'), 7000);
+      });
+    }
+    // keep: false lets a take go (the sheet closed, or the page hidden mid-word).
+    function stop(keep) {
+      if (S.state === 'starting') { S.state = 'idle'; micOff(); draw(); return; }
+      if (S.state !== 'recording' || !S.mr) return;
+      S.keep = keep; S.state = keep ? 'saving' : 'idle';
+      try { S.mr.stop(); } catch (e) { micOff(); S.state = 'idle'; }
+      controls();
+    }
+    S.halt = function () { stop(false); };
+    // A take kept: checked that it plays and something was heard, then put away for its line.
+    function take(blob, s) {
+      var buf;
+      readBlob(blob).then(function (b) {
+        buf = b;
+        var a = ctx(); if (!a) return null;
+        return new Promise(function (ok, bad) { var q = a.decodeAudioData(b.slice(0), ok, bad); if (q && q.then) q.then(ok, bad); }).catch(function () { throw { quiet: true }; }); // nothing in it to play
+      }).then(function (dec) {
+        if (dec && (dec.duration < 0.25 || heard(dec)[2] < 0.01)) throw { quiet: true };
+        var nv = S.v || { id: 'r' + Date.now().toString(36), name: S.who, made: Date.now(), rec: true, have: {} };
+        return vtx(['voices', 'clips'], 'readwrite', function (t) {
+          t.objectStore('voices').put(recRow(nv));
+          t.objectStore('clips').put({ k: nv.id + '/' + s.key, buf: buf, type: blob.type, t: Date.now() });
+        }).then(function () {
+          if (!S.v) { S.v = nv; RECS.push(nv); C.settings.voice = 'rec:' + nv.id; save(); } // the voice El Cantor calls with, from its first line
+          nv.have[s.key] = true; forget(clipUrl(nv, s));
+        });
+      }).then(function () { S.state = 'idle'; draw(); }, function (e) {
+        S.state = 'idle'; draw();
+        toast(T(e && e.quiet ? 'rec.silent' : buf ? 'rec.cantKeep' : 'rec.micFail'), 6000);
+      });
+    }
+    function listen() {
+      var s = step(); if (!has(s) || S.state !== 'idle') return;
+      hush(); unlock();
+      playClip(S.v, s, ++R.token, function () { });
+    }
+    function go(d) { hush(); S.i = Math.max(0, Math.min(steps().length, S.i + d)); S.armed = false; $('rcDel').textContent = T('rec.delete'); draw(); }
+    function leave() { stop(false); micOff(); hush(); UI.rec = null; UI.onClose = null; }
+    $('rcGo').addEventListener('click', record);
+    $('rcPlay').addEventListener('click', listen);
+    $('rcBack').addEventListener('click', function () { go(-1); });
+    $('rcNext').addEventListener('click', function () { go(1); });
+    $('rcPart').querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () { if (S.state !== 'idle' || S.part === b.dataset.v) return; hush(); S.part = b.dataset.v; S.i = Math.max(0, first(S.part)); draw(); }); });
+    $('rcName').addEventListener('input', function () { var nv = S.v; if (nv && this.value.trim()) { nv.name = this.value.trim(); vtx(['voices'], 'readwrite', function (t) { t.objectStore('voices').put(recRow(nv)); }).catch(function () { }); } });
+    $('rcName').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); this.blur(); } });
+    // Delete asks for a second tap, then takes every recording of the voice away.
+    $('rcDel').addEventListener('click', function () {
+      var nv = S.v; if (!nv) return;
+      if (!S.armed) { S.armed = true; this.textContent = T('rec.deleteAgain', { name: nv.name }); return; }
+      leave();
+      vtx(['voices', 'clips'], 'readwrite', function (t) { t.objectStore('voices').delete(nv.id); t.objectStore('clips').delete(IDBKeyRange.bound(nv.id + '/', nv.id + '/￿')); }).catch(function () { });
+      RECS = RECS.filter(function (x) { return x !== nv; });
+      if (C.settings.voice === 'rec:' + nv.id) { C.settings.voice = ''; save(); }
+      settingsSheet();
+    });
+    $('rcx').addEventListener('click', function () { leave(); settingsSheet(); });
+    UI.onClose = leave; // Escape, or a tap outside
+    draw();
+  }
 
   // ---------- checking a ¡Lotería! ----------
   var BEAN = '<svg viewBox="0 0 100 100"><defs><radialGradient id="mkb" cx="38%" cy="32%" r="72%"><stop offset="0" stop-color="#D2AB7F"/><stop offset=".55" stop-color="#8E5C38"/><stop offset="1" stop-color="#48290F"/></radialGradient></defs><path d="M20 60C10 36 28 16 52 16c25 0 36 17 31 36-4 14-15 23-31 26C36 81 26 74 20 60z" fill="url(#mkb)" stroke="#FFF4DC" stroke-width="5" paint-order="stroke"/><path d="M40 28c6-5 16-5 24-1" stroke="#4A2A12" stroke-width="3.5" fill="none" opacity=".55" stroke-linecap="round"/><ellipse cx="62" cy="52" rx="7" ry="5" fill="#4A2A12" opacity=".35"/><ellipse cx="38" cy="62" rx="5" ry="3.5" fill="#4A2A12" opacity=".3"/></svg>';
@@ -1905,6 +2198,8 @@ a.chip{text-decoration:none}
   function follow(raw) {
     var o; try { o = JSON.parse(raw); } catch (x) { return; }
     if (!wholeDeck(o)) return;
+    var vo = (o.settings && o.settings.voice) || '';
+    if (vo.indexOf('rec:') === 0 && !RECS.some(function (x) { return 'rec:' + x.id === vo; })) loadRecs(); // recorded in the other window
     var was = C.round + ':' + C.pos + ':' + C.order.join(), busy = R.playing || R.phase !== 'idle' || R.opening;
     take(o);
     if (C.round + ':' + C.pos + ':' + C.order.join() !== was) {
