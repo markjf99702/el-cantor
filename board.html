@@ -208,6 +208,19 @@ a{color:var(--teal);font-weight:700}
 @media (max-width:520px){.top h1 small{display:none}.callbtn{min-width:88px;padding:6px 10px}.callbtn b{font-size:17px}.last .v{display:none}}
 @media (max-width:380px){.last{gap:8px;padding:6px}} /* room for El Violoncello's whole name at 360 */
 @media (max-width:420px){.top.two{gap:4px;padding-left:8px;padding-right:8px}.top.two .chip:not(.ic){padding-left:7px;padding-right:7px}.top.two h1{font-size:18px}} /* room for a name */
+/* On a touchscreen a small button takes a tap 44 px tall, past what it shows (WCAG 2.2 success criterion 2.5.5,
+   Target Size), and a little to the sides, short of its neighbours; it looks the same. */
+@media (pointer:coarse){
+  .chip,.btn.sm,.seg button,.last button.undo{position:relative}
+  .chip::after,.btn.sm::after,.seg button::after,.last button.undo::after{content:"";position:absolute;left:-3px;right:-3px;top:min(0px,calc(50% - 22px));bottom:min(0px,calc(50% - 22px))}
+  .seg button::after{left:0;right:0} /* side by side, with no space between */
+  .seg{overflow:visible}.seg button:first-child{border-radius:999px 0 0 999px}.seg button:last-child{border-radius:0 999px 999px 0} /* the round ends, without clipping the taps */
+  /* a tabla's name and ⤢ do the same, so the whole label takes the tap, up into the space above it but not down onto the squares */
+  .tabla .lbl .k{flex:1;min-width:0}
+  .tabla .lbl button{position:relative}
+  .tabla .lbl button::after{content:"";position:absolute;left:0;right:0;top:-8px;bottom:-2px}
+  .tabla .lbl .z::after{left:-7px;right:-7px}
+}
 @media (prefers-reduced-motion:reduce){.cell .mk.new,.winc,.cell.hit::after{animation:none}.toast{transition:none}}
 .noscript{position:fixed;inset:0;z-index:100;margin:0;display:flex;flex-direction:column;gap:14px;align-items:center;justify-content:center;padding:16px;text-align:center;font:400 22px/1.3 var(--disp);color:var(--ink);background:var(--bg)}
 </style>

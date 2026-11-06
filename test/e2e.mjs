@@ -3336,6 +3336,39 @@ check('keyboard: a phone’s keyboard leaves the box and what it finds in view, 
   } finally { await ctx.close(); }
 });
 
+check('taps: on a phone the small buttons take a tap 44 px tall, and a tabla’s ⤢ in My tablas one 24 px each way', async () => {
+  // How far a tap can land from each control and still press it (WCAG 2.2 success criteria 2.5.5 and 2.5.8): its tap
+  // area, measured with elementFromPoint from its middle, and what it shows. They look the same as they did.
+  const taps = (page, sel) => page.$$eval(sel, els => els.map(el => {
+    const r = el.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    const on = (x, y) => { const h = document.elementFromPoint(x, y); return !!h && (h === el || el.contains(h)); };
+    const reach = (dx, dy) => { let k = 0; while (k < 30 && on(cx + dx * (k + 1), cy + dy * (k + 1))) k++; return k; };
+    return on(cx, cy) && { name: (el.getAttribute('aria-label') || el.textContent).trim().slice(0, 20), shows: Math.round(r.height), tall: reach(0, -1) + reach(0, 1) + 1, wide: reach(-1, 0) + reach(1, 0) + 1 };
+  }).filter(Boolean)); // the ones on the screen
+  const tall = async (page, sel, what) => { const all = await taps(page, sel); assert.ok(all.length, what + ': nothing found'); for (const t of all) assert.ok(t.tall >= 44, `${what}: “${t.name}” shows ${t.shows} px and takes a tap ${t.tall} px tall`); };
+  const ctx = await context({ ...PHONE, viewport: { width: 360, height: 740 } });
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.cantor': { order: run(1, 54), pos: 6, round: 3, patterns: ['linea', 'esquinas', 'cuadro'], juego: '', wins: [], settings: { speak: false, sound: false, check: false } } });
+    await page.goto(base + 'cantor.html');
+    await tall(page, '.top .chip:not([hidden]), .bar .cbtn, .bar .nextb, .bar .pacec', 'El Cantor');
+    await page.click('#setBtn');
+    await tall(page, '.sheet .hd .btn, .sheet .seg button, .sheet .row.sp .chip', 'El Cantor’s Settings');
+    const SIX = people([1, 2, 3, 4, 5, 6].map(i => ({ id: 'm' + i, name: 'Mine ' + i, cards: run(i) })));
+    await seed(page, { 'loteria.v1': SIX, 'loteria.game': { called: [1, 2], announced: {} } });
+    await page.goto(base + 'board.html');
+    await tall(page, '.top .chip:not([hidden]), .last .undo', 'My tablas');
+    for (const t of await taps(page, '.tabla .lbl .z')) assert.ok(t.tall >= 24 && t.wide >= 24, `My tablas: a tabla’s ⤢ takes a tap ${t.wide}×${t.tall}`);
+    await page.click('#setBtn');
+    await tall(page, '.sheet .hd .btn, .sheet .seg button, .sheet .row.sp .chip', 'My tablas’ Settings');
+    await seed(page, { 'loteria.print': { tablas: [{ id: 't1', name: 'Tabla 1', cards: run(1) }] } });
+    await page.goto(base + 'print.html');
+    await tall(page, '.top .chip, .top .btn', 'Make tablas');
+    for (const t of await taps(page, '.tba button')) assert.ok(t.tall >= 36, `Make tablas: “${t.name}” takes a tap ${t.tall} px tall`);
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('keyboard: name boxes start each word with a capital, and the search boxes have a phone’s Search key', async () => {
   const ctx = await context(PHONE);
   try {
