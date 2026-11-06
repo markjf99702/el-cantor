@@ -2564,6 +2564,24 @@ check('board: calling a card from Cantaron… doesn’t put a phone’s keyboard
   }
 });
 
+check('board: Cantaron… on a phone shows four cards to a row, named once, by their pictures, with nothing over their numbers', async () => {
+  for (const width of [390, 360]) {
+    const ctx = await context({ ...PHONE, viewport: { width, height: 800 } });
+    try {
+      const page = await ctx.newPage(), problems = watch(page);
+      await seed(page, { 'loteria.v1': ANA });
+      await page.goto(base + 'board.html');
+      await page.click('#callBtn');
+      const tops = await page.$$eval('#pk .pk', els => els.slice(0, 5).map(el => Math.round(el.getBoundingClientRect().top)));
+      assert.deepEqual(tops.slice(1, 4), [tops[0], tops[0], tops[0]], width + ': fewer than four cards to a row');
+      assert.notEqual(tops[4], tops[0], width + ': more than four cards to a row');
+      assert.equal(await page.locator('#pk .pk .n, #pk .pk .num').count(), 0, width + ': a card is named again under its picture, or a badge covers its number');
+      assert.equal(await page.getAttribute('#pk .pk[data-n="23"]', 'aria-label'), 'La Luna');
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
+});
+
 check('board: a card picked again in Cantaron… stays called, and taking one back says so', async () => {
   const ctx = await context(PHONE);
   try {
@@ -3469,7 +3487,7 @@ check('board: the squares, the Tablas sheet and Cantaron… work from the keyboa
     assert.equal(await active(), 'La Sirena');
     await page.keyboard.press('Enter');
     assert.equal(await page.getAttribute('#pkq', 'placeholder'), 'Pick a card for this square');
-    await page.locator('#pk .pk', { hasText: 'La Rana' }).focus(); await page.keyboard.press(' ');
+    await page.locator('#pk .pk[aria-label="La Rana"]').focus(); await page.keyboard.press(' ');
     assert.equal((await saved(page, 'loteria.v1')).players[0].boards[0].cards[5], 54);
     assert.equal(await page.evaluate(() => document.activeElement === document.querySelectorAll('#edb .eg')[0].querySelectorAll('.cell')[5]), true, 'the focus isn’t on the square that changed');
     assert.equal(await active(), 'La Rana');
