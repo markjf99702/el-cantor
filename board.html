@@ -294,8 +294,12 @@ a{color:var(--teal);font-weight:700}
     if (!G.announced || typeof G.announced !== 'object') G.announced = {};
   }
   readG();
-  function save() { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) { } if (window.LoteriaSync) LoteriaSync.changed(); }
-  function saveG() { try { localStorage.setItem(LSG, JSON.stringify(G)); } catch (e) { } }
+  // A browser that keeps nothing (storage turned off, or full) says so once, and About says so, rather than promise a
+  // refresh keeps the round.
+  var unkept = false, kept = (function () { try { localStorage.setItem('loteria.try', '1'); localStorage.removeItem('loteria.try'); return true; } catch (e) { return false; } })();
+  function unsaved() { if (!unkept) { unkept = true; setTimeout(function () { toast(T('noStorage'), 6000); }, 0); } }
+  function save() { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) { unsaved(); } if (window.LoteriaSync) LoteriaSync.changed(); }
+  function saveG() { try { localStorage.setItem(LSG, JSON.stringify(G)); } catch (e) { unsaved(); } }
   function player() { var p = S.players.filter(function (p) { return p.id === S.current; })[0]; if (!p) { p = S.players[0]; S.current = p.id; } return p; }
   function isCalled(n) { return G.called.indexOf(n) >= 0; }
 
@@ -552,7 +556,7 @@ a{color:var(--teal);font-weight:700}
       pasteCard() +
       '<div class="card"><div class="eyebrow">' + T('board.callingH') + '</div><p class="note" style="margin-top:6px">' + T.html('board.calling_html') + '</p></div>' +
       '<div class="card" id="syncCard" hidden></div>' +
-      '<div class="card"><div class="eyebrow">' + T('board.about') + '</div><p class="note" style="margin-top:6px">' + T(window.LoteriaSync && LoteriaSync.ready ? 'board.aboutDrive' : 'board.aboutLocal') + '</p></div>' +
+      '<div class="card"><div class="eyebrow">' + T('board.about') + '</div><p class="note" style="margin-top:6px">' + T(!kept ? 'noStorage' : window.LoteriaSync && LoteriaSync.ready ? 'board.aboutDrive' : 'board.aboutLocal') + '</p></div>' +
       '<footer class="jd-foot"><a href="https://junkdrawer.works/">' + T('foot.part') + '</a> <span aria-hidden="true">·</span> <a href="https://junkdrawer.works/privacy.html">' + T('foot.privacy') + '</a></footer></div>');
     T.switch($('langSw'), 'settings'); // a new language reloads the page, and Settings opens again
     reopen = settingsSheet;

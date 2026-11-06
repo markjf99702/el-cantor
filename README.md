@@ -14,6 +14,8 @@
 
 Install it from the browser (on an iPhone, Share → Add to Home Screen) and it runs as its own app, named El Cantor whichever page it was added from. It works offline too: installing keeps the card pictures, and once a round starts with a recorded voice, the rest of that voice (about 1.5 MB) comes down quietly in the background, so the next game with no signal sounds the same. It doesn't when the browser says the phone is saving data; Safari never says, so in Safari on an iPhone it comes down in Low Data Mode too (MDN's browser compatibility data: Safari has no `navigator.connection`).
 
+**A browser that keeps nothing** (its storage turned off, or full) says so once on each page, *This browser isn't keeping what you do here (private browsing, or its storage is off or full), so it will be gone when you close it*, and Make tablas and My tablas' About say it in place of saying they save.
+
 **Keeping tablas in Safari.** Safari deletes what a website saved after seven days of Safari use without a visit, while a web app on the Home Screen keeps its own count (WebKit blog, "Full Third-Party Cookie Blocking and More", 24 March 2020). So in a Safari tab on an iPhone or iPad, with Google Drive saving off, My tablas and Make tablas say so in a line, with the two ways to keep the tablas: the Home Screen, or Google Drive. Its × puts it away for good on that device. Every page also asks the browser to keep what it saves (`navigator.storage.persist()`, which Safari 17 grants on signs like being opened from the Home Screen), except in Firefox, which would ask the person first.
 
 The home screen has three choices:

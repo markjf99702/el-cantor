@@ -56,6 +56,7 @@
       'home.privacyDrive': 'Everything stays on this device unless you save to Google Drive, which keeps your tablas in a Lotería folder in your own Drive.',
       'home.juegos_html': 'Need tablas for tonight? El Cantor’s <b>Print tablas</b> makes a numbered set it can check by number.',
       // shared by the pages
+      'noStorage': 'This browser isn’t keeping what you do here (private browsing, or its storage is off or full), so it will be gone when you close it.',
       'home.aria': 'Home — all the Lotería tools',
       'home.title': 'Home',
       'settings': 'Settings',
@@ -587,6 +588,7 @@
       'home.privacyDrive': 'Todo se queda en este dispositivo, a menos que guardes en Google Drive: ahí tus tablas van a una carpeta Lotería en tu propio Drive.',
       'home.juegos_html': '¿Necesitas tablas para esta noche? En El Cantor, <b>Imprimir tablas</b> hace un juego de tablas numeradas que luego puede revisar por número.',
       // shared by the pages
+      'noStorage': 'Este navegador no está guardando lo que haces aquí (navegación privada, o su almacenamiento está apagado o lleno), así que se perderá al cerrarlo.',
       'home.aria': 'Inicio — todas las herramientas de Lotería',
       'home.title': 'Inicio',
       'settings': 'Ajustes',

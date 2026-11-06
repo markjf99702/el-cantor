@@ -422,7 +422,9 @@ a.chip{text-decoration:none}
       C.printed = goodPrinted(o.printed);
     }
   } catch (e) { }
-  function save() { C.last = Date.now(); try { localStorage.setItem(LS, JSON.stringify(C)); } catch (e) { } if (window.LoteriaSync) LoteriaSync.changed(); }
+  // A browser that keeps nothing (storage turned off, or full) says so once, rather than lose the night quietly.
+  var unkept = false;
+  function save() { C.last = Date.now(); try { localStorage.setItem(LS, JSON.stringify(C)); } catch (e) { if (!unkept) { unkept = true; setTimeout(function () { toast(T('noStorage'), 6000); }, 0); } } if (window.LoteriaSync) LoteriaSync.changed(); }
   // ---------- nights ----------
   // Wins less than six hours apart are one night, and so is El Cantor used with less than six hours between saves.
   // A new night starts the round numbers again at 1: the round left from the last night shows as round 1, and if it

@@ -68,6 +68,7 @@ a{color:var(--teal);font-weight:700}
 .btn.sm{padding:6px 11px;font-size:13px}
 .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .note{color:var(--ink2);font-size:13.5px;margin:0}
+.note.warn{color:var(--ink);font-weight:800}
 .eyebrow{font:600 11px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--ink3)}
 .card{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:var(--shadow)}
 .stack{display:flex;flex-direction:column;gap:12px}
@@ -276,7 +277,11 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   if (P.set.paper !== 'letter' && P.set.paper !== 'a4') P.set.paper = 'letter';
   var UI = { active: (P.tablas.filter(function (t) { return t.cards.indexOf(0) >= 0; })[0] || P.tablas[0] || {}).id || null, sel: null, q: '', flash: null, skip: {}, appSkip: {} }; // the first tabla with a square to fill
   var H = []; // undo snapshots of P.tablas
-  function save() { try { localStorage.setItem(LSP, JSON.stringify(P)); } catch (e) { } if (window.LoteriaSync) LoteriaSync.changed(); }
+  // A browser that keeps nothing (storage turned off, or full) says so once, and the line that says the tablas are
+  // saved as you go says so instead.
+  var unkept = false;
+  function save() { try { localStorage.setItem(LSP, JSON.stringify(P)); } catch (e) { if (!unkept) { unkept = true; setTimeout(function () { toast(T('noStorage'), 6000); }, 0); } } if (window.LoteriaSync) LoteriaSync.changed(); }
+  try { localStorage.setItem('loteria.try', '1'); localStorage.removeItem('loteria.try'); } catch (e) { var sh = document.querySelector('[data-t="print.savedHere"]'); sh.textContent = T('noStorage'); sh.classList.add('warn'); }
   function tab(id) { return P.tablas.filter(function (t) { return t.id === id; })[0]; }
   function active() { var t = tab(UI.active); if (!t && P.tablas.length) { t = P.tablas[0]; UI.active = t.id; UI.sel = null; } return t; }
   function counts(tb) { var c = {}; tb.cards.forEach(function (n) { if (n) c[n] = (c[n] || 0) + 1; }); return c; }

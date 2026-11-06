@@ -3786,6 +3786,38 @@ check('board: the ¡Lotería! box says who won and what to tell the caller: a pr
 });
 
 // ---------------------------------------------------------------- damaged saves
+check('saves: a browser that keeps nothing says so once on each page, and Make tablas and My tablas don’t say it saves', async () => {
+  const NO = 'This browser isn’t keeping what you do here (private browsing, or its storage is off or full), so it will be gone when you close it.';
+  const ctx = await context(PHONE);
+  try {
+    await ctx.addInitScript(() => { Storage.prototype.setItem = function () { throw new DOMException('The quota has been exceeded.', 'QuotaExceededError'); }; });
+    const page = await ctx.newPage(), problems = watch(page);
+    // How many times the toast has said it: once a page, however many saves fail.
+    const said = () => page.evaluate(no => window.__said || 0, NO);
+    const count = () => page.evaluate(no => { window.__said = 0; new MutationObserver(rs => { for (const r of rs) for (const n of r.addedNodes) if (n.textContent === no) window.__said++; }).observe(document.getElementById('toast'), { childList: true }); }, NO);
+    await page.goto(base + 'board.html');
+    await count();
+    await page.fill('#wName', 'Ana'); await page.click('#wRandom');
+    await until(page, no => document.getElementById('toast').textContent === no, NO); // after the toast that welcomes Ana, not hidden by it
+    await page.locator('#boards .cell').first().click();
+    await page.locator('#boards .cell').nth(5).click();
+    assert.equal(await said(), 1, 'My tablas');
+    await page.click('#setBtn');
+    assert.ok((await page.textContent('#sheet')).includes(NO), 'My tablas’ About still says a refresh keeps the round');
+    await page.goto(base + 'print.html');
+    await count();
+    assert.equal(await page.textContent('.foot .note'), NO, 'Make tablas still says it saves as you go');
+    await page.locator('#dg .dk[data-n="23"]').tap();
+    await page.locator('#dg .dk[data-n="24"]').tap();
+    assert.equal(await said(), 1, 'Make tablas');
+    await page.goto(base + 'cantor.html');
+    await count();
+    await page.click('#nextBtn'); await page.click('#nextBtn');
+    assert.equal(await said(), 1, 'El Cantor');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('saves: a damaged save opens with what can be kept, instead of a blank page or an error', async () => {
   for (const tool of ['board', 'cantor', 'print']) {
     const ctx = await context(PHONE);
