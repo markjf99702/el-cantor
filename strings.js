@@ -629,9 +629,11 @@
       'sync.full': 'Your Google Drive is full, so nothing new was saved there. Free some space and tap Sync now.',
       'sync.busy': 'Google Drive is busy — trying again in a minute.',
       'sync.stillBusy': 'Google Drive is still busy — try again in a few minutes.',
-      // in a Safari tab on an iPhone or iPad, with Drive saving off (sync.js); keep.home where Drive saving isn't offered
+      // in a Safari tab on an iPhone or iPad, with Drive saving off (sync.js); keep.home where Drive saving isn't offered;
+      // keep.mac in Safari on a Mac, which has no Home Screen
       'keep.drive': 'Safari clears what a website saves after a week without a visit. Add El Cantor to your Home Screen (Share\u00a0→ Add to Home Screen), or save to Google Drive, to keep these tablas.',
       'keep.home': 'Safari clears what a website saves after a week without a visit. Add El Cantor to your Home Screen (Share\u00a0→ Add to Home Screen) to keep these tablas.',
+      'keep.mac': 'Safari clears what a website saves after a week without a visit. Save to Google Drive to keep these tablas.',
       'keep.dismiss': 'Dismiss this note',
       'sync.newer': 'Google Drive has tablas from a newer El Cantor. Close it and open it again to update, and it’ll sync.'
     },
@@ -1235,6 +1237,7 @@
       // Apple's Spanish (Mexico) iPhone guide names the Share sheet's item "Agregar a Inicio"
       'keep.drive': 'Safari borra lo que guarda un sitio web después de una semana sin visitarlo. Agrega El Cantor a tu pantalla de inicio (Compartir\u00a0→ Agregar a Inicio), o guarda en Google Drive, para no perder estas tablas.',
       'keep.home': 'Safari borra lo que guarda un sitio web después de una semana sin visitarlo. Agrega El Cantor a tu pantalla de inicio (Compartir\u00a0→ Agregar a Inicio) para no perder estas tablas.',
+      'keep.mac': 'Safari borra lo que guarda un sitio web después de una semana sin visitarlo. Guarda en Google Drive para no perder estas tablas.',
       'keep.dismiss': 'Cerrar este aviso',
       'sync.newer': 'Google Drive tiene tablas de una versión más nueva de El Cantor. Ciérralo y vuelve a abrirlo para actualizarlo, y se sincroniza.'
     }

@@ -486,9 +486,11 @@
   // Safari deletes everything a website saved after seven days of Safari use without a visit, while a web app on the
   // Home Screen keeps its own count (WebKit blog, "Full Third-Party Cookie Blocking and More", 24 March 2020). So in a
   // Safari tab on an iPhone or iPad, with Drive saving off, My tablas and Make tablas say how to keep the tablas, in a
-  // line that goes once it's dismissed (remembered on the device). Every page also asks the browser to keep its saves,
-  // which Safari 17 grants on signs like being opened from the Home Screen (WebKit blog, "Updates to Storage Policy",
-  // 10 August 2023). Firefox would ask the person with a prompt, so it isn't asked there.
+  // line that goes once it's dismissed (remembered on the device). Safari on a Mac clears them the same way (the same
+  // post covers Safari 13.1 on macOS), and there the line names only Google Drive: a Mac has no Home Screen, and an app
+  // added to its Dock isn't known to keep them past the week, so it shows there too. Every page also asks the browser
+  // to keep its saves, which Safari 17 grants on signs like being opened from the Home Screen (WebKit blog, "Updates to
+  // Storage Policy", 10 August 2023). Firefox would ask the person with a prompt, so it isn't asked there.
   var KK = 'loteria.keepNote', persisting = false;
   function ipad() { var ua = navigator.userAgent || ''; return /iPad/.test(ua) || /Macintosh/.test(ua) && navigator.maxTouchPoints > 1; } // an iPad asks for the computer site
   function ios() { return /iPhone|iPod/.test(navigator.userAgent || '') || ipad(); }
@@ -496,6 +498,11 @@
   function safariTab() {
     var ua = navigator.userAgent || '';
     return ios() && !homeScreen() && /Safari\//.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS|GSA\//.test(ua); // Safari itself, not another browser
+  }
+  // Safari on a Mac, in a window or as an app in the Dock: not an iPad (which says it's a Mac), Chrome, Edge, Opera or Firefox.
+  function macSafari() {
+    var ua = navigator.userAgent || '';
+    return /Macintosh/.test(ua) && !ipad() && /Version\/[\d.]+.*Safari\//.test(ua) && !/Chrome\/|Chromium|Edg\/|OPR\/|Firefox\//.test(ua);
   }
   function persist() {
     var s = navigator.storage;
@@ -506,9 +513,10 @@
   // host: an empty element for the line. moved(): the line came or went, for a page that fits itself to the room left.
   function keep(host, moved) {
     if (!host) return;
-    if (!safariTab()) { host.hidden = true; return; }
+    var mac = !safariTab() && macSafari();
+    if (!safariTab() && !(mac && CLIENT_ID)) { host.hidden = true; return; } // a Mac's line has nothing to offer without Drive
     host.classList.add('lkeep'); keepCss();
-    host.innerHTML = '<span>' + esc(T(CLIENT_ID ? 'keep.drive' : 'keep.home')) + '</span><button type="button" aria-label="' + esc(T('keep.dismiss')) + '" title="' + esc(T('keep.dismiss')) + '">×</button>';
+    host.innerHTML = '<span>' + esc(T(mac ? 'keep.mac' : CLIENT_ID ? 'keep.drive' : 'keep.home')) + '</span><button type="button" aria-label="' + esc(T('keep.dismiss')) + '" title="' + esc(T('keep.dismiss')) + '">×</button>';
     function draw() { var was = host.hidden; host.hidden = !!get(KK) || !!(CLIENT_ID && st.on); if (was !== host.hidden && moved) moved(); }
     host.querySelector('button').addEventListener('click', function () { put(KK, Date.now()); draw(); });
     host.hidden = true; watch(draw);

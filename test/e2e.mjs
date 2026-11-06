@@ -3986,6 +3986,73 @@ check('safari: in a Safari tab, My tablas and Make tablas say how to keep the ta
   } finally { await A.ctx.close(); }
 });
 
+// Safari on a Mac, and Chrome on one, as their user agents read in macOS 15. An iPad's Safari reads as the Mac's, with
+// a touch screen.
+const SAFARI_MAC = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15';
+const CHROME_MAC = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36';
+check('safari: in Safari on a Mac, with Google Drive saving off, My tablas and Make tablas say to save to Google Drive, until it’s dismissed', async () => {
+  const LINE = {
+    en: 'Safari clears what a website saves after a week without a visit. Save to Google Drive to keep these tablas.',
+    es: 'Safari borra lo que guarda un sitio web después de una semana sin visitarlo. Guarda en Google Drive para no perder estas tablas.',
+    ipad: 'Safari clears what a website saves after a week without a visit. Add El Cantor to your Home Screen (Share → Add to Home Screen), or save to Google Drive, to keep these tablas.'
+  };
+  const line = page => page.evaluate(() => { const e = document.getElementById('keepNote'); return e.checkVisibility() ? e.querySelector('span').textContent : null; });
+  // A computer at junkdrawer.works, where Google Drive saving is offered (or, with drive false, somewhere it isn't).
+  async function mac(userAgent, { drive = true, kind = DESKTOP, init, data = {} } = {}) {
+    const ctx = await context(kind, { userAgent });
+    if (drive) await fakeGoogle().install(ctx, { rewrite: { '**/sync.js': s => s.replace(/var ORIGINS = \[[^\]]*\];/, `var ORIGINS = ['${origin}'];`) } });
+    if (init) await ctx.addInitScript(init);
+    const page = await ctx.newPage(), problems = watch(page, ['https://accounts.google.com/', 'https://www.googleapis.com/']);
+    await seed(page, { 'loteria.v1': ANA, ...data });
+    return { ctx, page, problems };
+  }
+  for (const lang of ['en', 'es']) {
+    const { ctx, page, problems } = await mac(SAFARI_MAC, { data: { 'loteria.lang': lang } });
+    try {
+      await page.goto(base + 'board.html');
+      assert.equal(await line(page), LINE[lang], lang + ': My tablas in Safari on a Mac');
+      if (lang === 'es') assert.deepEqual(await english(page), [], 'English in the line');
+      await page.goto(base + 'print.html');
+      assert.equal(await line(page), LINE[lang], lang + ': Make tablas in Safari on a Mac');
+      if (lang === 'en') {
+        await page.click('#keepNote button');
+        assert.equal(await line(page), null, 'the line stayed after ×');
+        await page.reload();
+        assert.equal(await line(page), null, 'the line came back after it was dismissed');
+        await page.goto(base + 'board.html');
+        assert.equal(await line(page), null, 'My tablas has the line after Make tablas’ was dismissed');
+      }
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
+  // As an app in the Dock too, which isn't known to keep its saves past the week either.
+  const dock = await mac(SAFARI_MAC, { init: () => { const mm = matchMedia.bind(window); window.matchMedia = q => /display-mode:\s*standalone/.test(q) ? { matches: true, media: q, addEventListener() { }, removeEventListener() { } } : mm(q); } });
+  try {
+    await dock.page.goto(base + 'board.html');
+    assert.equal(await line(dock.page), LINE.en, 'El Cantor in the Dock');
+    assert.deepEqual(dock.problems, []);
+  } finally { await dock.ctx.close(); }
+  // An iPad, which says it's a Mac, still gets its own line, with the Home Screen.
+  const ipad = await mac(SAFARI_MAC, { kind: { viewport: { width: 1024, height: 768 }, hasTouch: true }, init: () => { Object.defineProperty(Navigator.prototype, 'maxTouchPoints', { get: () => 5, configurable: true }); } });
+  try {
+    await ipad.page.goto(base + 'board.html');
+    assert.equal(await line(ipad.page), LINE.ipad, 'an iPad');
+    assert.deepEqual(ipad.problems, []);
+  } finally { await ipad.ctx.close(); }
+  // None with Google Drive saving on, nor where Drive saving isn't offered, as the line has nothing else to say; none in
+  // Chrome on a Mac.
+  for (const [what, ua, opt] of [['Drive saving on', SAFARI_MAC, { data: DRIVE_ON() }], ['no Drive saving offered', SAFARI_MAC, { drive: false }], ['Chrome on a Mac', CHROME_MAC, {}]]) {
+    const { ctx, page } = await mac(ua, opt);
+    try {
+      for (const p of ['board.html', 'print.html']) {
+        await page.goto(base + p);
+        if (what === 'Drive saving on') await synced(page);
+        assert.equal(await line(page), null, 'the line shows with ' + what + ' on ' + p);
+      }
+    } finally { await ctx.close(); }
+  }
+});
+
 check('board: Settings keeps each On/Off beside its words on a phone', async () => {
   const ctx = await context(PHONE);
   try {
