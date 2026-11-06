@@ -441,7 +441,7 @@
       'board.anotherPrinted': '+ Another printed tabla',
       'board.eitherWay_html': 'However you start, you can change every square later under <b>Tablas</b>.',
       'board.alreadyDrive': 'Already saving tablas to Google Drive on another device? Turn it on here and they come right over.',
-      'board.driveEmpty': 'Nothing is saved in this Google Drive yet. Pick how to start above, and your tablas will be saved there.',
+      'board.driveEmpty': 'No tablas are saved in this Google Drive yet. Pick how to start above, and your tablas will be saved there.', // it may hold El Cantor's winners
       'board.nameFirst': 'Your name first',
       'board.notNow': 'Not now',
       'board.tapTablas': 'Playing as {name} — tap Tablas to change any square',
@@ -984,7 +984,7 @@
       'board.anotherPrinted': '+ Otra tabla impresa',
       'board.eitherWay_html': 'Como sea, después puedes cambiar cada casilla en <b>Tablas</b>.',
       'board.alreadyDrive': '¿Ya guardas tablas en Google Drive en otro dispositivo? Actívalo aquí y llegan solitas.',
-      'board.driveEmpty': 'Todavía no hay nada guardado en este Google Drive. Elige arriba cómo empezar y tus tablas se guardarán ahí.',
+      'board.driveEmpty': 'Todavía no hay tablas guardadas en este Google Drive. Elige arriba cómo empezar y tus tablas se guardarán ahí.',
       'board.nameFirst': 'Primero tu nombre',
       'board.notNow': 'Ahora no',
       'board.tapTablas': 'Juegas como {name} — toca Tablas para cambiar cualquier casilla',

@@ -4510,7 +4510,7 @@ check('drive: turning Drive on from Who’s playing with nothing in that Drive s
       await B.page.click('#wSync [data-a="on"]');
       await synced(B.page);
       await until(B.page, () => !document.getElementById('wNone').hidden);
-      assert.equal(await B.page.textContent('#wNone'), lang === 'en' ? 'Nothing is saved in this Google Drive yet. Pick how to start above, and your tablas will be saved there.' : 'Todavía no hay nada guardado en este Google Drive. Elige arriba cómo empezar y tus tablas se guardarán ahí.');
+      assert.equal(await B.page.textContent('#wNone'), lang === 'en' ? 'No tablas are saved in this Google Drive yet. Pick how to start above, and your tablas will be saved there.' : 'Todavía no hay tablas guardadas en este Google Drive. Elige arriba cómo empezar y tus tablas se guardarán ahí.');
       assert.match(await B.page.textContent('#wSync .note'), lang === 'en' ? /^Saving to mark@gmail\.com: tablas set up here show up/ : /^Se guarda en mark@gmail\.com: las tablas que armes aquí/);
       assert.equal(await sheetTitle(B.page), lang === 'en' ? 'Who’s playing on this device?' : '¿Quién juega en este dispositivo?', 'Who’s playing closed');
       // Once someone is set up, the card in Settings says the tablas are saved there.
