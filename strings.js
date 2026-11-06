@@ -283,7 +283,7 @@
       'cantor.checkIt': '¡Lotería! — check it',
       'cantor.printedTabla': 'Printed tabla',
       'cantor.cardByCard': 'Card by card',
-      'cantor.ours': 'Our tablas', // the checker's third way: Mark's four and Make tablas' own, each one tap
+      'cantor.ours': 'Our tablas', // the checker's third way: everyone's in My tablas, Mark's four and Make tablas' own, each one tap
       'cantor.ours.find': 'Find a tabla by name',
       'cantor.ours.pick': 'Tap the tabla they’re playing.',
       'cantor.ours.none': 'No tabla here is called “{q}”.',

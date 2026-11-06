@@ -291,7 +291,7 @@ a.chip{text-decoration:none}
 .vfwin .chips{grid-column:1/-1;grid-row:2;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:0 -14px;padding:0 14px} /* one line, so the row stays short */
 .vfwin .chips::-webkit-scrollbar{display:none}
 .vfwin .chips .chip{flex:none}
-/* Our tablas: Mark's four and Make tablas' own, each a small picture with its name, under its heading */
+/* Our tablas: everyone's in My tablas, Mark's four and Make tablas' own, each a small picture with its name, under its heading */
 .otg+.otg{margin-top:12px}
 .ots{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px;margin-top:6px}
 .ot{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:4px 4px 5px;text-align:center;font:inherit;color:inherit;min-width:0}
@@ -1075,7 +1075,10 @@ a.chip{text-decoration:none}
   function me() {
     var id = C.settings.me; if (!id) return null;
     var all = people(), p = all.filter(function (x) { return x.id === id; })[0] || all.filter(function (x) { return nameKey(x.name) === nameKey(C.settings.meName) && nameKey(x.name); })[0]; // the same person, merged on another device
-    if (!p) return null;
+    return p ? tablasOf(p) : null;
+  }
+  // A person in My tablas with their whole tablas, or null when they have none yet.
+  function tablasOf(p) {
     var boards = (Array.isArray(p.boards) ? p.boards : []).filter(function (b) { return b && Array.isArray(b.cards) && b.cards.length === 16 && b.cards.every(realCard); }).map(function (b, i) { return { id: String(b.id || i), name: String(b.name || 'Tabla'), cards: b.cards.slice() }; });
     return boards.length ? { id: p.id, name: String(p.name || '').trim() || T('cantor.unnamed'), boards: boards } : null;
   }
@@ -1547,21 +1550,25 @@ a.chip{text-decoration:none}
       return '<div class="cell' + (out ? ' marked' : '') + (hit[i] ? ' hit' : '') + (need[i] ? ' need' : '') + '"><img src="' + src(n) + '" alt="' + esc(out ? T('calledAria', { card: card(n).name }) : card(n).name) + '" draggable="false">' + (out ? '<div class="mk" style="--rot:' + (((i * 53) % 70) - 35) + 'deg">' + BEAN + '</div>' : '') + '</div>';
     }).join('') + '</div>';
   }
-  // Our tablas, for the checker: the caller's own when they play too, Mark's four, and every full tabla in Make tablas
-  // on this device, those Google Drive brought from another device too; each once, the first time its cards come. The
-  // caller's own are theirs and leave the rest listed: a caller playing Mark's four in My tablas still finds Mark's
-  // four, for a player holding one of them. key: where it's from and which it is; name: under its picture; full: its
-  // name with whose it is, for the verdict and the tally.
+  // Our tablas, for the checker: the caller's own when they play too, everyone else in My tablas on this device (with
+  // Google Drive saving to one family account, that's the whole family), Mark's four, and every full tabla in Make
+  // tablas on this device, those Google Drive brought from another device too. A person's tablas are theirs: each is
+  // listed once under their name, and they leave the rest listed, so a caller or a player on Mark's four in My tablas
+  // still leaves Mark's four there for a player holding one of them, and two people on the same tabla each find it under
+  // their own name. Mark's four and Make tablas list each tabla once, the first time its cards come. key: where it's
+  // from and which it is; name: under its picture; full: its name with whose it is, for the verdict and the tally.
   function realCard(n) { return n === (n | 0) && n >= 1 && n <= 54; }
   function ourTablas() {
-    var out = [], seen = {}, mine = {};
+    var out = [], seen = {};
     function add(group, head, list, whose) {
+      var own = {}; // a person's own, once each
       list.forEach(function (t) {
-        var k = t.cards.join('.'), s = group === 'me' ? mine : seen; if (s[k]) return; s[k] = 1;
+        var k = t.cards.join('.'), s = group === 'me' || group.indexOf('pl:') === 0 ? own : seen; if (s[k]) return; s[k] = 1;
         out.push({ key: group + ':' + t.id, group: group, head: head, name: t.name, full: whose ? T('cantor.ours.whose', { who: whose, tabla: t.name }) : t.name, cards: t.cards });
       });
     }
     var m = me(); if (m) add('me', T('cantor.me.h', { who: m.name }), m.boards, m.name);
+    people().forEach(function (p) { var o = tablasOf(p); if (o && !(m && o.id === m.id)) add('pl:' + o.id, T('cantor.me.h', { who: o.name }), o.boards, o.name); }); // the caller's own are listed already
     add('m', T('print.marks'), L.originals().map(function (c, i) { return { id: i + 1, name: 'Tabla ' + (i + 1), cards: c }; }), 'Mark');
     var made = []; try { var o = JSON.parse(localStorage.getItem('loteria.print') || 'null'); if (o && Array.isArray(o.tablas)) made = o.tablas; } catch (e) { }
     add('p', T('tool.print'), made.filter(function (t, i) { return t && Array.isArray(t.cards) && t.cards.length === 16 && t.cards.every(realCard); }).map(function (t, i) { return { id: t.id || i, name: String(t.name || 'Tabla'), cards: t.cards.slice() }; }));
@@ -1683,7 +1690,7 @@ a.chip{text-decoration:none}
         $('vfOQ').addEventListener('keydown', function (e) { if (e.key !== 'Enter') return; e.preventDefault(); var all = $('vfOurs').querySelectorAll('.ot'); if (all.length === 1) all[0].click(); else this.blur(); });
         oursList(); ours();
         if (V.sel) inView(true);
-        UI.onOurs = function () { oursList(); ours(); }; // Make tablas' tablas from Google Drive, landing meanwhile
+        UI.onOurs = function () { oursList(); ours(); }; // Make tablas' tablas and My tablas' people from Google Drive, landing meanwhile
       } else {
         $('vfBody').innerHTML = '<div class="stack"><div class="verdict" id="vfV"></div><div class="chips" id="vfChips"></div><input id="vfQ" type="search" enterkeyhint="search" placeholder="' + T('cantor.findCard') + '" autocomplete="off"><div class="pick" id="vfPick"></div></div>';
         $('vfQ').value = V.q;
@@ -2193,7 +2200,7 @@ a.chip{text-decoration:none}
   // El Cantor has no ☁ button: a winner or a juego saved after Google's hour says it waits here for Sync now.
   if (window.LoteriaSync) LoteriaSync.onWait(function () { toast(T('cantor.syncWait'), 6000); });
   if (window.LoteriaSync) LoteriaSync.onUpdate(function (keys) { // winners, the juego and what was printed, from another device
-    if (keys.indexOf('loteria.print') >= 0 && UI.onOurs) UI.onOurs(); // and Make tablas' tablas, for Our tablas
+    if ((keys.indexOf('loteria.print') >= 0 || keys.indexOf('loteria.v1') >= 0) && UI.onOurs) UI.onOurs(); // and Make tablas' tablas and everyone in My tablas, for Our tablas
     if (keys.indexOf('loteria.v1') >= 0 && C.settings.me) layout(); // and the caller's own, when they play too
     if (keys.indexOf(LS) < 0) return;
     try { var o = JSON.parse(localStorage.getItem(LS)); if (o) { if (Array.isArray(o.wins)) C.wins = goodWins(o.wins); if (typeof o.juego === 'string') C.juego = o.juego; C.printed = goodPrinted(o.printed); } } catch (e) { }

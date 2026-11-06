@@ -1871,6 +1871,82 @@ check('cantor: I’m playing too: the caller’s tablas mark themselves, and a w
   } finally { await ctx6.close(); }
 });
 
+check('cantor: Our tablas lists everyone in My tablas on this device under their name, after the caller’s own, and Google Drive brings more in while it’s open', async () => {
+  // Mark's Tabla 3 has El Gallo, El Nopal, El Diablito and La Mano across its top row: those four have just been called.
+  // Beto's Tabla 1 has them across its top row too. Ana and Dani both play Mark's Tabla 1; Beto has his Tabla 1 twice,
+  // and Make tablas has a copy of it; Cora has no whole tabla yet.
+  const TOP3 = [1, 39, 2, 21], BETO1 = [1, 39, 2, 21, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+  const MARKS1 = [11, 24, 43, 33, 16, 51, 29, 52, 26, 31, 31, 49, 22, 19, 44, 50];
+  const PEOPLE = { players: [
+    { id: 'ana', name: 'Ana', boards: [{ id: 'a1', name: 'Tabla 1', cards: run(17) }, { id: 'a2', name: 'Tabla 2', cards: MARKS1 }] },
+    { id: 'beto', name: 'Beto', boards: [{ id: 'b1', name: 'Tabla 1', cards: BETO1 }, { id: 'b2', name: 'Tabla 2', cards: BETO1 }] },
+    { id: 'cora', name: 'Cora', boards: [{ id: 'c1', name: 'Tabla 1', cards: [1, 2, 3].concat(Array(13).fill(0)) }] },
+    { id: 'dani', name: 'Dani', boards: [{ id: 'd1', name: 'Tabla 1', cards: MARKS1 }] }
+  ], current: 'ana', patterns: ['linea', 'esquinas', 'cuadro'], settings: {} };
+  const CANTOR = settings => ({ order: TOP3.concat(run(1, 54).filter(n => !TOP3.includes(n))), pos: 4, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], juego: '', wins: [], settings: { speak: false, sound: false, check: true, checkWith: 'ours', ...settings } });
+  const MADE = { tablas: [{ id: 'x', name: 'Beto copy', cards: BETO1 }] };
+  const groups = page => page.$$eval('#vfOurs .otg', gs => gs.map(g => [g.querySelector('.eyebrow').textContent, [...g.querySelectorAll('.ot')].map(b => b.getAttribute('aria-label'))]));
+  const MARKS = ['Mark’s four', ['Mark’s Tabla 1', 'Mark’s Tabla 2', 'Mark’s Tabla 3', 'Mark’s Tabla 4']];
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    // Ana calls and plays too: her tablas first, then each of the others under their name, each tabla once.
+    await seed(page, { 'loteria.v1': PEOPLE, 'loteria.print': MADE, 'loteria.cantor': CANTOR({ me: 'ana', meName: 'Ana' }) });
+    await page.goto(base + 'cantor.html');
+    await page.click('#lotBtn');
+    assert.deepEqual(await groups(page), [['Ana’s tablas', ['Ana’s Tabla 1', 'Ana’s Tabla 2']], ['Beto’s tablas', ['Beto’s Tabla 1']], ['Dani’s tablas', ['Dani’s Tabla 1']], MARKS, ['Make tablas', ['Beto copy']]]);
+    await noSideways(page, 'Our tablas with everyone');
+    // One tap on Beto's: his verdict, and the tally keeps whose it was.
+    await page.click('#vfOurs .ot[aria-label="Beto’s Tabla 1"]');
+    assert.equal(await page.textContent('#vfV h3'), '¡Buena! Línea');
+    assert.equal(await page.textContent('#vfV p'), 'Beto’s Tabla 1 — It finished on the card just called, La Mano.');
+    // The box finds a person by name.
+    await page.fill('#vfOQ', 'dani');
+    assert.deepEqual(await groups(page), [['Dani’s tablas', ['Dani’s Tabla 1']]]);
+    await page.fill('#vfOQ', '');
+    await page.fill('#vfWho', 'Beto');
+    await page.click('#vfWin');
+    await page.waitForSelector('#winbox .winc #celOk');
+    assert.deepEqual((await saved(page, 'loteria.cantor')).wins.map(w => [w.who, w.tabla]), [['Beto', 'Beto’s Tabla 1']]);
+    // Beto calling and playing too: his first, then Ana, listed once, and Dani. Nobody playing too: My tablas' order.
+    for (const [settings, want] of [[{ me: 'beto', meName: 'Beto' }, ['Beto', 'Ana', 'Dani']], [{}, ['Ana', 'Beto', 'Dani']]]) {
+      await seed(page, { 'loteria.cantor': CANTOR(settings) });
+      await page.goto(base + 'cantor.html');
+      await page.click('#lotBtn');
+      assert.deepEqual((await groups(page)).slice(0, 3).map(g => g[0]), want.map(w => w + '’s tablas'), JSON.stringify(settings));
+    }
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+  // In Spanish.
+  const ctx2 = await context(PHONE, { locale: 'es-MX' });
+  try {
+    const page = await ctx2.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.v1': PEOPLE, 'loteria.cantor': CANTOR({}) });
+    await page.goto(base + 'cantor.html');
+    await page.click('#lotBtn');
+    assert.deepEqual((await groups(page)).slice(0, 2), [['Las tablas de Ana', ['Tabla 1 de Ana', 'Tabla 2 de Ana']], ['Las tablas de Beto', ['Tabla 1 de Beto']]]);
+    assert.deepEqual(await english(page), [], 'English in Our tablas');
+    assert.deepEqual(problems, []);
+  } finally { await ctx2.close(); }
+  // The caller's device has nobody in My tablas yet; another device on the same Google account adds Beto while the
+  // checker is open, and he comes into Our tablas with the next sync.
+  const g = fakeGoogle();
+  const B = await driveDevice(g, { 'loteria.cantor': CANTOR({}) });
+  const A = await driveDevice(g, { 'loteria.v1': { ...PEOPLE, players: PEOPLE.players.slice(1, 2), current: 'beto' } });
+  try {
+    await B.page.goto(base + 'cantor.html'); await synced(B.page);
+    await B.page.click('#lotBtn');
+    assert.deepEqual(await groups(B.page), [MARKS]);
+    await A.page.goto(base + 'board.html'); await synced(A.page);
+    const t = await B.page.evaluate(() => JSON.parse(localStorage.getItem('loteria.sync')).last);
+    await B.page.evaluate(() => LoteriaSync.now());
+    await synced(B.page, t);
+    await until(B.page, () => document.querySelectorAll('#vfOurs .otg').length === 2);
+    assert.deepEqual(await groups(B.page), [['Beto’s tablas', ['Beto’s Tabla 1']], MARKS]);
+    assert.deepEqual([...A.problems, ...B.problems], []);
+  } finally { await A.ctx.close(); await B.ctx.close(); }
+});
+
 check('cantor: a ¡Buena! is the moment of the night: the winner’s name large, the tabla with its gold line, and cut paper falling, but none with less motion', async () => {
   const CANELA7 = [21, 51, 23, 6, 16, 33, 8, 4, 14, 20, 9, 40, 29, 41, 13, 25];
   const box = page => page.evaluate(() => {
