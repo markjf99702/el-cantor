@@ -5523,7 +5523,7 @@ check('drive: a voice recorded on one device comes whole to another on the same 
     assert.deepEqual(takesOf(id).map(f => [f.name, f.mimeType, f.appProperties.line, f.appProperties.type]).sort(), [['00 ¡Se va y se corre!.webm', 'audio/webm', 'open', 'audio/webm;codecs=opus'], ['01 El Gallo.webm', 'audio/webm', 'n01', 'audio/webm;codecs=opus'], ['02 El Diablito.webm', 'audio/webm', 'n02', 'audio/webm;codecs=opus']]);
     assert.ok(takesOf(id).every(f => Buffer.isBuffer(f.body) && f.body.length > 1000), 'a take reached Drive empty');
     await until(A, () => !/still to go/.test(document.getElementById('vNote').textContent));
-    assert.equal(await A.textContent('#vNote'), 'Recorded by the family, and saved to Google Drive too: every device signed in to it calls with it. 3 of 56 recorded so far: this device’s voice says the rest.');
+    assert.equal(await A.textContent('#vNote'), 'Recorded by the family, and saved to Google Drive too: every device that saves there has it in its list. 3 of 56 recorded so far: this device’s voice says the rest.');
 
     // On the laptop she comes down a take at a time, and isn't in the list until every take is here: with two of
     // three, El Cantor still calls with Dora.
@@ -5546,7 +5546,7 @@ check('drive: a voice recorded on one device comes whole to another on the same 
     assert.ok(await B.page.isHidden('#vComing'));
     assert.deepEqual((await voicesKept(B.page)).clips, [id + '/n01', id + '/n02', id + '/open']);
     await B.page.selectOption('#vSel', 'rec:' + id);
-    assert.equal(await B.page.textContent('#vNote'), 'Recorded by the family, and saved to Google Drive too: every device signed in to it calls with it. 3 of 56 recorded so far: this device’s voice says the rest.');
+    assert.equal(await B.page.textContent('#vNote'), 'Recorded by the family, and saved to Google Drive too: every device that saves there has it in its list. 3 of 56 recorded so far: this device’s voice says the rest.');
     await B.page.click('#stx');
     await B.page.evaluate(() => { window.__played = []; window.__said = []; });
     await B.page.click('#nextBtn');
@@ -5587,7 +5587,7 @@ check('drive: a voice recorded on one device comes whole to another on the same 
     await B.page.click('#setBtn');
     await until(B.page, v => document.getElementById('vSel').value === v, 'rec:' + id);
     assert.equal(await B.page.$eval('#vSel option:checked', o => o.textContent), 'Abuelita · de otro dispositivo');
-    assert.match(await B.page.textContent('#vNote'), /^Grabada por la familia y guardada también en Google Drive: todos los dispositivos con esa cuenta cantan con ella\. /);
+    assert.match(await B.page.textContent('#vNote'), /^Grabada por la familia y guardada también en Google Drive: cada dispositivo que guarda ahí la tiene en su lista\. /);
     assert.deepEqual(await english(B.page), [], 'English in Ajustes');
     // Deleted on the laptop, with two taps that say it goes from every device and Drive: it's gone from Drive, folder
     // and all, and from her phone at its next sync.
