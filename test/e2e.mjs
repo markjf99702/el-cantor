@@ -1132,6 +1132,38 @@ check('cantor: Full screen in Settings, and F, hide the browser’s bars where t
   } finally { await ctx.close(); }
 });
 
+check('cantor: on a phone turned sideways the card is on the left, as tall as the room, with its name and the cards before it on the right', async () => {
+  // An iPhone 14 on its side (47 px of notch each side, the home bar below) and an iPhone SE on its side. Before, the
+  // card sat above its name and came out a 26 px thumbnail.
+  for (const [width, height, side, bottom] of [[844, 390, 47, 21], [667, 375, 0, 0]]) {
+    const ctx = await context({ ...PHONE, viewport: { width, height } });
+    try {
+      const page = await ctx.newPage(), problems = watch(page), at = width + '×' + height + ': ';
+      await (await ctx.newCDPSession(page)).send('Emulation.setSafeAreaInsetsOverride', { insets: { left: side, right: side, top: 0, bottom } });
+      await seed(page, { 'loteria.cantor': { order: run(1, 54), pos: 6, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], juego: '', wins: [], settings: { speak: false, sound: false, awake: false, check: false } } });
+      await page.goto(base + 'cantor.html');
+      await until(page, () => document.getElementById('flip').getBoundingClientRect().width > 60, null, 5000).catch(() => { });
+      const card = await rect(page, '#flip'), name = await rect(page, '#cap h2'), before = await rect(page, '#antes'), bar = await rect(page, '.bar');
+      assert.ok(card.width >= 120, at + `the card is ${card.width} px wide`);
+      assert.ok(card.right < name.left && card.right < before.left, at + 'the card isn’t on the left of its name and the cards before it');
+      assert.ok(card.height >= (bar.top - 120) * 0.9 && card.bottom <= bar.top, at + `the card is ${card.height} px tall, in ${bar.top} px above the bar`);
+      assert.ok(card.left >= side, at + 'the card is in the notch');
+      assert.equal(await page.isVisible('#sabBtn'), true, at + 'no Sábana button for the sábana');
+      assert.equal(await page.textContent('#cap h2'), 'La Sirena');
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
+  // Upright, and on a computer, it is as it was.
+  for (const [kind, mode] of [[PHONE, 'compact'], [DESKTOP, 'wide']]) {
+    const ctx = await context(kind);
+    try {
+      const page = await ctx.newPage();
+      await page.goto(base + 'cantor.html');
+      assert.equal(await page.getAttribute('#app', 'class'), 'app ' + mode);
+    } finally { await ctx.close(); }
+  }
+});
+
 check('cantor: the card called is the card itself, edge to edge on its own cream paper, with no white mat round it', async () => {
   // The cards are drawn on cream (#FBF4E4) with their own rounded frame; a white mat round them made a second frame,
   // and the brightest thing on a dark screen.

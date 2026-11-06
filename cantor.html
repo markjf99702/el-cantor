@@ -117,6 +117,16 @@ a.chip{text-decoration:none}
 .app.wide .sab{width:var(--sabw,50%);padding-top:4px}
 .app.tall .sab{height:var(--sabh,36%)}
 .app.compact .sab{display:none}
+/* a phone on its side: the card on the left, as tall as the screen allows, its name and the cards before it on the
+   right; the sábana is a sheet, as upright */
+.app.side .stage{padding-bottom:6px}
+.app.side .deal{display:grid;grid-template-columns:var(--colw,140px) minmax(0,1fr);grid-template-rows:1fr auto auto auto 1fr;gap:8px 28px;align-items:center;justify-items:center}
+.app.side .cardarea{grid-column:1;grid-row:1/-1;align-self:stretch;width:var(--colw,140px);height:auto}
+.app.side .tiebar{grid-column:2;grid-row:2}
+.app.side .cap{grid-column:2;grid-row:3;min-height:0}
+.app.side .antes{grid-column:2;grid-row:4}
+.app.side .sab{display:none}
+.app.side .bar{padding-top:6px;padding-bottom:8px}
 .sabhd{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex:none;padding:0 2px}
 .sabhd b{font:400 18px var(--disp)}
 .sabhd span{font:800 11px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--ink3);font-variant-numeric:tabular-nums}
@@ -815,9 +825,11 @@ a.chip{text-decoration:none}
   // ---------- layout ----------
   function layout() {
     var app = $('app'), W = window.innerWidth, H = window.innerHeight;
-    var mode = W >= 860 && W >= H * 1.1 ? 'wide' : (H >= 860 && W >= 600 ? 'tall' : 'compact');
+    // A phone on its side is too short for the card over its name: side by side, the card as tall as the room.
+    var mode = W > H && H < 600 && W < 1000 ? 'side' : W >= 860 && W >= H * 1.1 ? 'wide' : (H >= 860 && W >= 600 ? 'tall' : 'compact');
     app.className = 'app ' + mode;
-    $('sabBtn').hidden = mode !== 'compact';
+    $('sabBtn').hidden = mode !== 'compact' && mode !== 'side';
+    if (mode === 'side') { var deal = document.querySelector('.deal'); deal.style.setProperty('--colw', Math.floor(Math.min(deal.clientHeight / 1.635, deal.clientWidth * 0.5, 440)) + 'px'); }
     if (mode === 'wide') app.style.setProperty('--sabw', Math.round(($('app').clientWidth - 32) * 0.5) + 'px');
     if (mode === 'tall') app.style.setProperty('--sabh', Math.round(H * 0.34) + 'px');
     if (mode !== 'compact') fitSabana($('sbgrid'), mode === 'wide' ? [6, 9] : [9, 11, 14, 18]);
