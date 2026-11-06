@@ -345,6 +345,9 @@ a.chip{text-decoration:none}
 .rcstage img{object-fit:cover;background:#FBF4E4;display:block}
 .rcline{display:flex;align-items:center;justify-content:center;padding:14px;background:var(--paper);border:1px solid var(--line2);font:400 21px/1.2 var(--disp);text-wrap:balance}
 .rcline.win{color:var(--red);font-size:28px}
+/* The opening line and ¡Lotería! have no picture: card-shaped where there's room, and wide and tall enough for their
+   words on a small phone or one on its side, where a card that short is too narrow for them */
+.rcline{height:auto;aspect-ratio:auto;min-height:clamp(140px,calc(100vh - 520px),300px);min-height:clamp(140px,calc(100dvh - 520px),300px);width:max(170px,calc(clamp(140px,calc(100vh - 520px),300px) * 200 / 327));width:max(170px,calc(clamp(140px,calc(100dvh - 520px),300px) * 200 / 327))}
 .rcstage h3{margin:2px 0 0;font:400 26px/1.1 var(--disp);text-wrap:balance}
 .rcstage .verse{margin:2px 0 0;font-style:italic;font-size:17px;line-height:1.35;max-width:26em;text-wrap:balance}
 .rcstate{display:flex;align-items:center;justify-content:center;gap:8px;min-height:20px;font:800 12.5px var(--body);color:var(--ink2)}

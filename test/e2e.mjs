@@ -1174,6 +1174,12 @@ check('cantor: Record a voice, one card at a time: kept on this device, El Canto
     assert.equal(await sheetTitle(page), 'Record a voice');
     assert.deepEqual([await page.textContent('#rcStage .eyebrow'), await page.textContent('#rcStage .rcline'), await state()], ['To start the round', '¡Se va y se corre, con la vieja en el coche!', 'Not recorded yet']);
     assert.equal(await page.$eval('#rcName', i => [i.type, i.getAttribute('autocapitalize'), i.getAttribute('enterkeyhint')].join(' ')), 'text words done');
+    // The opening line stays inside its box on a small phone and on one turned sideways, where a card's shape is too narrow.
+    for (const vp of [{ width: 375, height: 667 }, { width: 844, height: 390 }]) {
+      await page.setViewportSize(vp);
+      assert.ok(await page.$eval('#rcStage .rcline', d => d.scrollHeight <= d.clientHeight + 1 && d.scrollWidth <= d.clientWidth + 1), 'the opening line spills out of its box at ' + vp.width + 'x' + vp.height);
+    }
+    await page.setViewportSize(PHONE.viewport);
     // Whose voice it is comes first.
     await page.click('#rcGo');
     assert.equal(await page.textContent('#toast'), 'First, type whose voice it is.');
