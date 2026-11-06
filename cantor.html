@@ -424,13 +424,10 @@ a.chip{text-decoration:none}
     return Math.floor(Math.random() * n);
   }
   function shuffled() { var d = CARDS.map(function (c) { return c.n; }); for (var i = d.length - 1; i > 0; i--) { var j = rand(i + 1), t = d[i]; d[i] = d[j]; d[j] = t; } return d; }
-  // Letter where it's the paper in the shops: the Americas from Canada to Chile, and the Philippines. A phone set to
-  // plain Spanish or Latin American Spanish (es, es-419) is most likely in Mexico or the US; only es-ES means Spain.
-  function defaultPaper() { var ls = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || 'en-US']; return /-(US|CA|MX|PH|CL|CO|VE|CR|GT|SV|HN|NI|PA|PR|DO)$/i.test(ls[0]) || /^(en|es|es-419)$/i.test(ls[0]) ? 'letter' : 'a4'; }
   // The house rules: two, for two or more ¡Lotería!s on the same card, 'next' (the next card decides), 'share' or
   // 'first' (first to shout wins); late, for a ¡Lotería! called late, 'counts' or 'strict' (too late after the next card).
   function freshSettings() { return { speak: true, style: 'name', voice: '', rate: 1, pace: 'normal', sound: true, awake: true, check: false, two: 'next', late: 'counts' }; }
-  function freshPrint() { return { name: '', count: 12, per: 1, deck: false, paper: defaultPaper() }; }
+  function freshPrint() { return { name: '', count: 12, per: 1, deck: false, paper: L.defaultPaper() }; }
   function fresh() { return { order: shuffled(), pos: 0, round: 1, patterns: L.CLASICO.slice(), juego: '', printed: {}, wins: [], tie: null, print: freshPrint(), settings: freshSettings() }; }
   var C = fresh();
   function goodWins(w) { return Array.isArray(w) ? w.filter(function (x) { return x && typeof x === 'object'; }).map(function (x) { if (typeof x.t !== 'number') x.t = 0; return x; }) : []; } // a damaged save may hold nulls, or a win with no time

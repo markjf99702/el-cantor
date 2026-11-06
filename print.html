@@ -187,10 +187,14 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   html,body{height:auto;overflow:visible;background:#fff!important}
   .app,#dlg,.toast,.ghost{display:none!important}
   .printout{display:block}
-  .page{width:var(--pw);height:var(--ph);display:grid;grid-template-columns:repeat(var(--cols),1fr);grid-template-rows:repeat(var(--rows),1fr);gap:var(--gut);overflow:hidden;break-after:page;page-break-after:always}
+  .page{break-after:page;page-break-after:always}
   .page:last-child{break-after:auto;page-break-after:auto}
-  .slot{position:relative;display:flex;align-items:center;justify-content:center;min-width:0;min-height:0}
 }
+.page{width:var(--pw);height:var(--ph);display:grid;grid-template-columns:repeat(var(--cols),1fr);grid-template-rows:repeat(var(--rows),1fr);gap:var(--gut);overflow:hidden}
+.slot{position:relative;display:flex;align-items:center;justify-content:center;min-width:0;min-height:0}
+/* Print…'s picture of page 1: the printout's own first page on a sheet of the paper, its margins round it, scaled down */
+.ppv{position:relative;margin:12px auto 0;width:calc(var(--sw) * var(--k));height:calc(var(--sl) * var(--k));border-radius:3px;box-shadow:0 0 0 1px var(--line2),var(--shadow);overflow:hidden;background:#fff}
+.ppv .sheetp{position:absolute;left:0;top:0;width:var(--sw);height:var(--sl);padding:var(--mg);background:#fff;transform:scale(var(--k));transform-origin:0 0}
 .pt{flex:none;width:var(--tw);height:var(--th);border:var(--bw) solid #B7332F;border-radius:.09in;padding:var(--pad);background:#fff;display:flex;flex-direction:column;gap:var(--hg);-webkit-print-color-adjust:exact;print-color-adjust:exact}
 /* Two per page, each tabla turned sideways. Before it turns, its box is taller than half a page, and Chromium splits
    whatever runs off the bottom of a page onto the next one. So it's anchored to the top of the upper half and the
@@ -268,13 +272,13 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   function blank(name) { return { id: uid(), name: name, cards: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }; }
   function okCards(c) { return Array.isArray(c) && c.length === 16 && c.every(function (n) { return n === (n | 0) && n >= 0 && n <= 54; }); }
   function savedTablas(o) { return o.tablas.filter(function (t) { return t && okCards(t.cards); }).map(function (t) { return { id: t.id || uid(), name: String(t.name || 'Tabla'), cards: t.cards.slice() }; }); }
-  var P = { tablas: [blank('Tabla 1')], set: { doubles: true, per: 2, paper: 'letter', names: true, who: '' } };
+  var P = { tablas: [blank('Tabla 1')], set: { doubles: true, per: 2, paper: L.defaultPaper(), names: true, who: '' } }; // the paper in the shops where the device is, as El Cantor starts on
   try {
     var raw = localStorage.getItem(LSP);
     if (raw) { var o = JSON.parse(raw); if (o && Array.isArray(o.tablas)) { P.tablas = savedTablas(o); if (o.set && typeof o.set === 'object') P.set = Object.assign(P.set, o.set); } }
   } catch (e) { }
   P.set.per = +P.set.per; if ([1, 2, 4].indexOf(P.set.per) < 0) P.set.per = 2; // a damaged save falls back to the defaults
-  if (P.set.paper !== 'letter' && P.set.paper !== 'a4') P.set.paper = 'letter';
+  if (P.set.paper !== 'letter' && P.set.paper !== 'a4') P.set.paper = L.defaultPaper();
   var UI = { active: (P.tablas.filter(function (t) { return t.cards.indexOf(0) >= 0; })[0] || P.tablas[0] || {}).id || null, sel: null, q: '', flash: null, skip: {}, appSkip: {} }; // the first tabla with a square to fill
   var H = []; // undo snapshots of P.tablas
   // A browser that keeps nothing (storage turned off, or full) says so once, and the line that says the tablas are
@@ -634,7 +638,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
   function printDlg() {
     if (!P.tablas.some(filled)) { toast(T('print.putSome')); return; }
     openDlg('<div class="hd"><h2>' + T('printTablas') + '</h2><button class="btn sec sm" type="button" id="pdx">' + T('cancel') + '</button></div><div class="bd stack">' +
-      '<div class="card"><div class="eyebrow">' + T('print.perPageH') + '</div><div class="pers" id="pers"></div></div>' +
+      '<div class="card"><div class="eyebrow">' + T('print.perPageH') + '</div><div class="pers" id="pers"></div><div class="ppv" id="ppv" role="img"></div></div>' +
       // A label that wraps leaves its control on the right, on a line of its own.
       '<div class="card"><div class="row" style="justify-content:space-between"><span class="eyebrow">' + T('paper') + '</span><div class="seg" id="paperSeg" style="margin-left:auto"><button type="button" data-v="letter">' + T('paper.letter') + '</button><button type="button" data-v="a4">A4</button></div></div>' +
       '<div class="row" style="justify-content:space-between;margin-top:10px"><span class="eyebrow">' + T('print.nameStrip') + '</span><div class="seg" id="nameSeg" style="margin-left:auto"><button type="button" data-v="1">' + T('on') + '</button><button type="button" data-v="0">' + T('off') + '</button></div></div></div>' +
@@ -643,7 +647,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       '<div class="row"><button class="btn red" type="button" id="pdo">' + T('print.print') + '</button></div>' +
       '<p class="note">' + T('print.scaleNote') + '</p></div>');
     function draw() {
-      $('pers').innerHTML = [1, 2, 4].map(function (n) { var g = geometry(n, P.set.paper); return '<button class="per' + (P.set.per === n ? ' on' : '') + '" type="button" data-v="' + n + '">' + pageIcon(n) + '<b>' + T('print.nPer', { n: n }) + '</b><small>' + T(n === 1 ? 'print.big' : n === 2 ? 'print.regular' : 'print.mini') + ' · ' + T('print.cardsSize', { size: sizeText(g) }) + '</small></button>'; }).join('');
+      $('pers').innerHTML = [1, 2, 4].map(function (n) { var g = geometry(n, P.set.paper); return '<button class="per' + (P.set.per === n ? ' on' : '') + '" type="button" data-v="' + n + '">' + pageIcon(n) + '<b>' + T('print.nPer', { n: n }) + '</b><small>' + T(n === 1 ? 'print.big' : n === 2 ? 'print.regular' : 'print.mini') + ' · ' + (g.L.rot ? T('print.sideways') + ' · ' : '') + T('print.cardsSize', { size: sizeText(g) }) + '</small></button>'; }).join('');
       $('pers').querySelectorAll('.per').forEach(function (b) { b.addEventListener('click', function () { P.set.per = +b.dataset.v; save(); renderPrint(); draw(); }); });
       document.querySelectorAll('#paperSeg button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === P.set.paper); });
       document.querySelectorAll('#nameSeg button').forEach(function (b) { b.classList.toggle('on', (b.dataset.v === '1') === !!P.set.names); });
@@ -660,6 +664,7 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       var gaps = list.filter(function (t) { return filled(t) < 16; }).map(function (t) { return T('print.emptyN', { name: t.name, n: 16 - filled(t) }); });
       $('pwarn').hidden = !gaps.length; $('pwarn').textContent = gaps.length ? T('print.notFull', { n: gaps.length, list: gaps.join(', ') }) : '';
       $('pdo').disabled = !list.length;
+      pagePreview();
     }
     document.querySelectorAll('#paperSeg button').forEach(function (b) { b.addEventListener('click', function () { P.set.paper = b.dataset.v; save(); renderPrint(); draw(); }); });
     document.querySelectorAll('#nameSeg button').forEach(function (b) { b.addEventListener('click', function () { P.set.names = b.dataset.v === '1'; save(); renderPrint(); draw(); }); });
@@ -669,6 +674,17 @@ body.dragging,body.dragging *{cursor:grabbing!important}
       whenReady().then(function () { window.print(); });
     });
     draw();
+  }
+  // Page 1 as it will print, from the printout itself: the same tablas, sizes and turn, on its paper.
+  function pagePreview() {
+    var box = $('ppv'), page = $('printout').querySelector('.page'), pp = PAPER[P.set.paper] || PAPER.letter, list = printList();
+    box.hidden = !page;
+    if (!page) return;
+    box.style.cssText = $('printout').style.cssText;
+    box.style.setProperty('--sw', pp.w + 'in'); box.style.setProperty('--sl', pp.h + 'in'); box.style.setProperty('--mg', MARGIN + 'in');
+    box.style.setProperty('--k', (130 / (pp.w * 96)).toFixed(4)); // 130 px wide
+    box.innerHTML = '<div class="sheetp">' + page.outerHTML + '</div>';
+    box.setAttribute('aria-label', T('print.preview', { tablas: T('tablas', { n: Math.min(list.length, LAYOUT[P.set.per].cols * LAYOUT[P.set.per].rows) }) }));
   }
   function whenReady() {
     var imgs = [].slice.call($('printout').querySelectorAll('img'));

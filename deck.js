@@ -175,6 +175,15 @@
     return best;
   }
 
+  // ---------- paper ----------
+  // Letter where it's the paper in the shops: the Americas from Canada to Chile, and the Philippines. A phone set to
+  // plain Spanish or Latin American Spanish (es, es-419) is most likely in Mexico or the US; only es-ES means Spain.
+  // El Cantor's Print tablas and Make tablas' Print… both start on it.
+  function defaultPaper() {
+    var n = window.navigator || {}, ls = n.languages && n.languages.length ? n.languages : [n.language || 'en-US'];
+    return /-(US|CA|MX|PH|CL|CO|VE|CR|GT|SV|HN|NI|PA|PR|DO)$/i.test(ls[0]) || /^(en|es|es-419)$/i.test(ls[0]) ? 'letter' : 'a4';
+  }
+
   // ---------- confetti ----------
   // The cut paper both ¡Lotería! boxes throw: little banderitas with the papel picado's zigzag edge, in its five
   // colours, falling and turning for two to three and a half seconds into `host` (the box's backdrop), then gone.
@@ -262,7 +271,7 @@
 
   window.Loteria = {
     CARDS: CARDS, BYFILE: BYFILE, card: card, src: src, fold: fold, findCards: findCards, originals: originals,
-    PATS: PATS, CLASICO: CLASICO, ALL: ALL, pat: pat, isClasico: isClasico, hasClasico: hasClasico, gameName: gameName, holdShape: holdShape, squaresNeeded: squaresNeeded, check: check, closest: closest, confetti: confetti,
+    PATS: PATS, CLASICO: CLASICO, ALL: ALL, pat: pat, isClasico: isClasico, hasClasico: hasClasico, gameName: gameName, holdShape: holdShape, squaresNeeded: squaresNeeded, check: check, closest: closest, defaultPaper: defaultPaper, confetti: confetti,
     juegoName: juegoName, juego: juego, juegoTabla: juegoTabla, randomJuego: randomJuego
   };
 })();

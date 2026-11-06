@@ -500,6 +500,8 @@
       'print.regular': 'Regular',
       'print.mini': 'Mini',
       'print.cardsSize': 'cards {size}',
+      'print.sideways': 'sideways', // two per page: each tabla turns to fill half a page
+      'print.preview': 'Page 1 as it will print, with {tablas}',
       'print.unitIn': 'in',
       'print.nameStrip': 'Name strip on each tabla',
       'print.which': 'Which tablas',
@@ -1042,6 +1044,8 @@
       'print.regular': 'Normal',
       'print.mini': 'Mini',
       'print.cardsSize': 'cartas de {size}',
+      'print.sideways': 'de lado',
+      'print.preview': 'La hoja 1 como se va a imprimir, con {tablas}',
       'print.unitIn': 'pulg.',
       'print.nameStrip': 'Nombre en cada tabla',
       'print.which': 'Cuáles tablas',

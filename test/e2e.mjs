@@ -542,7 +542,7 @@ check('espanol: Make tablas in Spanish, with Print… and Play these in My tabla
       // Print…: the sizes in pulgadas, and each Sí / No on the right of its row, even when its label wraps.
       await page.click('#printBtn');
       assert.equal(await page.textContent('#dlg h2'), 'Imprimir tablas');
-      assert.match(await page.textContent('#pers .per.on small'), /^Normal · cartas de \d\.\d\d × \d\.\d\d\u00a0pulg\.$/);
+      assert.match(await page.textContent('#pers .per.on small'), /^Normal · de lado · cartas de \d\.\d\d × \d\.\d\d\u00a0pulg\.$/);
       assert.equal(await page.textContent('#pwarn'), 'Todavía no está llena; sus casillas vacías salen en blanco: Tabla 2 (faltan\u00a07)');
       const right = await page.$$eval('#paperSeg, #nameSeg', ss => ss.map(s => Math.round(s.getBoundingClientRect().right)));
       assert.equal(right[0], right[1], 'Sí / No isn’t on the right of its row');
@@ -3674,6 +3674,49 @@ check('print: Print… says how many squares of a tabla print blank, and has not
     assert.deepEqual([await page.textContent('#psum'), await page.textContent('#pwarn')], ['1 tabla en 1 hoja.', 'Todavía no está llena; sus casillas vacías salen en blanco: Tabla 1 (falta\u00a01)']);
     assert.deepEqual(problems, []);
   } finally { await es.close(); }
+});
+
+check('print: Print… shows page 1 as it will print, says two per page turn sideways, and starts on A4 outside the Americas', async () => {
+  const three = [{ id: 'a', name: 'Tabla 1', cards: run(1) }, { id: 'b', name: 'Tabla 2', cards: run(17) }, { id: 'c', name: 'Tabla 3', cards: run(33) }];
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.print': { tablas: three, set: { doubles: true, per: 2, paper: 'letter', names: true, who: '' } } });
+    await page.goto(base + 'print.html');
+    await page.click('#printBtn');
+    const pv = () => page.evaluate(() => { const b = document.getElementById('ppv'), r = b.getBoundingClientRect(); return { shown: !b.hidden && r.width > 0, w: Math.round(r.width), h: Math.round(r.height), tablas: b.querySelectorAll('.pt').length, rot: b.querySelectorAll('.pt.rot').length, names: [...b.querySelectorAll('.ph span')].map(s => s.textContent), cards: b.querySelectorAll('.pc img').length }; });
+    let got = await pv();
+    assert.deepEqual([got.shown, got.tablas, got.rot, got.names, got.cards], [true, 2, 2, ['Tabla 1', 'Tabla 2'], 32], 'page 1 at two per page: ' + JSON.stringify(got));
+    assert.ok(Math.abs(got.h / got.w - 11 / 8.5) < 0.03, 'a Letter page is 8.5 by 11: ' + got.w + '×' + got.h);
+    const tile = n => page.textContent(`#pers .per[data-v="${n}"] small`);
+    assert.match(await tile(2), /^Regular · sideways · /);
+    assert.doesNotMatch(await tile(1) + await tile(4), /sideways/);
+    await page.click('#pers .per[data-v="4"]');
+    got = await pv();
+    assert.deepEqual([got.tablas, got.rot], [3, 0], 'page 1 at four per page');
+    await page.click('#nameSeg button[data-v="0"]');
+    assert.deepEqual((await pv()).names, [], 'the names show with the name strip off');
+    await page.click('#paperSeg button[data-v="a4"]');
+    got = await pv();
+    assert.ok(Math.abs(got.h / got.w - 11.69 / 8.27) < 0.03, 'an A4 page is 210 by 297 mm: ' + got.w + '×' + got.h);
+    await page.click('#nameSeg button[data-v="1"]'); await page.click('#pers .per[data-v="1"]');
+    await page.click('#tchips .chip:first-child'); // Tabla 1 left out: page 1 is Tabla 2
+    assert.deepEqual((await pv()).names, ['Tabla 2']);
+    await noSideways(page, 'Print…');
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+  // A first visit starts on the paper in the shops there, as El Cantor's Print tablas does.
+  for (const [locale, paper] of [['en-US', 'letter'], ['es-MX', 'letter'], ['es', 'letter'], ['en-GB', 'a4'], ['es-ES', 'a4']]) {
+    const c = await context(DESKTOP, { locale });
+    try {
+      const page = await c.newPage();
+      await page.goto(base + 'print.html');
+      await page.click('#tg button[data-a="rnd"]');
+      await page.click('#printBtn');
+      assert.equal(await page.getAttribute('#paperSeg button.on', 'data-v'), paper, locale + ' starts on ' + paper);
+      assert.match(await page.textContent('#pagesize'), paper === 'a4' ? /size:A4/ : /size:letter/);
+    } finally { await c.close(); }
+  }
 });
 
 check('print: two per page prints every tabla whole (Letter and A4, names on and off)', async () => {
