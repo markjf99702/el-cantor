@@ -1419,7 +1419,11 @@ a.chip{text-decoration:none}
     var S = { v: v, part: 'names', i: 0, state: 'idle', armed: false };
     function first(part) { var all = recSteps(part), w = S.v; for (var i = 0; i < all.length; i++) if (!w || !w.have[all[i].key]) return i; return -1; } // S.v: a voice begun in this sheet too
     if (v) { var a = first('names'), b = first('verses'); if (a < 0 && b >= 0) { S.part = 'verses'; S.i = b; } else S.i = Math.max(0, a); }
-    var safari = window.LoteriaSync && LoteriaSync.safariTab();
+    // How to keep the voice where Safari would clear it after a week without a visit. In a Safari tab on an iPhone or
+    // iPad: record it in El Cantor on the Home Screen, which keeps its own. In Safari on a Mac, which has no Home Screen:
+    // save to Google Drive, or keep a copy with Send this voice…, until the Mac saves to Google Drive, which keeps it.
+    var LS = window.LoteriaSync, safari = !!LS && LS.safariTab(), mac = !safari && !!LS && LS.macSafari() && !driveOn();
+    var keepNote = safari ? T('rec.safari') : mac ? T(LS.ready ? 'rec.mac' : 'rec.macFile') : '';
     openSheet('<div class="hd"><h2>' + T('rec.title') + '</h2><button class="btn sec sm" type="button" id="rcx">' + T('done') + '</button></div><div class="bd stack rec">' +
       '<label class="fld"><span>' + T('rec.who') + '</span><input id="rcName" type="text" maxlength="30" autocomplete="off" autocapitalize="words" enterkeyhint="done" placeholder="' + esc(T('rec.whoPh')) + '"></label>' +
       '<div class="seg" id="rcPart"><button type="button" data-v="names"></button><button type="button" data-v="verses"></button></div>' +
@@ -1428,7 +1432,7 @@ a.chip{text-decoration:none}
       '<button class="rcbig" type="button" id="rcGo"><span class="dot"></span><span class="t"></span></button>' +
       '<button class="rcbig play" type="button" id="rcPlay"><span class="dot">' + PLAY_IC + '</span><span class="t">' + T('rec.play') + '</span></button>' +
       '<button class="btn sec" type="button" id="rcNext">' + T('rec.next') + '</button></div>' +
-      '<p class="note">' + T('rec.intro') + '</p>' + (safari ? '<p class="note conote">' + T('rec.safari') + '</p>' : '') +
+      '<p class="note">' + T('rec.intro') + '</p>' + (keepNote ? '<p class="note conote" id="rcKeep">' + esc(keepNote) + '</p>' : '') +
       '<div class="row" id="rcDelRow"><button class="btn sec sm" type="button" id="rcDel">' + T('rec.delete') + '</button></div></div>');
     UI.rec = S; UI.onVoices = null; UI.onFull = null; UI.onComing = null; // Settings' own, from before
     $('rcName').value = v ? v.name : '';

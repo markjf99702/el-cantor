@@ -4301,6 +4301,54 @@ check('safari: in Safari on a Mac, with Google Drive saving off, My tablas and M
   }
 });
 
+check('safari: in Safari on a Mac, Record a voice says how to keep the voice, until the Mac saves to Google Drive; an iPhone or iPad says the Home Screen', async () => {
+  const LINE = {
+    en: 'Safari clears what a website saves after a week without a visit, this voice too. Save to Google Drive to keep it, or keep a copy with Send this voice…, in Settings.',
+    es: 'Safari borra lo que guarda un sitio web después de una semana sin visitarlo, incluida esta voz. Guarda en Google Drive para no perderla, o guarda una copia con Enviar esta voz…, en Ajustes.',
+    file: 'Safari clears what a website saves after a week without a visit, this voice too. Keep a copy with Send this voice…, in Settings.',
+    home: 'Recorded in a Safari tab, the voice stays in Safari, and Safari clears it after a week without a visit. Record it in El Cantor on your Home Screen instead (Share → Add to Home Screen).'
+  };
+  // El Cantor at junkdrawer.works, where Google Drive saving is offered (or, with drive false, somewhere it isn't):
+  // Settings › Record a voice…, and the line under it.
+  async function recorder(userAgent, { drive = true, kind = DESKTOP, init, data = {} } = {}) {
+    const ctx = await context(kind, { userAgent });
+    if (drive) await fakeGoogle().install(ctx, { rewrite: { '**/sync.js': s => s.replace(/var ORIGINS = \[[^\]]*\];/, `var ORIGINS = ['${origin}'];`) } });
+    if (init) await ctx.addInitScript(init);
+    const page = await ctx.newPage(), problems = watch(page, ['https://accounts.google.com/', 'https://www.googleapis.com/']);
+    await seed(page, { 'loteria.cantor': NAMES_ONLY, ...data });
+    await page.goto(base + 'cantor.html');
+    if (data['loteria.sync']) await synced(page);
+    await page.click('#setBtn'); await page.click('#recNew');
+    await until(page, () => !!document.getElementById('rcName'));
+    const line = await page.evaluate(() => { const e = document.getElementById('rcKeep'); return e && e.checkVisibility() ? e.textContent : null; });
+    return { ctx, page, problems, line };
+  }
+  for (const lang of ['en', 'es']) {
+    const r = await recorder(SAFARI_MAC, { data: { 'loteria.lang': lang } });
+    try {
+      assert.equal(r.line, LINE[lang], lang + ': Safari on a Mac');
+      if (lang === 'es') assert.deepEqual(await english(r.page), [], 'English in Grabar una voz');
+      assert.deepEqual(r.problems, []);
+    } finally { await r.ctx.close(); }
+  }
+  const dockInit = () => { const mm = matchMedia.bind(window); window.matchMedia = q => /display-mode:\s*standalone/.test(q) ? { matches: true, media: q, addEventListener() { }, removeEventListener() { } } : mm(q); };
+  const ipadInit = () => { Object.defineProperty(Navigator.prototype, 'maxTouchPoints', { get: () => 5, configurable: true }); };
+  for (const [what, ua, opt, want] of [
+    ['El Cantor in the Dock', SAFARI_MAC, { init: dockInit }, LINE.en],
+    ['no Drive saving offered', SAFARI_MAC, { drive: false }, LINE.file], // a copy in a file is all there is to keep
+    ['Drive saving on', SAFARI_MAC, { data: DRIVE_ON() }, null], // the voice goes to Google Drive as it's recorded
+    ['an iPad, which says it’s a Mac', SAFARI_MAC, { kind: { viewport: { width: 1024, height: 768 }, hasTouch: true }, init: ipadInit }, LINE.home],
+    ['a Safari tab on an iPhone', SAFARI, { kind: PHONE }, LINE.home],
+    ['Chrome on a Mac', CHROME_MAC, {}, null]
+  ]) {
+    const r = await recorder(ua, opt);
+    try {
+      assert.equal(r.line, want, what);
+      assert.deepEqual(r.problems, [], what);
+    } finally { await r.ctx.close(); }
+  }
+});
+
 check('board: Settings keeps each On/Off beside its words on a phone', async () => {
   const ctx = await context(PHONE);
   try {

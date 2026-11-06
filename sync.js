@@ -654,6 +654,7 @@
     isOn: function () { return !!CLIENT_ID && st.on; },
     connect: start, now: now, changed: changed, chip: chip, card: card, keep: keep,
     safariTab: safariTab, // a Safari tab on an iPhone or iPad, not the Home Screen app
+    macSafari: macSafari, // Safari on a Mac, in a window or in the Dock, not an iPad
     screenOn: screenOn, // keeping the screen on: screenOn(want, cant) gives { hold, why, held }
     onUpdate: function (f) { ups.push(f); }, // f(keys): synced data landed in these localStorage keys
     onNote: function (f) { says.push(f); }, // f(text): what went wrong after a tap, to show for a few seconds

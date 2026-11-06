@@ -239,6 +239,8 @@
       'rec.cantKeep': 'This browser couldn’t keep that recording (its storage is off or full).',
       'rec.intro': 'Tap Record, say what’s on the screen, then Stop. Each one is kept as soon as it stops: on this device, and in Google Drive too when you save there.',
       'rec.safari': 'Recorded in a Safari tab, the voice stays in Safari, and Safari clears it after a week without a visit. Record it in El Cantor on your Home Screen instead (Share → Add to Home Screen).',
+      'rec.mac': 'Safari clears what a website saves after a week without a visit, this voice too. Save to Google Drive to keep it, or keep a copy with Send this voice…, in Settings.', // Safari on a Mac, with Drive saving offered and off
+      'rec.macFile': 'Safari clears what a website saves after a week without a visit, this voice too. Keep a copy with Send this voice…, in Settings.', // where Drive saving isn't offered
       'rec.doneNames': '{name} calls the cards now.',
       'rec.doneVerses': 'With Verse, then name and Adivinanza, {name} says the verses too.',
       'rec.doneCount': '{n} of {of} recorded.',
@@ -868,6 +870,8 @@
       'rec.cantKeep': 'Este navegador no pudo guardar esa grabación (su almacenamiento está apagado o lleno).',
       'rec.intro': 'Toca Grabar, di lo que sale en la pantalla y luego Parar. Cada una se guarda en cuanto paras: en este dispositivo, y también en Google Drive si guardas ahí.',
       'rec.safari': 'Grabada en una pestaña de Safari, la voz se queda en Safari, y Safari la borra después de una semana sin visitar el sitio. Mejor grábala en El Cantor desde tu pantalla de inicio (Compartir → Agregar a Inicio).',
+      'rec.mac': 'Safari borra lo que guarda un sitio web después de una semana sin visitarlo, incluida esta voz. Guarda en Google Drive para no perderla, o guarda una copia con Enviar esta voz…, en Ajustes.',
+      'rec.macFile': 'Safari borra lo que guarda un sitio web después de una semana sin visitarlo, incluida esta voz. Guarda una copia con Enviar esta voz…, en Ajustes.',
       'rec.doneNames': '{name} canta las cartas ahora.',
       'rec.doneVerses': 'Con Verso y luego nombre y con Adivinanza, {name} dice también los versos.',
       'rec.doneCount': '{n} de {of} grabadas.',
