@@ -1143,6 +1143,10 @@ check('cantor: Record a voice, one card at a time: kept on this device, El Canto
       const start = AudioBufferSourceNode.prototype.start;
       AudioBufferSourceNode.prototype.start = function () { if (this.buffer && this.buffer.duration > 0.3) window.__played.push(performance.now()); return start.apply(this, arguments); };
       navigator.audioSession = { type: 'auto' }; // an iPhone's, as Safari 17 has it
+      // window.__lose: the next IndexedDB request finds its connection closed, as Safari can leave it after the app
+      // was in the background.
+      const tx = IDBDatabase.prototype.transaction;
+      IDBDatabase.prototype.transaction = function () { if (window.__lose) { window.__lose = false; this.close(); } return tx.apply(this, arguments); };
     });
     const state = () => page.textContent('#rcState .t');
     const recording = () => until(page, () => document.getElementById('rcGo').classList.contains('on'));
@@ -1267,10 +1271,12 @@ check('cantor: Record a voice, one card at a time: kept on this device, El Canto
     assert.deepEqual(kept.clips.map(c => c[0]).sort(), [id + '/n01', id + '/n02', id + '/open', id + '/v01']);
     await page.click('#rcx');
     await page.click('#stx');
-    await page.evaluate(() => { window.__played = []; window.__said = []; });
+    // Her verse comes from storage whose connection the browser let go of meanwhile: it's opened again.
+    await page.evaluate(() => { window.__played = []; window.__said = []; window.__lose = true; });
     await page.keyboard.press('r');
-    await until(page, () => window.__played.length === 2);
-    assert.deepEqual(await page.evaluate(() => window.__said), [], 'this device’s voice read part of a card Abuela recorded whole');
+    await until(page, () => window.__played.length + window.__said.length === 2);
+    assert.deepEqual(await page.evaluate(() => window.__said.map(s => s.text)), [], 'this device’s voice read part of a card Abuela recorded whole');
+    assert.equal(await page.evaluate(() => window.__lose), false, 'the connection was never closed');
     // In Spanish: grabada aquí, and the recorder with no English left in it.
     await page.evaluate(() => localStorage.setItem('loteria.lang', 'es'));
     await page.reload();

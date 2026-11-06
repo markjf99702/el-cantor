@@ -1311,21 +1311,25 @@ a.chip{text-decoration:none}
       VDB = new Promise(function (ok, bad) {
         var q; try { q = indexedDB.open('loteria.voices', 1); } catch (e) { bad(e); return; }
         q.onupgradeneeded = function () { var d = q.result; if (!d.objectStoreNames.contains('voices')) d.createObjectStore('voices', { keyPath: 'id' }); if (!d.objectStoreNames.contains('clips')) d.createObjectStore('clips', { keyPath: 'k' }); };
-        q.onsuccess = function () { ok(q.result); };
+        q.onsuccess = function () { var d = q.result; d.onclose = d.onversionchange = function () { try { d.close(); } catch (e) { } VDB = null; }; ok(d); }; // closed under us: opened again next time
         q.onerror = function () { bad(q.error); };
       });
       VDB.catch(function () { MIC.noDb = true; VDB = null; if (UI.onVoices) UI.onVoices(); }); // a browser that keeps nothing: nothing to record into
     }
     return VDB;
   }
-  // fn(transaction, set) asks; the promise is what set() was given, once the transaction is done.
-  function vtx(stores, mode, fn) {
+  // fn(transaction, set) asks; the promise is what set() was given, once the transaction is done. A connection the
+  // browser let go of (Safari can, after the app was in the background) is opened again once.
+  function vtx(stores, mode, fn, again) {
     return vdb().then(function (d) {
       return new Promise(function (ok, bad) {
-        var t = d.transaction(stores, mode), out;
+        var t, out; try { t = d.transaction(stores, mode); } catch (e) { bad({ lost: e }); return; }
         t.oncomplete = function () { ok(out); }; t.onerror = t.onabort = function () { bad(t.error || new Error('not kept')); };
         fn(t, function (v) { out = v; });
       });
+    }).catch(function (e) {
+      if (e && e.lost) { VDB = null; if (!again) return vtx(stores, mode, fn, true); throw e.lost; }
+      throw e;
     });
   }
   function got(r, set) { r.onsuccess = function () { set(r.result); }; }
