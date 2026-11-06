@@ -247,6 +247,12 @@
       'cantor.prBadImage': 'A card image couldn’t be read',
       'cantor.prFileUrl': 'Open El Cantor from a web address to make PDFs',
       'cantor.prImgLoad': 'A card image didn’t load — check the connection',
+      'cantor.prDeck': 'The deck',
+      'cantor.prDeckInfo_html': '<b>The deck</b>: 54 cards to cut out · {pages}, {paper}',
+      'cantor.prDeckNote': 'All 54 cards, 9 to a page, each about 2 × 3.3 in, with a light grey grid to cut along. For a night without power or signal, or for calling from real cards.',
+      'cantor.prDeckDone': '{how} — the deck, 54 cards on {pages}, {mb} MB.',
+      'cantor.deckFile': 'loteria-deck.pdf',
+      'pdf.deckFooter': 'El Cantor · The deck · Page {k} of {n} · Cut along the grey lines',
       'pdf.footer': 'Juego {name} · Tabla {k} · El Cantor can check this tabla by its number',
 
       // shared by My tablas and Make tablas
@@ -714,6 +720,12 @@
       'cantor.prBadImage': 'No se pudo leer la imagen de una carta',
       'cantor.prFileUrl': 'Abre El Cantor desde una dirección web para hacer PDFs',
       'cantor.prImgLoad': 'No cargó la imagen de una carta — revisa la conexión',
+      'cantor.prDeck': 'La baraja',
+      'cantor.prDeckInfo_html': '<b>La baraja</b>: 54 cartas para recortar · {pages}, {paper}',
+      'cantor.prDeckNote': 'Las 54 cartas, 9 por hoja, de unos 5 × 8.3 cm cada una, con una cuadrícula gris clara para recortar. Para una noche sin luz ni señal, o para cantar con cartas de verdad.',
+      'cantor.prDeckDone': '{how} — la baraja, 54 cartas en {pages}, {mb} MB.',
+      'cantor.deckFile': 'loteria-baraja.pdf',
+      'pdf.deckFooter': 'El Cantor · La baraja · Hoja {k} de {n} · Corta por las líneas grises',
       'pdf.footer': 'Juego {name} · Tabla {k} · El Cantor puede revisar esta tabla por su número',
 
       // shared by My tablas and Make tablas

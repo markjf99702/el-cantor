@@ -9,7 +9,7 @@
 // fingerprint of every file in SHELL and CARDS: change any of them, a card picture included, and test/e2e.mjs fails
 // until FILES is changed to match (it says what to), which changes this file, so every copy is made whole again at once.
 const CACHE = 'el-cantor-v3'; // bump the number when the file list changes
-const FILES = '66575237'; // test/e2e.mjs checks this
+const FILES = 'bfa34e10'; // test/e2e.mjs checks this
 const SHELL = [
   './', 'index.html', 'carry.js', 'strings.js', 'cantor.html', 'board.html', 'print.html', 'deck.js', 'sync.js',
   'icon.svg', 'icon-180.png', 'icon-192.png', 'manifest.webmanifest', 'audio/voices.json',

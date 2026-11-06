@@ -1207,6 +1207,46 @@ check('cantor: Print tablas makes the PDF it says, with CANELA 7 square for squa
   } finally { await ctx.close(); }
 });
 
+check('cantor: Print tablas prints the deck too: 54 cards to cut out, 9 to a page with a grid to cut along, in either language', async () => {
+  for (const [locale, words] of [['en-US', { deck: 'The deck', info: 'The deck: 54 cards to cut out · 6 pages, Letter', file: 'loteria-deck.pdf', done: /^Downloaded — the deck, 54 cards on 6 pages, [\d.]+ MB\.$/, foot: '(El Cantor · The deck · Page 1 of 6 · Cut along the grey lines) Tj' }],
+    ['es-MX', { deck: 'La baraja', info: 'La baraja: 54 cartas para recortar · 6 hojas, tamaño carta', file: 'loteria-baraja.pdf', done: /^Descargado — la baraja, 54 cartas en 6 hojas, [\d.]+ MB\.$/, foot: '(El Cantor · La baraja · Hoja 1 de 6 · Corta por las l\xedneas grises) Tj' }]]) {
+    const ctx = await context(DESKTOP, { acceptDownloads: true, locale });
+    try {
+      const page = await ctx.newPage(), problems = watch(page);
+      await seed(page, { 'loteria.cantor': { order: run(1, 54), pos: 3, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], juego: 'CANELA', wins: [], print: { name: 'CANELA', count: 12, per: 2, paper: 'letter' } } });
+      await page.goto(base + 'cantor.html');
+      await page.click('#printBtn');
+      assert.deepEqual(await page.$$eval('#prPer button', bs => bs.map(b => b.textContent)).then(l => l[2]), words.deck);
+      await page.click('#prPer [data-v="deck"]');
+      // A deck has no juego name and no count; what it prints shows below, the 54 cards.
+      assert.equal(await page.textContent('#prInfo'), words.info);
+      assert.ok(await page.isHidden('#prName') && await page.isHidden('#prCount'), 'the juego name and the count still show for the deck');
+      assert.equal(await page.locator('#prGrid .g img').count(), 54);
+      await noSideways(page, 'Print tablas with the deck');
+      const [dl] = await Promise.all([page.waitForEvent('download'), page.click('#prGo')]);
+      assert.equal(dl.suggestedFilename(), words.file);
+      await until(page, re => new RegExp(re).test(document.getElementById('toast').textContent), words.done.source);
+      const pdf = await readPdf(await dl.path());
+      assert.deepEqual(pdf.sizes, Array(6).fill('612x792'), 'six Letter pages');
+      assert.deepEqual(pdf.cards, [0, 1, 2, 3, 4, 5].map(p => run(1 + 9 * p, 9)), 'the 54 cards in order, 9 to a page');
+      assert.ok(pdf.pages[0].includes(words.foot), 'page 1’s footer');
+      // The grid to cut along: 4 lines down and 4 across, the card's own size apart (2 in, and 2 in × 656/400).
+      const lines = [...pdf.pages[0].matchAll(/([\d.]+) ([\d.]+) m ([\d.]+) ([\d.]+) l/g)].map(m => m.slice(1).map(Number));
+      const xs = lines.filter(l => l[0] === l[2]).map(l => l[0]), ys = lines.filter(l => l[1] === l[3]).map(l => l[1]);
+      assert.deepEqual(xs.map(x => x - xs[0]), [0, 144, 288, 432]);
+      assert.deepEqual(ys.map(y => Math.round((ys[0] - y) * 100) / 100), [0, 236.16, 472.32, 708.48]);
+      // It leaves the tablas' settings and the juego as they were, and choosing Two again brings the tablas back.
+      const c = await saved(page, 'loteria.cantor');
+      assert.deepEqual([c.juego, c.print.name, c.print.count, c.print.per, c.print.deck], ['CANELA', 'CANELA', 12, 2, true]);
+      await page.click('#prPer [data-v="2"]');
+      assert.ok(await page.isVisible('#prName'), 'the juego name didn’t come back');
+      assert.equal(await page.locator('#prGrid .prt').count(), 12);
+      assert.equal((await saved(page, 'loteria.cantor')).print.deck, false);
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
+});
+
 check('cantor: Print tablas at two per page draws the cut line between two tablas, and none beside a lone one', async () => {
   // 3 tablas, 2 per page: page 1 has two side by side and a dashed line down the middle; page 2 has tabla 3 alone.
   const ctx = await context(DESKTOP, { acceptDownloads: true });

@@ -237,6 +237,8 @@ a.chip{text-decoration:none}
 .prt .lb b{color:var(--red);font:400 14px/1 var(--disp);letter-spacing:0}
 .prt .g{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;padding:3px;background:#fff;border:1.5px solid #2B221C;border-radius:4px}
 .prt .g img{width:100%;aspect-ratio:200/327;object-fit:cover;display:block}
+.prdeck .g{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:1px;padding:1px;margin-top:10px}
+.prdeck .g img{width:100%;aspect-ratio:400/656;display:block;box-shadow:0 0 0 1px var(--line2)} /* the lines to cut along */
 .styles{display:grid;gap:8px;margin-top:8px}
 .opt{display:block;text-align:left;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:9px 12px}
 .opt b{display:block;font:400 16px var(--disp)}
@@ -343,7 +345,7 @@ a.chip{text-decoration:none}
   // plain Spanish or Latin American Spanish (es, es-419) is most likely in Mexico or the US; only es-ES means Spain.
   function defaultPaper() { var ls = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || 'en-US']; return /-(US|CA|MX|PH|CL|CO|VE|CR|GT|SV|HN|NI|PA|PR|DO)$/i.test(ls[0]) || /^(en|es|es-419)$/i.test(ls[0]) ? 'letter' : 'a4'; }
   function freshSettings() { return { speak: true, style: 'name', voice: '', rate: 1, pace: 'normal', sound: true, awake: true, check: false }; }
-  function freshPrint() { return { name: '', count: 12, per: 1, paper: defaultPaper() }; }
+  function freshPrint() { return { name: '', count: 12, per: 1, deck: false, paper: defaultPaper() }; }
   function fresh() { return { order: shuffled(), pos: 0, round: 1, patterns: L.CLASICO.slice(), juego: '', wins: [], print: freshPrint(), settings: freshSettings() }; }
   var C = fresh();
   function goodWins(w) { return Array.isArray(w) ? w.filter(function (x) { return x && typeof x === 'object'; }) : []; } // a damaged save may hold nulls
@@ -1008,21 +1010,27 @@ a.chip{text-decoration:none}
     openSheet('<div class="hd"><h2>' + T('printTablas') + '</h2><button class="btn sec sm" type="button" id="prx">' + T('done') + '</button></div><div class="bd stack">' +
       '<p class="note">' + T.html('cantor.prIntro_html') + '</p>' +
       '<p class="note">' + T.html('cantor.prByHand_html') + '</p>' +
-      '<div class="prform"><label class="fld"><span>' + T('cantor.prName') + '</span><span class="row" style="flex-wrap:nowrap"><input id="prName" maxlength="12" autocomplete="off" autocapitalize="characters" spellcheck="false" style="flex:1;text-transform:uppercase;font-weight:800;letter-spacing:.06em"><button class="btn sec sm" type="button" id="prNew">' + T('cantor.prNew') + '</button></span></label>' +
-      '<div class="fld"><span>' + T('cantor.prHowMany') + '</span><span class="stepper"><button type="button" id="prMinus" aria-label="' + T('cantor.prFewer') + '">−</button><input id="prCount" inputmode="numeric" maxlength="3" aria-label="' + T('cantor.prCountAria') + '"><button type="button" id="prPlus" aria-label="' + T('cantor.prMore') + '">+</button></span></div>' +
-      '<div class="fld"><span>' + T('cantor.prPer') + '</span><div class="seg" id="prPer"><button type="button" data-v="1">' + T('cantor.prOneBig') + '</button><button type="button" data-v="2">' + T('cantor.prTwo') + '</button></div></div>' +
+      '<div class="prform"><label class="fld" id="prNameF"><span>' + T('cantor.prName') + '</span><span class="row" style="flex-wrap:nowrap"><input id="prName" maxlength="12" autocomplete="off" autocapitalize="characters" spellcheck="false" style="flex:1;text-transform:uppercase;font-weight:800;letter-spacing:.06em"><button class="btn sec sm" type="button" id="prNew">' + T('cantor.prNew') + '</button></span></label>' +
+      '<div class="fld" id="prCountF"><span>' + T('cantor.prHowMany') + '</span><span class="stepper"><button type="button" id="prMinus" aria-label="' + T('cantor.prFewer') + '">−</button><input id="prCount" inputmode="numeric" maxlength="3" aria-label="' + T('cantor.prCountAria') + '"><button type="button" id="prPlus" aria-label="' + T('cantor.prMore') + '">+</button></span></div>' +
+      '<div class="fld"><span>' + T('cantor.prPer') + '</span><div class="seg" id="prPer"><button type="button" data-v="1">' + T('cantor.prOneBig') + '</button><button type="button" data-v="2">' + T('cantor.prTwo') + '</button><button type="button" data-v="deck">' + T('cantor.prDeck') + '</button></div></div>' +
       '<div class="fld"><span>' + T('paper') + '</span><div class="seg" id="prPaper"><button type="button" data-v="letter">' + T('paper.letter') + '</button><button type="button" data-v="a4">A4</button></div></div></div>' +
       '<div class="row sp" style="flex-wrap:wrap"><p class="note" id="prInfo"></p><button class="btn red" type="button" id="prGo">' + T('cantor.prGo') + '</button></div>' +
       '<div class="prgrid" id="prGrid"></div></div>');
     function info() {
-      var pages = Math.ceil(P.count / P.per);
-      $('prInfo').innerHTML = T.html('cantor.prInfo_html', { tablas: T('tablas', { n: P.count }), name: P.name || '—', pages: T('pages', { n: pages }), paper: P.paper === 'a4' ? 'A4' : T('paper.letterSize') }) + (P.per === 2 ? T('cantor.prSideways') : '');
-      document.querySelectorAll('#prPer button').forEach(function (b) { b.classList.toggle('on', +b.dataset.v === P.per); });
+      var pages = Math.ceil(P.count / P.per), paper = P.paper === 'a4' ? 'A4' : T('paper.letterSize');
+      $('prInfo').innerHTML = P.deck ? T.html('cantor.prDeckInfo_html', { pages: T('pages', { n: DECK_PAGES }), paper: paper })
+        : T.html('cantor.prInfo_html', { tablas: T('tablas', { n: P.count }), name: P.name || '—', pages: T('pages', { n: pages }), paper: paper }) + (P.per === 2 ? T('cantor.prSideways') : '');
+      document.querySelectorAll('#prPer button').forEach(function (b) { b.classList.toggle('on', P.deck ? b.dataset.v === 'deck' : +b.dataset.v === P.per); });
       document.querySelectorAll('#prPaper button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === P.paper); });
-      $('prGo').disabled = !P.name;
+      $('prNameF').hidden = $('prCountF').hidden = P.deck; // the deck is the same for everyone: no name, no count
+      $('prGo').disabled = !P.deck && !P.name;
     }
     function preview() {
-      var host = $('prGrid'); host.innerHTML = '';
+      var host = $('prGrid'); host.innerHTML = ''; host.className = P.deck ? 'prdeck' : 'prgrid';
+      if (P.deck) { // the deck, as it prints: 9 to a page with a line to cut along between the cards
+        host.innerHTML = '<p class="note">' + esc(T('cantor.prDeckNote')) + '</p><div class="g">' + CARDS.map(function (c) { return '<img src="' + src(c.n) + '" alt="" loading="lazy" draggable="false">'; }).join('') + '</div>';
+        return;
+      }
       if (!P.name) { host.innerHTML = '<p class="note">' + T('cantor.prNoName') + '</p>'; return; }
       L.juego(P.name, P.count).forEach(function (t, i) {
         var d = document.createElement('div'); d.className = 'prt';
@@ -1038,19 +1046,23 @@ a.chip{text-decoration:none}
     $('prMinus').addEventListener('click', function () { setCount(P.count - 1); });
     $('prPlus').addEventListener('click', function () { setCount(P.count + 1); });
     $('prCount').addEventListener('change', function () { setCount(parseInt(this.value, 10)); });
-    document.querySelectorAll('#prPer button').forEach(function (b) { b.addEventListener('click', function () { P.per = +b.dataset.v; save(); info(); }); });
+    document.querySelectorAll('#prPer button').forEach(function (b) { b.addEventListener('click', function () { var was = P.deck; P.deck = b.dataset.v === 'deck'; if (!P.deck) P.per = +b.dataset.v; save(); info(); if (was !== P.deck) preview(); }); });
     document.querySelectorAll('#prPaper button').forEach(function (b) { b.addEventListener('click', function () { P.paper = b.dataset.v; save(); info(); }); });
     $('prGo').addEventListener('click', function () {
       var btn = this, name = P.name, count = P.count;
-      if (!name) return;
+      if (!name && !P.deck) return;
       if (window.claude && !DL) { toast(T('cantor.prNoSave')); return; }
       btn.disabled = true; btn.textContent = T('cantor.prMaking');
-      makePdf(name, count, P.per, P.paper).then(function (bytes) {
+      (P.deck ? makeDeck(P.paper).then(function (bytes) {
+        return savePdf(bytes, T('cantor.deckFile')).then(function (how) {
+          if (how) toast(T('cantor.prDeckDone', { how: how, pages: T('pages', { n: DECK_PAGES }), mb: (bytes.length / 1048576).toFixed(1) }));
+        });
+      }) : makePdf(name, count, P.per, P.paper).then(function (bytes) {
         C.juego = name; save();
         return savePdf(bytes, 'loteria-' + name.toLowerCase() + '-' + count + '.pdf').then(function (how) {
           if (how) toast(T('cantor.prDone', { how: how, tablas: T('tablas', { n: count }), mb: (bytes.length / 1048576).toFixed(1), name: name }));
         });
-      }).catch(function (e) {
+      })).catch(function (e) {
         toast(e && e.message ? e.message : T('cantor.prFail'));
       }).then(function () { if (btn.isConnected) { btn.disabled = false; btn.textContent = T('cantor.prGo'); } });
     });
@@ -1223,6 +1235,31 @@ a.chip{text-decoration:none}
         pdf.page(ops, used);
       }
       return pdf.bytes('Lotería · Juego ' + name);
+    });
+  }
+  // The deck to cut out: the 54 cards in order, 9 to a page, edge to edge at 2 in wide (each about 2 × 3.3 in, the
+  // cards' own shape), with light lines along every edge that run a little into the margin, to cut along.
+  var DECK_PAGES = Math.ceil(54 / 9);
+  function makeDeck(paper) {
+    var ns = CARDS.map(function (c) { return c.n; });
+    return Promise.all(ns.map(cardBytes)).then(function (imgs) {
+      var P = paper === 'a4' ? [595.28, 841.89] : [612, 792], W = P[0], H = P[1], cw = 144, ch = cw * 656 / 400;
+      var gx = (W - 3 * cw) / 2, gy = (H - 3 * ch) / 2 - 6, pdf = new Pdf(W, H), over = 14;
+      for (var pg = 0; pg < DECK_PAGES; pg++) {
+        var ops = [], used = [], on = ns.slice(pg * 9, pg * 9 + 9), rows = Math.ceil(on.length / 3);
+        on.forEach(function (n, j) {
+          var im = pdf.image('c' + n, imgs[ns.indexOf(n)]), x = gx + (j % 3) * cw, y = gy + Math.floor(j / 3) * ch;
+          ops.push('q ' + num(cw) + ' 0 0 ' + num(ch) + ' ' + num(x) + ' ' + num(H - y - ch) + ' cm /' + im.name + ' Do Q'); used.push(im);
+        });
+        var cut = [];
+        for (var k = 0; k <= 3; k++) cut.push(num(gx + k * cw) + ' ' + num(H - gy + over) + ' m ' + num(gx + k * cw) + ' ' + num(H - gy - rows * ch - over) + ' l');
+        for (k = 0; k <= rows; k++) cut.push(num(gx - over) + ' ' + num(H - gy - k * ch) + ' m ' + num(gx + 3 * cw + over) + ' ' + num(H - gy - k * ch) + ' l');
+        ops.push(col(RULE, true) + ' 0.5 w ' + cut.join(' ') + ' S');
+        var foot = T('pdf.deckFooter', { k: pg + 1, n: DECK_PAGES }), fsz = 7;
+        ops.push('BT /F2 ' + fsz + ' Tf 0 Tc ' + col(GREY) + ' ' + num((W - textW('H', fsz, foot)) / 2) + ' ' + num(H - gy - rows * ch - over - 12) + ' Td (' + pdfStr(foot) + ') Tj ET');
+        pdf.page(ops, used);
+      }
+      return pdf.bytes('Lotería · ' + T('cantor.prDeck'));
     });
   }
 
