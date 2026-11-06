@@ -6,10 +6,10 @@
 
 // An installed copy downloads the whole list again only when this file changes by a byte. Otherwise each file in it is
 // refreshed only when a page that loads it is visited online, and the copy could mix two releases. So FILES is a
-// fingerprint of every file in SHELL: change any of them and test/e2e.mjs fails until FILES is changed to match (it
-// says what to), which changes this file, so every copy is made whole again at once.
+// fingerprint of every file in SHELL and CARDS: change any of them, a card picture included, and test/e2e.mjs fails
+// until FILES is changed to match (it says what to), which changes this file, so every copy is made whole again at once.
 const CACHE = 'el-cantor-v3'; // bump the number when the file list changes
-const FILES = '26a291ec'; // test/e2e.mjs checks this
+const FILES = '15f3ad56'; // test/e2e.mjs checks this
 const SHELL = [
   './', 'index.html', 'carry.js', 'strings.js', 'cantor.html', 'board.html', 'print.html', 'deck.js', 'sync.js',
   'icon.svg', 'icon-180.png', 'icon-192.png', 'manifest.webmanifest', 'audio/voices.json',

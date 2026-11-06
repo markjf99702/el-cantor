@@ -3244,14 +3244,15 @@ check('offline: opens with the server down and on a stalled connection, and a ne
   }
 });
 
-check('offline: FILES in sw.js is the fingerprint of the files it keeps', async () => {
+check('offline: FILES in sw.js is the fingerprint of the files it keeps, the card pictures too', async () => {
   // sw.js changes whenever a file it keeps does, so a release replaces the whole offline copy at once: FILES in sw.js
-  // is a fingerprint of every file in SHELL (sha1 of each, in the list's order, an address like './' read as its
-  // index.html; the first 8 hex of the sha1 of those).
-  const sw = await readFile(join(root, 'sw.js'), 'utf8');
-  const shell = [...sw.match(/SHELL = \[([^\]]*)\]/)[1].replace(/\/\/.*/g, '').matchAll(/'([^']*)'/g)].map(m => m[1]);
+  // is a fingerprint of every file in SHELL and CARDS, the card pictures included (sha1 of each, in the lists' order,
+  // an address like './' read as its index.html; the first 8 hex of the sha1 of those).
+  const sw = await readFile(join(root, 'sw.js'), 'utf8'), box = { self: { addEventListener() { } } };
+  vm.runInNewContext(sw + '\n;this.out = { SHELL, CARDS };', box);
+  const kept = box.out.SHELL.concat(box.out.CARDS);
   const all = createHash('sha1');
-  for (const f of shell) all.update(createHash('sha1').update(await readFile(join(root, f.endsWith('/') ? f + 'index.html' : f))).digest());
+  for (const f of kept) all.update(createHash('sha1').update(await readFile(join(root, f.endsWith('/') ? f + 'index.html' : f))).digest());
   const files = all.digest('hex').slice(0, 8);
   assert.equal(sw.match(/const FILES = '([0-9a-f]*)'/)?.[1], files, `a file sw.js keeps for offline has changed: set FILES in sw.js to '${files}'`);
 });
