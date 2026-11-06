@@ -184,6 +184,7 @@ a{color:var(--teal);font-weight:700}
 .edb .eg .cell.sel{outline:3px solid var(--teal);outline-offset:-3px}
 .edb input{width:100%;margin-bottom:6px;font-size:15px;padding:7px 10px}
 .edb.ims{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px} /* a shared link's tablas: two to a row on a phone */
+@media (max-width:520px){#edb{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px 10px}} /* the Tablas sheet: two to a row on a phone, so six fit in a few screens */
 .edb .tabla .lbl .k{display:flex}
 .edb .tabla .cell{cursor:default}
 .edb .dups{color:var(--ink2);font-size:12.5px;margin-top:6px}
@@ -578,7 +579,7 @@ a{color:var(--teal);font-weight:700}
 
   function tablasSheet() {
     var p = player();
-    openSheet('<div class="hd"><input id="tbName" value="' + esc(p.name) + '" aria-label="' + esc(T('board.playerName')) + '" autocapitalize="words" style="font:400 18px var(--disp);flex:1"><button class="btn sec sm" type="button" id="tbShare">' + T('board.share') + '</button><button class="btn sm" type="button" id="tbx">' + T('done') + '</button></div><div class="bd stack"><p class="note">' + T('board.editNote') + '</p><div class="edb" id="edb"></div><div class="row"><button class="btn sec sm" type="button" id="tbAdd">' + T('board.addTabla') + '</button><button class="btn sec sm" type="button" id="tbPrinted">' + T('board.addPrinted') + '</button><button class="btn sec sm" type="button" id="tbOrig">' + T('board.restore') + '</button><a class="btn sec sm" href="print.html">' + T('board.makeToPrint') + '</a><button class="btn sec sm" type="button" id="tbDel" style="color:var(--red)">' + T('board.removePerson') + '</button></div></div>');
+    openSheet('<div class="hd"><input id="tbName" value="' + esc(p.name) + '" aria-label="' + esc(T('board.playerName')) + '" autocapitalize="words" style="font:400 18px var(--disp);flex:1"><button class="btn sec sm" type="button" id="tbShare">' + T('board.share') + '</button><button class="btn sm" type="button" id="tbx">' + T('done') + '</button></div><div class="bd stack"><p class="note">' + T('board.editNote') + '</p><div class="row"><button class="btn sec sm" type="button" id="tbAdd">' + T('board.addTabla') + '</button><button class="btn sec sm" type="button" id="tbPrinted">' + T('board.addPrinted') + '</button></div><div class="edb" id="edb"></div><div class="row"><button class="btn sec sm" type="button" id="tbOrig">' + T('board.restore') + '</button><a class="btn sec sm" href="print.html">' + T('board.makeToPrint') + '</a><button class="btn sec sm" type="button" id="tbDel" style="color:var(--red)">' + T('board.removePerson') + '</button></div></div>');
     reopen = tablasSheet;
     var origArmed = false; // the tablas a tap would replace or remove are only gone on a second tap
     function draw() {
@@ -620,7 +621,7 @@ a{color:var(--teal);font-weight:700}
       });
     }
     $('tbPrinted').addEventListener('click', function () { if (p.boards.length >= 6) { toast(T('board.sixPlenty')); return; } printedSheet(); });
-    $('tbAdd').addEventListener('click', function () { if (p.boards.length >= 6) { toast(T('board.sixPlenty')); return; } p.boards.push(randomBoard('Tabla ' + (p.boards.length + 1))); save(); draw(); render(); });
+    $('tbAdd').addEventListener('click', function () { if (p.boards.length >= 6) { toast(T('board.sixPlenty')); return; } p.boards.push(randomBoard('Tabla ' + (p.boards.length + 1))); save(); draw(); render(); $('edb').lastElementChild.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }); // the new tabla, at the end
     $('tbOrig').addEventListener('click', function () {
       var four = origBoards(), same = function (bs) { return JSON.stringify(bs.map(function (b) { return [b.name, b.cards]; })); };
       if (p.boards.length && same(p.boards) !== same(four) && !origArmed) { origArmed = true; this.textContent = T('board.replaceAllAgain', { n: p.boards.length }); return; }

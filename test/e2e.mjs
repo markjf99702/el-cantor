@@ -2669,22 +2669,42 @@ check('board: back from the browser’s history, a window keeps the cards anothe
   } finally { await ctx.close(); }
 });
 
+check('board: on a phone the Tablas sheet shows two tablas to a row, under + Add a tabla and + A printed tabla', async () => {
+  const ctx = await context(PHONE);
+  try {
+    const page = await ctx.newPage(), problems = watch(page);
+    await seed(page, { 'loteria.v1': people([1, 2, 3, 4].map(i => ({ id: 'm' + i, name: 'Mine ' + i, cards: run(i) }))) });
+    await page.goto(base + 'board.html');
+    await page.click('#tablasBtn');
+    const eds = await page.$$eval('#edb > div', els => els.map(el => Math.round(el.getBoundingClientRect().top)));
+    assert.deepEqual([eds[1], eds[3]], [eds[0], eds[2]], 'the tablas aren’t two to a row');
+    for (const b of ['#tbAdd', '#tbPrinted']) {
+      const r = await rect(page, b);
+      assert.ok(r.bottom < eds[0] && r.bottom <= 844, b + ' isn’t above the tablas, on the first screen');
+    }
+    await page.click('#tbAdd');
+    assert.equal((await saved(page, 'loteria.v1')).players[0].boards.length, 5);
+    await until(page, () => { const r = document.querySelector('#edb > div:last-child').getBoundingClientRect(); return r.bottom <= document.querySelector('#sheet .bd').getBoundingClientRect().bottom + 1; }, null, 3000);
+    assert.deepEqual(problems, []);
+  } finally { await ctx.close(); }
+});
+
 check('board: the Tablas sheet stays where it was after a square is changed', async () => {
   const ctx = await context(PHONE);
   try {
     const page = await ctx.newPage(), problems = watch(page);
-    await seed(page, { 'loteria.v1': people([1, 2, 3].map(k => ({ id: 'm' + k, name: 'Mine ' + k, cards: run(1 + (k - 1) * 16) }))) });
+    await seed(page, { 'loteria.v1': people([1, 2, 3, 4, 5, 6].map(k => ({ id: 'm' + k, name: 'Mine ' + k, cards: run(k * 3) }))) });
     await page.goto(base + 'board.html');
     await page.click('#tablasBtn');
     const scroll = () => page.evaluate(() => document.querySelector('#sheet .bd').scrollTop);
     await page.evaluate(() => { const b = document.querySelector('#sheet .bd'); b.scrollTop = b.scrollHeight; });
-    const square = page.locator('#edb > div').nth(2).locator('.eg .cell').nth(5);
+    const square = page.locator('#edb > div').nth(4).locator('.eg .cell').nth(5); // two to a row on a phone: the third row
     await square.scrollIntoViewIfNeeded();
     const before = await scroll();
-    assert.ok(before > 500, 'scrolled down to the third tabla');
+    assert.ok(before > 500, 'scrolled down to the fifth tabla');
     await square.click();
     await page.fill('#pkq', '54'); await page.press('#pkq', 'Enter');
-    assert.equal((await saved(page, 'loteria.v1')).players[0].boards[2].cards[5], 54);
+    assert.equal((await saved(page, 'loteria.v1')).players[0].boards[4].cards[5], 54);
     assert.ok(Math.abs(await scroll() - before) <= 2, `the sheet went from ${before} to ${await scroll()}`);
     assert.deepEqual(problems, []);
   } finally { await ctx.close(); }
