@@ -111,9 +111,11 @@ function fresh(request) {
 }
 
 // The open tab keeps its own copy of each file too, and would reuse it on a reload without asking.
-// Marking the copy it gets from here no-cache sends that reload back through fresh() as well.
+// Marking the copy it gets from here no-cache sends that reload back through fresh() as well. The answer made here is
+// never a redirected one: a server that drops .html from addresses (`npx serve`, some hosts) answers cantor.html with
+// a redirect, so the copy can hold redirected answers, and a page load can't be answered with one.
 function askAgainNextTime(res) {
-  if (res.status !== 200 || res.type !== 'basic' || res.redirected) return res;
+  if (res.status !== 200 || res.type !== 'basic') return res;
   const headers = new Headers(res.headers);
   headers.set('cache-control', 'no-cache');
   headers.delete('content-encoding'); // the body here is already unpacked

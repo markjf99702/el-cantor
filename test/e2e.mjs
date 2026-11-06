@@ -3244,6 +3244,46 @@ check('offline: opens with the server down and on a stalled connection, and a ne
   }
 });
 
+check('offline: from a server that drops .html from addresses, as `npx serve` does, every page still opens offline', async () => {
+  // Such a server answers cantor.html with a redirect to /cantor, so the offline copy is filled with redirected
+  // answers, and a page load can't be answered with one of those.
+  let down = false;
+  const pages = createServer(async (req, res) => {
+    if (down) { req.socket.destroy(); return; }
+    let path = decodeURIComponent(new URL(req.url, 'http://x').pathname);
+    if (path.endsWith('.html')) { res.writeHead(301, { location: path.slice(0, -5).replace(/\/index$/, '/') }); res.end(); return; }
+    if (path.endsWith('/')) path += 'index';
+    if (!extname(path)) path += '.html';
+    let body;
+    try { body = await readFile(join(root, path)); } catch { res.writeHead(404); res.end(); return; }
+    res.writeHead(200, { 'content-type': ({ '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.webmanifest': 'application/manifest+json', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.woff2': 'font/woff2' })[extname(path)] || 'application/octet-stream' });
+    res.end(body);
+  }).listen(0);
+  const at = `http://localhost:${pages.address().port}/`;
+  const ctx = await browser.newContext({ ...PHONE, locale: 'en-US' });
+  try {
+    const page = await ctx.newPage(), problems = [];
+    page.on('pageerror', e => problems.push(e.message));
+    await page.goto(at);
+    await page.waitForFunction(() => navigator.serviceWorker?.controller, null, { timeout: 15000 });
+    await page.evaluate(a => localStorage.setItem('loteria.v1', JSON.stringify(a)), ANA);
+    await page.goto(at + 'cantor.html');
+    await page.waitForSelector('#playBtn');
+    down = true;
+    await ctx.setOffline(true);
+    const PAGES = { 'cantor.html': '#playBtn', 'board.html': '#callBtn', 'print.html': '#printBtn', 'index.html': 'nav.tiles' };
+    for (const p in PAGES) {
+      await page.goto(at + p).catch(e => assert.fail(p + ' didn’t open offline: ' + e.message.split('\n')[0]));
+      await page.waitForSelector(PAGES[p], { timeout: 5000 });
+    }
+    assert.deepEqual(problems, []);
+  } finally {
+    await ctx.setOffline(false);
+    await ctx.close();
+    pages.close();
+  }
+});
+
 check('offline: FILES in sw.js is the fingerprint of the files it keeps, the card pictures too', async () => {
   // sw.js changes whenever a file it keeps does, so a release replaces the whole offline copy at once: FILES in sw.js
   // is a fingerprint of every file in SHELL and CARDS, the card pictures included (sha1 of each, in the lists' order,
