@@ -245,6 +245,9 @@ a.chip{text-decoration:none}
 .opt b{display:block;font:400 16px var(--disp)}
 .opt small{display:block;color:var(--ink2);font-size:12.5px;margin-top:1px}
 .opt.on{border-color:var(--teal);background:var(--teal-soft)}
+.rule{margin-top:10px}
+.rule>b{display:block;font-weight:800}
+.rule .styles{margin-top:6px}
 .wins{display:flex;flex-direction:column;gap:4px;margin-top:8px;font-size:13.5px}
 .wins div{display:flex;gap:8px;color:var(--ink2);font-variant-numeric:tabular-nums}
 .wins div b{color:var(--ink);font-weight:800}
@@ -350,7 +353,8 @@ a.chip{text-decoration:none}
   // Letter where it's the paper in the shops: the Americas from Canada to Chile, and the Philippines. A phone set to
   // plain Spanish or Latin American Spanish (es, es-419) is most likely in Mexico or the US; only es-ES means Spain.
   function defaultPaper() { var ls = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || 'en-US']; return /-(US|CA|MX|PH|CL|CO|VE|CR|GT|SV|HN|NI|PA|PR|DO)$/i.test(ls[0]) || /^(en|es|es-419)$/i.test(ls[0]) ? 'letter' : 'a4'; }
-  function freshSettings() { return { speak: true, style: 'name', voice: '', rate: 1, pace: 'normal', sound: true, awake: true, check: false }; }
+  // late: the house rule for a ¡Lotería! called late, 'counts' or 'strict' (too late after the next card).
+  function freshSettings() { return { speak: true, style: 'name', voice: '', rate: 1, pace: 'normal', sound: true, awake: true, check: false, late: 'counts' }; }
   function freshPrint() { return { name: '', count: 12, per: 1, deck: false, paper: defaultPaper() }; }
   function fresh() { return { order: shuffled(), pos: 0, round: 1, patterns: L.CLASICO.slice(), juego: '', printed: {}, wins: [], print: freshPrint(), settings: freshSettings() }; }
   var C = fresh();
@@ -790,6 +794,7 @@ a.chip{text-decoration:none}
       '<div class="card"><div class="eyebrow">' + T('cantor.styleH') + '</div><div class="styles" id="styles"></div></div>' +
       '<div class="card"><div class="eyebrow">' + T('cantor.paceGroup') + '</div><div class="row" style="margin-top:8px"><div class="seg" id="paceSeg">' + ['slow', 'normal', 'fast'].map(paceOpt).join('') + '</div></div><p class="note" style="margin-top:8px">' + T('cantor.paceNote') + '</p></div>' +
       '<div class="card"><div class="eyebrow">' + T('cantor.shoutH') + '</div><div class="row" style="margin-top:8px"><div class="seg" id="chkSeg"><button type="button" data-v="trust">' + T('cantor.trust') + '</button><button type="button" data-v="check">' + T('cantor.check') + '</button></div></div><p class="note" style="margin-top:8px" id="chkNote"></p></div>' +
+      '<div class="card" id="rulesCard"><div class="eyebrow">' + T('cantor.rulesH') + '</div><div class="rule"><b>' + T('cantor.lateH') + '</b><div class="styles" id="lateOpts"></div></div></div>' +
       '<div class="card"><div class="row sp"><div><b>' + T('sounds') + '</b><p class="note">' + T('cantor.soundsNote') + '</p></div><button class="chip" type="button" id="sndBtn"></button></div></div>' +
       '<div class="card"><div class="row sp"><div><b>' + T('cantor.awake') + '</b><p class="note">' + T('cantor.awakeNote') + '</p></div><button class="chip" type="button" id="awBtn"></button></div></div>' +
       '<div class="card" id="winsCard"></div>' +
@@ -803,6 +808,11 @@ a.chip{text-decoration:none}
       ['verse', T('cantor.style.verse'), T('cantor.style.verseNote')],
       ['riddle', 'Adivinanza', T('cantor.style.riddleNote')]
     ];
+    // A house rule's choices, each with what it means, as How each card is called has them.
+    function options(host, list, on, set) {
+      host.innerHTML = list.map(function (o) { return '<button type="button" class="opt' + (o[0] === on ? ' on' : '') + '" data-v="' + o[0] + '" aria-pressed="' + (o[0] === on) + '"><b>' + o[1] + '</b><small>' + o[2] + '</small></button>'; }).join('');
+      host.querySelectorAll('.opt').forEach(function (b) { b.addEventListener('click', function () { set(b.dataset.v); save(); draw(); }); });
+    }
     function onOff(b, on) { b.textContent = T(on ? 'on' : 'off'); b.classList.toggle('on', on); }
     function rateWord() { return T(st.rate === 1 ? 'cantor.rate.normal' : st.rate < 1 ? 'cantor.rate.slower' : 'cantor.rate.faster'); }
     // A recorded voice is described in the chosen language (voices.json's own words are English).
@@ -819,6 +829,7 @@ a.chip{text-decoration:none}
       $('rate').value = st.rate; $('rateV').textContent = rateWord();
       $('styles').innerHTML = STYLES.map(function (s) { return '<button type="button" class="opt' + (st.style === s[0] ? ' on' : '') + '" data-v="' + s[0] + '"><b>' + s[1] + '</b><small>' + s[2] + '</small></button>'; }).join('');
       $('styles').querySelectorAll('.opt').forEach(function (b) { b.addEventListener('click', function () { st.style = b.dataset.v; save(); draw(); }); });
+      options($('lateOpts'), [['counts', T('cantor.late.counts'), T('cantor.late.countsNote')], ['strict', T('cantor.late.strict'), T('cantor.late.strictNote')]], st.late === 'strict' ? 'strict' : 'counts', function (v) { st.late = v; });
       document.querySelectorAll('#paceSeg button').forEach(function (b) { b.classList.toggle('on', b.dataset.v === st.pace); });
       document.querySelectorAll('#chkSeg button').forEach(function (b) { b.classList.toggle('on', (b.dataset.v === 'check') === !!st.check); });
       $('chkNote').textContent = T(st.check ? 'cantor.chk.on' : 'cantor.chk.off');
@@ -878,6 +889,9 @@ a.chip{text-decoration:none}
       return '<div class="cell' + (out ? ' marked' : '') + (hit[i] ? ' hit' : '') + (need[i] ? ' need' : '') + '"><img src="' + src(n) + '" alt="' + esc(out ? T('calledAria', { card: card(n).name }) : card(n).name) + '" draggable="false">' + (out ? '<div class="mk" style="--rot:' + (((i * 53) % 70) - 35) + 'deg">' + BEAN + '</div>' : '') + '</div>';
     }).join('') + '</div>';
   }
+  // The house rule for a late ¡Lotería!: with Too late on, a tabla good two or more cards back is too late. The card
+  // just called and the one before it still count, to allow for the pace.
+  function tooLate(when) { return C.settings.late === 'strict' && C.pos - when >= 2; }
   function whenText(when) {
     var ago = C.pos - when, c = card(C.order[when - 1]).name;
     return ago === 0 ? T('cantor.when.now', { card: c }) : T('cantor.when.ago', { n: ago, card: c, ord: T.ord(when) });
@@ -986,8 +1000,9 @@ a.chip{text-decoration:none}
       if (C.juego !== name) { C.juego = name; save(); }
       C.patterns.forEach(function (pid) { var p = L.pat(pid); if (!p) return; var w = wonAt(t, p); if (w && (!best || w.when < best.when)) best = { when: w.when, cells: w.cells, pat: p }; });
       if (best) {
-        best.cells.forEach(function (c) { hit[c] = 1; }); V.how = best.pat.name; V.tabla = name + ' ' + k; // a win counted anyway has no tabla
-        v.className = 'verdict ok'; v.innerHTML = '<h3>¡Buena! ' + esc(best.pat.name) + '</h3><p>' + esc(T('cantor.goodLine', { juego: name, k: k, when: whenText(best.when) })) + '</p>';
+        best.cells.forEach(function (c) { hit[c] = 1; }); V.how = best.pat.name; V.tabla = name + ' ' + k; // a win counted anyway has no tabla, unless it was good and only late
+        if (tooLate(best.when)) { winRow(true); v.className = 'verdict no'; v.innerHTML = '<h3>' + T('cantor.tooLate') + '</h3><p>' + esc(T('cantor.lateGood', { card: card(C.order[best.when - 1]).name, n: C.pos - best.when })) + '</p>'; }
+        else { v.className = 'verdict ok'; v.innerHTML = '<h3>¡Buena! ' + esc(best.pat.name) + '</h3><p>' + esc(T('cantor.goodLine', { juego: name, k: k, when: whenText(best.when) })) + '</p>'; }
       } else {
         var cl = L.closest(t, isOut, C.patterns);
         (cl.missing || []).forEach(function (c) { need[c] = 1; });
@@ -1026,6 +1041,8 @@ a.chip{text-decoration:none}
       if (not.length) { v.className = 'verdict no'; v.innerHTML = '<h3>' + T('cantor.notYet') + '</h3><p>' + esc(T('cantor.notCalled', { n: not.length, list: T.list(not.map(function (n) { return card(n).name; })) })) + '</p>'; return; }
       var last = Math.max.apply(null, out.map(orderOf));
       V.how = L.gameName(C.patterns);
+      // Card by card goes by the last of the cards read out.
+      if (tooLate(last)) { winRow(true); v.className = 'verdict no'; v.innerHTML = '<h3>' + T('cantor.tooLate') + '</h3><p>' + esc(T('cantor.lateCards', { card: card(C.order[last - 1]).name, n: C.pos - last })) + '</p>'; return; }
       v.className = 'verdict ok'; v.innerHTML = '<h3>' + T('cantor.allOut', { n: out.length }) + '</h3><p>' + esc(T('cantor.ifShape', { game: L.gameName(C.patterns), when: whenText(last) })) + '</p>';
     }
     document.querySelectorAll('#vfSeg button').forEach(function (b) { b.addEventListener('click', function () { V.mode = b.dataset.v; body(); }); });

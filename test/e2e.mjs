@@ -1013,6 +1013,64 @@ check('cantor: checks a printed tabla by juego and number (CANELA 7 never change
   } finally { await ctx.close(); }
 });
 
+check('cantor: house rules: a late ¡Lotería! counts until Too late is chosen, then two cards after its tabla was good it’s too late', async () => {
+  const CANELA7 = [21, 51, 23, 6, 16, 33, 8, 4, 14, 20, 9, 40, 29, 41, 13, 25], top = CANELA7.slice(0, 4);
+  const order = top.concat(run(1, 54).filter(n => top.indexOf(n) < 0)); // CANELA 7's top row, done on the 4th card, La Sirena
+  for (const lang of ['en', 'es']) {
+    const W = { en: { rules: 'House rules', late: 'A late ¡Lotería!', counts: 'Counts', strict: 'Too late after the next card', too: 'Too late', good: 'It was good on La Sirena, 2 cards ago.', cards: 'The last of their cards, La Sirena, was called 2 cards ago.', buena: '¡Buena! Línea', keep: 'Keep calling', anyway: 'Count it anyway' },
+      es: { rules: 'Reglas de la casa', late: 'Una ¡Lotería! tarde', counts: 'Cuenta', strict: 'Ya no cuenta después de la siguiente carta', too: 'Llegó tarde', good: 'Ya estaba completa con La Sirena, hace 2 cartas.', cards: 'La última de sus cartas, La Sirena, salió hace 2 cartas.', buena: '¡Buena! Línea', keep: 'Seguir cantando', anyway: 'Darla por buena' } }[lang];
+    const ctx = await context(PHONE);
+    try {
+      const page = await ctx.newPage(), problems = watch(page);
+      await seed(page, { 'loteria.lang': lang, 'loteria.cantor': { order, pos: 6, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], juego: 'CANELA', wins: [], settings: { speak: false, sound: false, check: true } } });
+      await page.goto(base + 'cantor.html');
+      const buttons = () => page.$$eval('.vfwin button', bs => bs.filter(b => b.offsetParent).map(b => b.textContent + (b.classList.contains('red') ? ' (main)' : '')));
+      // Counts, to start with: good two cards back is good.
+      await page.click('#lotBtn');
+      await page.fill('#vfN', '7');
+      assert.equal(await page.textContent('#vfV h3'), W.buena, lang + ': Counts said it was late');
+      await page.click('#vfx');
+      // The house rules in Settings, Counts chosen, and Too late a tap away.
+      await page.click('#setBtn');
+      assert.equal(await page.textContent('#rulesCard .eyebrow'), W.rules);
+      assert.equal(await page.textContent('#rulesCard .rule > b'), W.late);
+      assert.deepEqual(await page.$$eval('#lateOpts .opt', bs => bs.map(b => b.querySelector('b').textContent + (b.classList.contains('on') ? ' (on)' : ''))), [W.counts + ' (on)', W.strict]);
+      await page.click('#lateOpts [data-v=strict]');
+      assert.equal((await saved(page, 'loteria.cantor')).settings.late, 'strict');
+      await noSideways(page, lang + ': Settings with the house rules');
+      await page.click('#stx');
+      // Too late: the tabla was good on the 4th card and the 6th is showing. Keep calling is the main button.
+      await page.click('#lotBtn');
+      await page.fill('#vfN', '7');
+      assert.equal(await page.textContent('#vfV h3'), W.too);
+      assert.equal(await page.textContent('#vfV p'), W.good);
+      assert.deepEqual(await buttons(), [W.keep + ' (main)', W.anyway]);
+      assert.deepEqual(await page.$$eval('#vfTabla .cell', cs => cs.flatMap((c, i) => c.classList.contains('hit') ? [i] : [])), [0, 1, 2, 3], lang + ': the line it was good with isn’t outlined');
+      // Card by card goes by the last of the cards read out.
+      await page.click('#vfSeg [data-v=cards]');
+      for (const n of top) { await page.fill('#vfQ', String(n)); await page.press('#vfQ', 'Enter'); }
+      assert.equal(await page.textContent('#vfV h3'), W.too);
+      assert.equal(await page.textContent('#vfV p'), W.cards);
+      assert.deepEqual(await buttons(), [W.keep + ' (main)', W.anyway]);
+      await page.click('#vfx');
+      // One card back is still in time: the card just called and the one before it count, for the pace.
+      await page.click('#backBtn');
+      await page.click('#lotBtn');
+      await page.click('#vfSeg [data-v=printed]');
+      await page.fill('#vfN', '7');
+      assert.equal(await page.textContent('#vfV h3'), W.buena, lang + ': the card before the one just called was too late');
+      // Count it anyway, on a tabla too late, keeps the tabla it was good with.
+      await page.click('#vfx'); await page.click('#nextBtn');
+      await page.click('#lotBtn'); await page.fill('#vfN', '7');
+      assert.equal(await page.textContent('#vfV h3'), W.too);
+      await page.fill('#vfWho', 'Abuela');
+      await page.click('#vfWin');
+      assert.deepEqual((await saved(page, 'loteria.cantor')).wins.map(w => [w.who, w.how, w.tabla]), [['Abuela', 'Línea', 'CANELA 7']]);
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
+});
+
 check('cantor: on a short phone a printed tabla’s verdict shows above the winner row', async () => {
   const ctx = await context({ ...PHONE, viewport: { width: 360, height: 740 } });
   try {
