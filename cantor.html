@@ -1051,7 +1051,8 @@ a.chip{text-decoration:none}
     m.boards.forEach(function (b) { L.check(b.cards, isOut, C.patterns).forEach(function (h) { out[b.id + ':' + h.pat.id] = b; }); });
     return out;
   }
-  // The round the wins looked at belong to: a win is seen once a round, and forgotten if its card is put back.
+  // The round the wins looked at belong to: a win is seen once a round. Its card put back and called again doesn't
+  // stop calling a second time; it's only forgotten if a card is said again (¿Cuál?) while the win isn't there.
   function mineRound() { return C.round + ':' + C.order.slice(0, 4).join('.'); }
   function mineSeen(wins) { C.mine = { round: mineRound(), seen: Object.keys(wins) }; }
   function mineCheck() {
