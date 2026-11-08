@@ -33,6 +33,13 @@ SPOKEN = [
 ]
 # The family's short call, leading into the first card. Written without ¡! and with plain dots: the engine ends it a
 # little higher, and an ellipsis character made it breathe out a hiss.
+# Phonemes the engine gets wrong, put right. Barril's rr came out as a stop, like a glottal stop: three quick taps make
+# it roll. (Tried on La Rosa, La Rana and El Borracho too, where the family preferred the engine's own r.)
+SOUNDS = [('βarˈil', 'βaɾɾɾˈil')]
+# Names said flat rather than called out, and names whose end the engine draws out into an "uh" after the last sound:
+# both chosen by ear for Barril.
+PLAIN = {'El Barril'}
+DRAWN_OUT = {'El Barril'}
 OPENING = 'Corre, se va con...'
 LOTERIA = '¡Lotería!'
 
@@ -62,6 +69,8 @@ class Kokoro:
         ps, _ = self.g2p(text)
         # es-419 writes the ll of "gallo" as a doubled glide; Mexican Spanish says it like the y of "yo".
         ps = ps.replace('jj', 'ʝ')
+        for a, b in SOUNDS:
+            ps = ps.replace(a, b)
         dropped = sorted({c for c in ps if c not in self.vocab and c not in '¡¿'})
         if dropped:
             print(f'  note: no token for {"".join(dropped)!r} in {text!r}', file=sys.stderr)
@@ -120,6 +129,25 @@ def cut_hiss(x, ps):
     return y
 
 
+def cut_tail(x, keep=0.06):
+    """End a name a little after its last bright sound, dropping the dull "uh" the engine can draw out after a final l.
+    Bright means some energy at 1.5-3.5 kHz against the low band, in a frame that isn't near silence."""
+    f = 240
+    n = len(x) // f
+    spec = np.abs(np.fft.rfft(x[:n * f].reshape(n, f) * np.hanning(f), axis=1)) ** 2
+    hz = np.fft.rfftfreq(f, 1 / RATE)
+    low, mid, tot = spec[:, hz < 1000].sum(1), spec[:, (hz >= 1500) & (hz < 3500)].sum(1), spec.sum(1)
+    db = 10 * np.log10(tot / tot.max() + 1e-12)
+    bright = np.flatnonzero((mid / (low + 1e-9) >= 0.02) & (db > -20))
+    if not len(bright):
+        return x
+    end = min(len(x), (bright[-1] + 1) * f + int(keep * RATE))
+    y = x[:end].copy()
+    fade = min(len(y), int(0.03 * RATE))
+    y[-fade:] *= np.linspace(1, 0, fade)
+    return y
+
+
 def silence(sec):
     return np.zeros(int(sec * RATE), dtype=np.float32)
 
@@ -169,8 +197,9 @@ def main():
         lead = 0.06
         for c in cards:
             verse, vps = tts(spoken(c['verse']), style, a.speed)
-            name, nps = tts(spoken(f"¡{c['name']}!"), style, a.speed)
-            verse, name = level(trim(verse)), level(cut_hiss(trim(name), nps))
+            name, nps = tts(spoken(c['name'] if c['name'] in PLAIN else f"¡{c['name']}!"), style, a.speed)
+            name = cut_tail(trim(name)) if c['name'] in DRAWN_OUT else cut_hiss(trim(name), nps)
+            verse, name = level(trim(verse)), level(name)
             clip = np.concatenate([silence(lead), verse, silence(a.gap), name, silence(0.12)])
             mp3(clip, folder / f"{c['n']:02d}.mp3", a.kbps)
             v_end = lead + len(verse) / RATE
