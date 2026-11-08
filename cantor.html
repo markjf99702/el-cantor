@@ -170,6 +170,15 @@ a.chip{text-decoration:none}
 .app.side .tiebar{grid-column:2;grid-row:2}
 .app.side .cap{grid-column:2;grid-row:3;min-height:0}
 .app.side .antes{grid-column:2;grid-row:4}
+/* A laptop or a TV: the card as tall as the room, its name and the cards before it beside it, when that makes it bigger */
+.deal.beside{display:grid;grid-template-columns:var(--colw,300px) minmax(0,1fr);grid-template-rows:1fr auto auto auto 1fr;gap:10px 28px;align-items:center;justify-items:center}
+.deal.beside .cardarea{grid-column:1;grid-row:1/-1;align-self:stretch;width:var(--colw,300px);height:auto}
+.deal.beside .tiebar{grid-column:2;grid-row:2}
+.deal.beside .cap{grid-column:2;grid-row:3;min-height:0}
+.deal.beside .antes{grid-column:2;grid-row:4;height:auto;max-height:68px}
+.deal.beside .cap h2{font-size:clamp(28px,3.3vw,72px)} /* read from across the room */
+.deal.beside .cap p{font-size:clamp(14.5px,1.3vw,26px)}
+.deal.beside .cap .no{font-size:clamp(11px,.7vw,14px)}
 .app.side .sab{display:none}
 .app.side .bar{padding-top:6px;padding-bottom:8px}
 .sabhd{display:flex;justify-content:space-between;align-items:center;gap:10px;flex:none;padding:0 2px}
@@ -996,7 +1005,9 @@ a.chip{text-decoration:none}
     if (mode === 'wide') app.style.setProperty('--sabw', Math.round(($('app').clientWidth - 32) * 0.5) + 'px');
     if (mine) fitMine(mode);
     if (mode === 'tall') app.style.setProperty('--sabh', Math.round(mine ? H * 0.28 + $('mine').offsetHeight + 8 : H * 0.34) + 'px'); // the caller's strip under a sábana a little shorter
-    if (mode !== 'compact') fitSabana($('sbgrid'), mode === 'wide' ? (mine ? [6, 9, 11] : [6, 9]) : [9, 11, 14, 18]);
+    var deal = document.querySelector('.deal'); deal.classList.remove('beside');
+    if (mode !== 'compact') { var sb = fitSabana($('sbgrid'), mode === 'wide' ? (mine ? [6, 9, 11] : [6, 9]) : [9, 11, 14, 18]); if (mode === 'wide' && !mine && sb) trimSabana(sb); }
+    if (mode === 'wide') beside(deal);
     fitCard(); fitSheetSabana(); fitCap();
   }
   // A phone on its side short of room for Ready when you are, Start calling and the link: the line under Ready gives way.
@@ -1011,10 +1022,25 @@ a.chip{text-decoration:none}
     if (!W) return;
     choices.forEach(function (c) { var r = Math.ceil(54 / c), w = Math.min((W - (c - 1) * g) / c, H ? ((H - (r - 1) * g) / r) / 1.635 : 1e9); if (w > best) { best = w; bc = c; } });
     host.style.setProperty('--cols', bc); host.style.setProperty('--tw', Math.floor(best) + 'px'); host.style.setProperty('--tg', g + 'px');
+    return { cols: bc, tw: Math.floor(best), gap: g };
+  }
+  // On a wide screen the sábana's tiles are sized by its height, so they rarely use its whole half: the card gets the
+  // rest. The sábana keeps at least 40% and its tiles stay the size they were.
+  function trimSabana(sb) {
+    var app = $('app'), half = Math.round((app.clientWidth - 32) * 0.5), w = Math.max(sb.cols * sb.tw + (sb.cols - 1) * sb.gap + 8, Math.round((app.clientWidth - 32) * 0.4));
+    if (w >= half) return;
+    app.style.setProperty('--sabw', w + 'px'); fitSabana($('sbgrid'), [6, 9]);
+  }
+  // A laptop or a TV: the card as tall as the room with its name and the cards before it beside it, when the room is
+  // wide enough for that and it makes the card at least an eighth bigger than with its name underneath.
+  function beside(deal) {
+    var a = $('cardarea'), stacked = Math.min(a.clientWidth, a.clientHeight / 1.635), w = Math.floor(Math.min(deal.clientHeight / 1.635, deal.clientWidth - 28 - 300));
+    if (!stacked || w < stacked * 1.12) return;
+    deal.style.setProperty('--colw', w + 'px'); deal.classList.add('beside');
   }
   function fitCard() {
     var area = $('cardarea'), W = area.clientWidth, H = area.clientHeight; if (!W || !H) return;
-    var cw = Math.floor(Math.min(W, H / 1.635, 440)), f = $('flip');
+    var cw = Math.floor(Math.min(W, H / 1.635, $('app').classList.contains('wide') ? 1e4 : 440)), f = $('flip'); // as big as the room on a laptop or a TV
     f.style.setProperty('--cw', cw + 'px'); f.style.setProperty('--ch', Math.round(cw * 1.635) + 'px');
   }
   function picado() {

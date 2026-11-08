@@ -1614,6 +1614,31 @@ check('cantor: on a phone turned sideways the card is on the left, as tall as th
   }
 });
 
+check('cantor: on a laptop or a TV the card is as tall as the room, with its name and the cards before it beside it', async () => {
+  // A 1280×720 TV had a 244 px card over its name, and every bigger screen stopped at 440 px. An iPad on its side keeps
+  // the name under the card, where the room is too narrow for both side by side.
+  for (const [width, height, min] of [[1280, 720, 320], [1920, 1080, 540], [2560, 1440, 760], [1024, 768, 0]]) {
+    const ctx = await context({ viewport: { width, height } });
+    try {
+      const page = await ctx.newPage(), problems = watch(page), at = width + '×' + height + ': ';
+      await seed(page, { 'loteria.cantor': { order: run(1, 54), pos: 6, round: 1, patterns: ['linea', 'esquinas', 'cuadro'], juego: '', wins: [], settings: { speak: false, sound: false, awake: false, check: false } } });
+      await page.goto(base + 'cantor.html');
+      await until(page, () => document.getElementById('flip').getBoundingClientRect().width > 60, null, 5000).catch(() => { });
+      const card = await rect(page, '#flip'), name = await rect(page, '#cap h2'), before = await rect(page, '#antes'), bar = await rect(page, '.bar'), sab = await rect(page, '#sbgrid');
+      assert.equal(await page.getAttribute('#app', 'class'), 'app wide', at + 'not the wide layout');
+      assert.equal(await page.textContent('#cap h2'), 'La Sirena');
+      assert.ok(card.right <= sab.left, at + 'the card runs into the sábana');
+      assert.ok(card.bottom <= bar.top, at + 'the card runs under the bar');
+      if (min) {
+        assert.ok(card.width >= min, at + `the card is ${card.width} px wide`);
+        assert.ok(card.right < name.left && card.right < before.left, at + 'the name and the cards before it aren’t beside the card');
+      } else assert.ok(name.top >= card.bottom, at + 'the name isn’t under the card');
+      assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), at + 'the page scrolls sideways');
+      assert.deepEqual(problems, []);
+    } finally { await ctx.close(); }
+  }
+});
+
 check('cantor: the card called is the card itself, edge to edge on its own cream paper, with no white mat round it', async () => {
   // The cards are drawn on cream (#FBF4E4) with their own rounded frame; a white mat round them made a second frame,
   // and the brightest thing on a dark screen.
