@@ -899,9 +899,12 @@ check('cantor: a clip that hasn’t come in 3 seconds is read by the device’s 
     await page.addInitScript(FAKE_TTS);
     await page.addInitScript(DEALS);
     await page.addInitScript(() => {
+      // Each clip of Dora's that starts, by the card showing (#live) when it does, not by the time. A clip that's here
+      // starts a moment after its card is turned, inside the tenth of a millisecond Chromium rounds performance.now()
+      // to, so the clip's time and the card's are often the same.
       window.__played = [];
       const start = AudioBufferSourceNode.prototype.start;
-      AudioBufferSourceNode.prototype.start = function () { if (this.buffer && this.buffer.duration > 0.3) window.__played.push(performance.now()); return start.apply(this, arguments); };
+      AudioBufferSourceNode.prototype.start = function () { if (this.buffer && this.buffer.duration > 0.3) window.__played.push(document.getElementById('live').textContent); return start.apply(this, arguments); };
     });
     await ctx.route(base + 'audio/dora/03.mp3', () => { }); // never answers
     await ctx.route(base + 'audio/dora/04.mp3', r => setTimeout(() => r.continue().catch(() => { }), 6000));
@@ -916,7 +919,7 @@ check('cantor: a clip that hasn’t come in 3 seconds is read by the device’s 
     const wait3 = r.said[0].at - r.dealt[2].at, wait4 = r.said[1].at - r.dealt[3].at;
     assert.ok(wait3 > 2700 && wait3 < 4500, 'card 3 waited ' + Math.round(wait3) + ' ms for its clip, not 3 s');
     assert.ok(wait4 < 800, 'card 4 waited ' + Math.round(wait4) + ' ms for its clip, after card 3’s didn’t come');
-    assert.ok(r.played.some(t => t > r.dealt[4].at && t < r.dealt[5].at), 'card 5, here in time, wasn’t Dora’s');
+    assert.ok(r.played.includes('El Paraguas'), 'card 5, here in time, wasn’t Dora’s: hers started on ' + JSON.stringify(r.played));
     assert.equal(r.toasts.filter(t => t === 'The recorded voice isn’t loading — using this device’s voice').length, 1, 'the note: ' + JSON.stringify(r.toasts));
     assert.deepEqual(problems, []);
   } finally { await ctx.close(); }
