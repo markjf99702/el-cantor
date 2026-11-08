@@ -27,10 +27,13 @@ RATE = 24000
 
 # Spellings the speech engine reads wrong, rewritten the way a caller says them.
 SPOKEN = [
-    (r'\bViolon[cç]ello\b', 'Violonchelo'), (r'\bviolon[cç]ello\b', 'violonchelo'),
+    # Violoncello the way the family says it, "violon-SELL-o", not the "ch" of the dictionary's violonchelo.
+    (r'\bViolon[cç]ello\b', 'Violonselo'), (r'\bviolon[cç]ello\b', 'violonselo'),
     (r'\bp’al\b', 'pal'), (r'\bpa’', 'pa'),
 ]
-OPENING = '¡Se va y se corre, con la vieja en el coche!'
+# The family's short call, leading into the first card. Written without ¡! and with plain dots: the engine ends it a
+# little higher, and an ellipsis character made it breathe out a hiss.
+OPENING = 'Corre, se va con...'
 LOTERIA = '¡Lotería!'
 
 
@@ -93,6 +96,30 @@ def level(x, rms=0.09, peak=0.95):
     return x * min(rms / max(r, 1e-6), peak / max(1e-6, np.abs(x).max()))
 
 
+def cut_hiss(x, ps):
+    """Cut the hiss the model sometimes leaves after a name's last sound (\"Bandolón\" came out \"Bandolóns\"): the
+    clip ends where the voice does, unless the name really ends in an s."""
+    if ps.rstrip('!.…¡ ').endswith(('s', 'z')):
+        return x
+    f = 240  # 10 ms frames
+    n = len(x) // f
+    if n < 4:
+        return x
+    spec = np.abs(np.fft.rfft(x[:n * f].reshape(n, f) * np.hanning(f), axis=1)) ** 2
+    hz = np.fft.rfftfreq(f, 1 / RATE)
+    low, high = spec[:, hz < 2500].sum(1), spec[:, hz >= 4000].sum(1)
+    voiced = np.flatnonzero(low > 0.01 * low.max())
+    if not len(voiced):
+        return x
+    end = (voiced[-1] + 2) * f  # 20 ms after the last voiced frame
+    if end >= len(x) or high[voiced[-1] + 1:].sum() < 0.02 * high.sum():  # nothing much after the voice
+        return x
+    y = x[:end].copy()
+    fade = min(len(y), int(0.015 * RATE))
+    y[-fade:] *= np.linspace(1, 0, fade)
+    return y
+
+
 def silence(sec):
     return np.zeros(int(sec * RATE), dtype=np.float32)
 
@@ -117,6 +144,7 @@ def main():
     ap.add_argument('--gap', type=float, default=0.45, help='seconds between the verse and the name')
     ap.add_argument('--kbps', type=int, default=48)
     ap.add_argument('--only', help='comma-separated card numbers, for trying a voice out')
+    ap.add_argument('--open', action='store_true', help='with --only, record the opening line again too')
     a = ap.parse_args()
 
     cards = cards_from_deck(Path(a.deck))
@@ -142,17 +170,17 @@ def main():
         for c in cards:
             verse, vps = tts(spoken(c['verse']), style, a.speed)
             name, nps = tts(spoken(f"¡{c['name']}!"), style, a.speed)
-            verse, name = level(trim(verse)), level(trim(name))
+            verse, name = level(trim(verse)), level(cut_hiss(trim(name), nps))
             clip = np.concatenate([silence(lead), verse, silence(a.gap), name, silence(0.12)])
             mp3(clip, folder / f"{c['n']:02d}.mp3", a.kbps)
             v_end = lead + len(verse) / RATE
             entry['cards'][str(c['n'])] = [round(v_end, 3), round(v_end + a.gap, 3)]
             print(f"{vid} {c['n']:02d} {len(clip) / RATE:4.1f}s  {c['name']}  /{nps}/  {vps}", flush=True)
-        if not a.only:
-            for fname, text in (('open', OPENING), ('loteria', LOTERIA)):
-                x, ps = tts(text, style, a.speed)
-                mp3(np.concatenate([silence(lead), level(trim(x)), silence(0.12)]), folder / f'{fname}.mp3', a.kbps)
-                print(f'{vid} {fname}  /{ps}/', flush=True)
+        lines = (('open', OPENING), ('loteria', LOTERIA)) if not a.only else (('open', OPENING),) if a.open else ()
+        for fname, text in lines:
+            x, ps = tts(text, style, a.speed)
+            mp3(np.concatenate([silence(lead), level(cut_hiss(trim(x), ps)), silence(0.12)]), folder / f'{fname}.mp3', a.kbps)
+            print(f'{vid} {fname}  /{ps}/', flush=True)
     manifest['credit'] = 'Voices rendered with Kokoro-82M by hexgrad (Apache-2.0).'
     voices = ',\n'.join('  ' + json.dumps(v, ensure_ascii=False, separators=(',', ':')) for v in manifest['voices'])
     manifest_path.write_text('{\n "credit": ' + json.dumps(manifest['credit'], ensure_ascii=False) + ',\n "voices": [\n' + voices + '\n ]\n}\n', encoding='utf-8')

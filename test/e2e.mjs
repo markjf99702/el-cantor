@@ -1039,7 +1039,7 @@ check('cantor: the opening call moves: the card back is squared up and the bande
       await page.click('#playBtn');
       const during = await moving();
       assert.equal(during.opening, true, 'no opening call');
-      assert.match(await page.textContent('#cap h2'), /Se va y se corre/);
+      assert.match(await page.textContent('#cap h2'), /Corre, se va con/);
       if (motion === 'reduce') assert.equal(during.card, 'none', 'the card back moves with Reduce motion on');
       else assert.deepEqual([during.card, during.flag], ['riffle', '1.1s'], 'the opening call doesn’t move');
       // The first card turns over as ever once it's said, and the deck is still again.
@@ -1152,7 +1152,7 @@ check('cantor: Record a voice, one card at a time: kept on this device, El Canto
     await page.click('#setBtn');
     await page.click('#recNew');
     assert.equal(await sheetTitle(page), 'Record a voice');
-    assert.deepEqual([await page.textContent('#rcStage .eyebrow'), await page.textContent('#rcStage .rcline'), await state()], ['To start the round', '¡Se va y se corre, con la vieja en el coche!', 'Not recorded yet']);
+    assert.deepEqual([await page.textContent('#rcStage .eyebrow'), await page.textContent('#rcStage .rcline'), await state()], ['To start the round', 'Corre, se va con…', 'Not recorded yet']);
     assert.equal(await page.$eval('#rcName', i => [i.type, i.getAttribute('autocapitalize'), i.getAttribute('enterkeyhint')].join(' ')), 'text words done');
     // The opening line stays inside its box on a small phone and on one turned sideways, where a card's shape is too narrow.
     for (const vp of [{ width: 375, height: 667 }, { width: 844, height: 390 }]) {
@@ -5573,7 +5573,7 @@ check('drive: a voice recorded on one device comes whole to another on the same 
     await poll(A, () => { try { return listFile().cols.voices.items[id].v.name === 'Abuela'; } catch { return false; } }, 'Abuela on the Drive list');
     const byId = Object.fromEntries(drive().map(f => [f.id, f])), folder = byId[takesOf(id)[0].parents[0]], voces = byId[folder.parents[0]], loteria = byId[voces.parents[0]];
     assert.deepEqual([loteria.name, voces.name, folder.name, folder.appProperties], ['Lotería', 'Voces', 'Abuela', { loteria: 'voice', voice: id }]);
-    assert.deepEqual(takesOf(id).map(f => [f.name, f.mimeType, f.appProperties.line, f.appProperties.type]).sort(), [['00 ¡Se va y se corre!.webm', 'audio/webm', 'open', 'audio/webm;codecs=opus'], ['01 El Gallo.webm', 'audio/webm', 'n01', 'audio/webm;codecs=opus'], ['02 El Diablito.webm', 'audio/webm', 'n02', 'audio/webm;codecs=opus']]);
+    assert.deepEqual(takesOf(id).map(f => [f.name, f.mimeType, f.appProperties.line, f.appProperties.type]).sort(), [['00 Corre, se va con.webm', 'audio/webm', 'open', 'audio/webm;codecs=opus'], ['01 El Gallo.webm', 'audio/webm', 'n01', 'audio/webm;codecs=opus'], ['02 El Diablito.webm', 'audio/webm', 'n02', 'audio/webm;codecs=opus']]);
     assert.ok(takesOf(id).every(f => Buffer.isBuffer(f.body) && f.body.length > 1000), 'a take reached Drive empty');
     await until(A, () => !/still to go/.test(document.getElementById('vNote').textContent));
     assert.equal(await A.textContent('#vNote'), 'Recorded by the family, and saved to Google Drive too: every device that saves there has it in its list. 3 of 56 recorded so far: this device’s voice says the rest.');
