@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 656" width="400" height="656">
+<defs>
+  <clipPath id="panel21"><rect x="24" y="24" width="352" height="520" rx="6"/></clipPath>
+  <filter id="cut" filterUnits="userSpaceOnUse" x="-60" y="-60" width="520" height="780"><feDropShadow dx="1.6" dy="2.6" stdDeviation="1.8" flood-color="#3b2410" flood-opacity=".38"/></filter>
+  <filter id="grain21" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="3" seed="21"/>
+    <feColorMatrix values="0 0 0 0 .32  0 0 0 0 .22  0 0 0 0 .12  1.4 0 0 0 -.62"/>
+  </filter>
+</defs>
+<rect width="400" height="656" rx="16" fill="#FBF4E4"/>
+<g clip-path="url(#panel21)"><rect x="24" y="24" width="352" height="520" fill="#22304F"/>
+  <g stroke="#D9A07A" stroke-linecap="round" fill="none" filter="url(#cut)">
+    <path d="M160,290 L148,150" stroke-width="38"/><path d="M198,284 L198,120" stroke-width="40"/>
+    <path d="M236,290 L246,146" stroke-width="38"/><path d="M266,312 L290,200" stroke-width="32"/>
+    <path d="M146,392 L94,300" stroke-width="42"/>
+  </g>
+  <path d="M130,300 C130,270 150,262 200,262 C250,262 272,270 272,304 L272,404 C272,452 242,482 200,482 C158,482 130,452 130,404 Z" fill="#D9A07A" filter="url(#cut)"/>
+  <g stroke="#C98B5E" stroke-width="4" fill="none" stroke-linecap="round"><path d="M154,378 Q204,356 252,338"/><path d="M160,420 Q196,408 236,416"/></g>
+  <path d="M168,470 L232,470 L236,520 L164,520 Z" fill="#D9A07A"/>
+  <g filter="url(#cut)"><path d="M140,500 L260,500 L264,548 L136,548 Z" fill="#FBF4E4"/></g>
+  <rect x="138" y="506" width="124" height="8" fill="#B7332F"/>
+</g>
+<rect x="24" y="24" width="352" height="520" rx="6" fill="none" stroke="#2B221C" stroke-width="3.5"/>
+<g filter="url(#cut)"><rect x="36" y="36" width="56" height="46" rx="7" fill="#FBF4E4"/></g>
+<text x="64" y="71" font-family="Bree Serif" font-size="32" text-anchor="middle" fill="#2B221C">21</text>
+<path d="M44,600 l9,-9 l9,9 l-9,9 Z M338,600 l9,-9 l9,9 l-9,9 Z" fill="#B7332F"/>
+<text x="200" y="616" font-family="Bree Serif" font-size="44" text-anchor="middle" fill="#2B221C" letter-spacing="1.5">LA MANO</text>
+<rect x="9" y="9" width="382" height="638" rx="12" fill="none" stroke="#2B221C" stroke-width="2"/>
+<rect width="400" height="656" rx="16" filter="url(#grain21)" opacity=".22"/>
+</svg>

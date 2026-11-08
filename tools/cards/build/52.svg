@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 656" width="400" height="656">
+<defs>
+  <clipPath id="panel52"><rect x="24" y="24" width="352" height="520" rx="6"/></clipPath>
+  <filter id="cut" filterUnits="userSpaceOnUse" x="-60" y="-60" width="520" height="780"><feDropShadow dx="1.6" dy="2.6" stdDeviation="1.8" flood-color="#3b2410" flood-opacity=".38"/></filter>
+  <filter id="grain52" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="3" seed="52"/>
+    <feColorMatrix values="0 0 0 0 .32  0 0 0 0 .22  0 0 0 0 .12  1.4 0 0 0 -.62"/>
+  </filter>
+</defs>
+<rect width="400" height="656" rx="16" fill="#FBF4E4"/>
+<g clip-path="url(#panel52)"><rect x="24" y="24" width="352" height="520" fill="#D9CFE8"/>
+  <path d="M0,506 L400,506 L400,560 L0,560 Z" fill="#B9A6D3"/>
+  <g filter="url(#cut)" fill="#3E7D4A">
+    <path d="M200,330 C170,280 120,250 84,262 C104,300 150,322 200,330 Z"/><path d="M200,330 C230,280 280,250 316,262 C296,300 250,322 200,330 Z"/>
+    <path d="M198,330 C160,300 150,240 170,196 C196,236 204,290 198,330 Z"/><path d="M202,330 C240,300 250,240 230,196 C204,236 196,290 202,330 Z"/>
+  </g>
+  <g stroke="#3E7D4A" stroke-width="7" fill="none" stroke-linecap="round"><path d="M200,330 L200,176"/><path d="M200,300 C180,260 150,230 128,208"/><path d="M200,300 C220,260 250,230 272,208"/></g>
+  <g filter="url(#cut)"><ellipse cx="218.6" cy="164.0" rx="15.0" ry="9.6" transform="rotate(0.0 218.6 164.0)" fill="#E2554F"/><ellipse cx="205.7" cy="181.7" rx="15.0" ry="9.6" transform="rotate(72.0 205.7 181.7)" fill="#E2554F"/><ellipse cx="185.0" cy="174.9" rx="15.0" ry="9.6" transform="rotate(144.0 185.0 174.9)" fill="#E2554F"/><ellipse cx="185.0" cy="153.1" rx="15.0" ry="9.6" transform="rotate(216.0 185.0 153.1)" fill="#E2554F"/><ellipse cx="205.7" cy="146.3" rx="15.0" ry="9.6" transform="rotate(288.0 205.7 146.3)" fill="#E2554F"/><circle cx="200" cy="164" r="8.4" fill="#E8B24A"/></g><g filter="url(#cut)"><ellipse cx="138.9" cy="204.0" rx="12.0" ry="7.7" transform="rotate(0.0 138.9 204.0)" fill="#E8B24A"/><ellipse cx="128.6" cy="218.2" rx="12.0" ry="7.7" transform="rotate(72.0 128.6 218.2)" fill="#E8B24A"/><ellipse cx="112.0" cy="212.7" rx="12.0" ry="7.7" transform="rotate(144.0 112.0 212.7)" fill="#E8B24A"/><ellipse cx="112.0" cy="195.3" rx="12.0" ry="7.7" transform="rotate(216.0 112.0 195.3)" fill="#E8B24A"/><ellipse cx="128.6" cy="189.8" rx="12.0" ry="7.7" transform="rotate(288.0 128.6 189.8)" fill="#E8B24A"/><circle cx="124" cy="204" r="6.7" fill="#B7332F"/></g><g filter="url(#cut)"><ellipse cx="290.9" cy="204.0" rx="12.0" ry="7.7" transform="rotate(0.0 290.9 204.0)" fill="#C2477A"/><ellipse cx="280.6" cy="218.2" rx="12.0" ry="7.7" transform="rotate(72.0 280.6 218.2)" fill="#C2477A"/><ellipse cx="264.0" cy="212.7" rx="12.0" ry="7.7" transform="rotate(144.0 264.0 212.7)" fill="#C2477A"/><ellipse cx="264.0" cy="195.3" rx="12.0" ry="7.7" transform="rotate(216.0 264.0 195.3)" fill="#C2477A"/><ellipse cx="280.6" cy="189.8" rx="12.0" ry="7.7" transform="rotate(288.0 280.6 189.8)" fill="#C2477A"/><circle cx="276" cy="204" r="6.7" fill="#E8B24A"/></g>
+  <g filter="url(#cut)">
+    <path d="M122,352 L278,352 L256,500 L144,500 Z" fill="#C4622D"/>
+    <rect x="108" y="330" width="184" height="36" rx="5" fill="#A04E22"/>
+  </g>
+  <path d="M132,420 L268,420" stroke="#FBF4E4" stroke-width="4"/>
+  <g fill="#FBF4E4"><path d="M150,404 l6,8 l-6,8 l-6,-8 Z"/><path d="M172,404 l6,8 l-6,8 l-6,-8 Z"/><path d="M194,404 l6,8 l-6,8 l-6,-8 Z"/><path d="M216,404 l6,8 l-6,8 l-6,-8 Z"/><path d="M238,404 l6,8 l-6,8 l-6,-8 Z"/></g>
+</g>
+<rect x="24" y="24" width="352" height="520" rx="6" fill="none" stroke="#2B221C" stroke-width="3.5"/>
+<g filter="url(#cut)"><rect x="36" y="36" width="56" height="46" rx="7" fill="#FBF4E4"/></g>
+<text x="64" y="71" font-family="Bree Serif" font-size="32" text-anchor="middle" fill="#2B221C">52</text>
+<path d="M44,600 l9,-9 l9,9 l-9,9 Z M338,600 l9,-9 l9,9 l-9,9 Z" fill="#B7332F"/>
+<text x="200" y="616" font-family="Bree Serif" font-size="44" text-anchor="middle" fill="#2B221C" letter-spacing="1.5">LA MACETA</text>
+<rect x="9" y="9" width="382" height="638" rx="12" fill="none" stroke="#2B221C" stroke-width="2"/>
+<rect width="400" height="656" rx="16" filter="url(#grain52)" opacity=".22"/>
+</svg>

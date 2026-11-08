@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 656" width="400" height="656">
+<defs>
+  <clipPath id="panel53"><rect x="24" y="24" width="352" height="520" rx="6"/></clipPath>
+  <filter id="cut" filterUnits="userSpaceOnUse" x="-60" y="-60" width="520" height="780"><feDropShadow dx="1.6" dy="2.6" stdDeviation="1.8" flood-color="#3b2410" flood-opacity=".38"/></filter>
+  <filter id="grain53" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="3" seed="53"/>
+    <feColorMatrix values="0 0 0 0 .32  0 0 0 0 .22  0 0 0 0 .12  1.4 0 0 0 -.62"/>
+  </filter>
+</defs>
+<rect width="400" height="656" rx="16" fill="#FBF4E4"/>
+<g clip-path="url(#panel53)"><rect x="24" y="24" width="352" height="520" fill="#9BCFCB"/>
+  <path d="M0,506 L400,506 L400,560 L0,560 Z" fill="#7FB9B4"/>
+  <g stroke="#FBF4E4" stroke-width="2"><path d="M136,159 L136,500"/><path d="M148,162 L148,473"/><path d="M160,164 L160,447"/><path d="M172,166 L172,421"/><path d="M184,169 L184,395"/><path d="M196,171 L196,369"/><path d="M208,173 L208,343"/><path d="M220,176 L220,316"/><path d="M232,178 L232,290"/><path d="M244,180 L244,264"/><path d="M256,182 L256,238"/><path d="M268,185 L268,212"/><path d="M280,187 L280,185"/></g>
+  <g filter="url(#cut)">
+    <path d="M288,168 L320,184 L172,504 L134,504 Z" fill="#A0673A"/>
+    <path d="M100,130 C160,98 222,150 300,164 L306,190 C228,176 170,132 118,154 Z" fill="#8A5A33"/>
+    <path d="M98,124 L124,124 L130,500 L100,500 Z" fill="#D99A2B"/>
+    <rect x="88" y="494" width="100" height="20" rx="4" fill="#5B3518"/>
+    <circle cx="110" cy="118" r="16" fill="#E8B24A"/>
+  </g>
+  <g fill="#E8B24A"><circle cx="298" cy="210" r="4"/><circle cx="282" cy="246" r="4"/><circle cx="267" cy="282" r="4"/><circle cx="251" cy="318" r="4"/><circle cx="235" cy="354" r="4"/><circle cx="220" cy="390" r="4"/><circle cx="204" cy="426" r="4"/><circle cx="189" cy="462" r="4"/></g>
+</g>
+<rect x="24" y="24" width="352" height="520" rx="6" fill="none" stroke="#2B221C" stroke-width="3.5"/>
+<g filter="url(#cut)"><rect x="36" y="36" width="56" height="46" rx="7" fill="#FBF4E4"/></g>
+<text x="64" y="71" font-family="Bree Serif" font-size="32" text-anchor="middle" fill="#2B221C">53</text>
+<path d="M44,600 l9,-9 l9,9 l-9,9 Z M338,600 l9,-9 l9,9 l-9,9 Z" fill="#B7332F"/>
+<text x="200" y="616" font-family="Bree Serif" font-size="44" text-anchor="middle" fill="#2B221C" letter-spacing="1.5">EL ARPA</text>
+<rect x="9" y="9" width="382" height="638" rx="12" fill="none" stroke="#2B221C" stroke-width="2"/>
+<rect width="400" height="656" rx="16" filter="url(#grain53)" opacity=".22"/>
+</svg>

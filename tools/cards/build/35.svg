@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 656" width="400" height="656">
+<defs>
+  <clipPath id="panel35"><rect x="24" y="24" width="352" height="520" rx="6"/></clipPath>
+  <filter id="cut" filterUnits="userSpaceOnUse" x="-60" y="-60" width="520" height="780"><feDropShadow dx="1.6" dy="2.6" stdDeviation="1.8" flood-color="#3b2410" flood-opacity=".38"/></filter>
+  <filter id="grain35" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="3" seed="35"/>
+    <feColorMatrix values="0 0 0 0 .32  0 0 0 0 .22  0 0 0 0 .12  1.4 0 0 0 -.62"/>
+  </filter>
+</defs>
+<rect width="400" height="656" rx="16" fill="#FBF4E4"/>
+<g clip-path="url(#panel35)"><rect x="24" y="24" width="352" height="520" fill="#22304F"/>
+  <circle cx="200" cy="284" r="190" fill="#E8B24A" opacity=".07"/>
+  <g filter="url(#cut)"><path d="M200.0,134.0 L236.4,233.8 L342.7,237.6 L259.0,303.2 L288.2,405.4 L200.0,346.0 L111.8,405.4 L141.0,303.2 L57.3,237.6 L163.6,233.8 Z" fill="#E8B24A"/></g>
+  <path d="M200,284 L200.0,134.0 L236.4,233.8 Z" fill="#E8B24A"/><path d="M200,284 L236.4,233.8 L342.7,237.6 Z" fill="#D99A2B"/><path d="M200,284 L342.7,237.6 L259.0,303.2 Z" fill="#E8B24A"/><path d="M200,284 L259.0,303.2 L288.2,405.4 Z" fill="#D99A2B"/><path d="M200,284 L288.2,405.4 L200.0,346.0 Z" fill="#E8B24A"/><path d="M200,284 L200.0,346.0 L111.8,405.4 Z" fill="#D99A2B"/><path d="M200,284 L111.8,405.4 L141.0,303.2 Z" fill="#E8B24A"/><path d="M200,284 L141.0,303.2 L57.3,237.6 Z" fill="#D99A2B"/><path d="M200,284 L57.3,237.6 L163.6,233.8 Z" fill="#E8B24A"/><path d="M200,284 L163.6,233.8 L200.0,134.0 Z" fill="#D99A2B"/>
+  <g fill="#FBF4E4">
+    <path d="M72,96 l5,14 l14,5 l-14,5 l-5,14 l-5,-14 l-14,-5 l14,-5 Z"/><path d="M330,440 l5,14 l14,5 l-14,5 l-5,14 l-5,-14 l-14,-5 l14,-5 Z"/>
+    <path d="M332,112 l3,8 l8,3 l-8,3 l-3,8 l-3,-8 l-8,-3 l8,-3 Z"/><path d="M76,454 l3,8 l8,3 l-8,3 l-3,8 l-3,-8 l-8,-3 l8,-3 Z"/>
+  </g>
+</g>
+<rect x="24" y="24" width="352" height="520" rx="6" fill="none" stroke="#2B221C" stroke-width="3.5"/>
+<g filter="url(#cut)"><rect x="36" y="36" width="56" height="46" rx="7" fill="#FBF4E4"/></g>
+<text x="64" y="71" font-family="Bree Serif" font-size="32" text-anchor="middle" fill="#2B221C">35</text>
+<path d="M44,600 l9,-9 l9,9 l-9,9 Z M338,600 l9,-9 l9,9 l-9,9 Z" fill="#B7332F"/>
+<text x="200" y="613" font-family="Bree Serif" font-size="37" text-anchor="middle" fill="#2B221C" letter-spacing="1.5">LA ESTRELLA</text>
+<rect x="9" y="9" width="382" height="638" rx="12" fill="none" stroke="#2B221C" stroke-width="2"/>
+<rect width="400" height="656" rx="16" filter="url(#grain35)" opacity=".22"/>
+</svg>

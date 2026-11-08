@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 656" width="400" height="656">
+<defs>
+  <clipPath id="panel45"><rect x="24" y="24" width="352" height="520" rx="6"/></clipPath>
+  <filter id="cut" filterUnits="userSpaceOnUse" x="-60" y="-60" width="520" height="780"><feDropShadow dx="1.6" dy="2.6" stdDeviation="1.8" flood-color="#3b2410" flood-opacity=".38"/></filter>
+  <filter id="grain45" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="3" seed="45"/>
+    <feColorMatrix values="0 0 0 0 .32  0 0 0 0 .22  0 0 0 0 .12  1.4 0 0 0 -.62"/>
+  </filter>
+</defs>
+<rect width="400" height="656" rx="16" fill="#FBF4E4"/>
+<g clip-path="url(#panel45)"><rect x="24" y="24" width="352" height="520" fill="#F6E3B4"/>
+  <path d="M0,500 C120,488 280,488 400,500 L400,560 L0,560 Z" fill="#9BBF7A"/>
+  <g stroke="#8E5634" stroke-width="13" stroke-linecap="round" filter="url(#cut)">
+    <path d="M166,380 L160,498"/><path d="M196,382 L200,500"/><path d="M270,378 L262,496"/><path d="M300,370 L306,494"/>
+  </g>
+  <g fill="#2B221C"><ellipse cx="160" cy="502" rx="8" ry="5"/><ellipse cx="200" cy="504" rx="8" ry="5"/><ellipse cx="262" cy="500" rx="8" ry="5"/><ellipse cx="306" cy="498" rx="8" ry="5"/></g>
+  <g stroke="#7A5230" stroke-width="7" fill="none" stroke-linecap="round" filter="url(#cut)">
+    <path d="M142,168 C150,130 176,108 206,98 M160,134 C150,114 146,98 150,82 M180,114 C178,94 182,78 190,66"/>
+    <path d="M122,166 C108,130 110,100 126,76 M114,124 C98,116 88,104 84,88"/>
+  </g>
+  <g filter="url(#cut)">
+    <ellipse cx="228" cy="330" rx="104" ry="58" fill="#B5773F"/>
+    <path d="M318,300 C336,296 344,306 338,318 C330,318 322,314 318,300 Z" fill="#FBF4E4"/>
+    <path d="M136,318 C124,280 124,236 132,204 L166,210 C164,246 170,288 190,318 Z" fill="#B5773F"/>
+    <ellipse cx="128" cy="194" rx="40" ry="26" transform="rotate(20 128 194)" fill="#B5773F"/>
+    <path d="M154,172 C170,150 190,148 196,156 C184,170 168,178 154,172 Z" fill="#B5773F"/>
+  </g>
+  <path d="M136,236 C140,270 150,296 170,318 C150,300 138,280 134,250 Z" fill="#FBF4E4" opacity=".85"/>
+  <ellipse cx="94" cy="206" rx="7" ry="6" fill="#2B221C"/>
+  <circle cx="124" cy="186" r="4" fill="#2B221C"/>
+</g>
+<rect x="24" y="24" width="352" height="520" rx="6" fill="none" stroke="#2B221C" stroke-width="3.5"/>
+<g filter="url(#cut)"><rect x="36" y="36" width="56" height="46" rx="7" fill="#FBF4E4"/></g>
+<text x="64" y="71" font-family="Bree Serif" font-size="32" text-anchor="middle" fill="#2B221C">45</text>
+<path d="M44,600 l9,-9 l9,9 l-9,9 Z M338,600 l9,-9 l9,9 l-9,9 Z" fill="#B7332F"/>
+<text x="200" y="616" font-family="Bree Serif" font-size="44" text-anchor="middle" fill="#2B221C" letter-spacing="1.5">EL VENADO</text>
+<rect x="9" y="9" width="382" height="638" rx="12" fill="none" stroke="#2B221C" stroke-width="2"/>
+<rect width="400" height="656" rx="16" filter="url(#grain45)" opacity=".22"/>
+</svg>

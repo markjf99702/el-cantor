@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 656" width="400" height="656">
+<defs>
+  <clipPath id="panel17"><rect x="24" y="24" width="352" height="520" rx="6"/></clipPath>
+  <filter id="cut" filterUnits="userSpaceOnUse" x="-60" y="-60" width="520" height="780"><feDropShadow dx="1.6" dy="2.6" stdDeviation="1.8" flood-color="#3b2410" flood-opacity=".38"/></filter>
+  <filter id="grain17" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="3" seed="17"/>
+    <feColorMatrix values="0 0 0 0 .32  0 0 0 0 .22  0 0 0 0 .12  1.4 0 0 0 -.62"/>
+  </filter>
+</defs>
+<rect width="400" height="656" rx="16" fill="#FBF4E4"/>
+<g clip-path="url(#panel17)"><rect x="24" y="24" width="352" height="520" fill="#9BCFCB"/>
+  <g transform="rotate(-14 200 330)">
+    <g filter="url(#cut)">
+      <path d="M186,84 L214,84 L218,126 L182,126 Z" fill="#7A4A28"/>
+      <rect x="189" y="120" width="22" height="196" fill="#7A4A28"/>
+    </g>
+    <rect x="194" y="126" width="12" height="186" fill="#3A2A22"/>
+    <g fill="#FBF4E4"><circle cx="180" cy="94" r="5"/><circle cx="178" cy="108" r="5"/><circle cx="220" cy="94" r="5"/><circle cx="222" cy="108" r="5"/></g>
+    <g filter="url(#cut)">
+      <path d="M200,298 C272,298 304,360 304,424 C304,486 258,526 200,526 C142,526 96,486 96,424 C96,360 128,298 200,298 Z" fill="#8A5A33"/>
+      <path d="M200,308 C264,308 294,364 294,424 C294,480 252,516 200,516 C148,516 106,480 106,424 C106,364 136,308 200,308 Z" fill="#D9A05C"/>
+    </g>
+    <circle cx="200" cy="398" r="36" fill="none" stroke="#D99A2B" stroke-width="7"/>
+    <circle cx="200" cy="398" r="26" fill="#2B221C"/>
+    <rect x="174" y="466" width="52" height="9" rx="2" fill="#2B221C"/>
+    <g stroke="#FBF4E4" stroke-width="1.8"><path d="M196,126 L190,468"/><path d="M200,126 L200,468"/><path d="M204,126 L210,468"/></g>
+  </g>
+</g>
+<rect x="24" y="24" width="352" height="520" rx="6" fill="none" stroke="#2B221C" stroke-width="3.5"/>
+<g filter="url(#cut)"><rect x="36" y="36" width="56" height="46" rx="7" fill="#FBF4E4"/></g>
+<text x="64" y="71" font-family="Bree Serif" font-size="32" text-anchor="middle" fill="#2B221C">17</text>
+<path d="M44,600 l9,-9 l9,9 l-9,9 Z M338,600 l9,-9 l9,9 l-9,9 Z" fill="#B7332F"/>
+<text x="200" y="613" font-family="Bree Serif" font-size="37" text-anchor="middle" fill="#2B221C" letter-spacing="1.5">EL BANDOLÓN</text>
+<rect x="9" y="9" width="382" height="638" rx="12" fill="none" stroke="#2B221C" stroke-width="2"/>
+<rect width="400" height="656" rx="16" filter="url(#grain17)" opacity=".22"/>
+</svg>

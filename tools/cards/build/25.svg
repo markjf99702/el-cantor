@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 656" width="400" height="656">
+<defs>
+  <clipPath id="panel25"><rect x="24" y="24" width="352" height="520" rx="6"/></clipPath>
+  <filter id="cut" filterUnits="userSpaceOnUse" x="-60" y="-60" width="520" height="780"><feDropShadow dx="1.6" dy="2.6" stdDeviation="1.8" flood-color="#3b2410" flood-opacity=".38"/></filter>
+  <filter id="grain25" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="3" seed="25"/>
+    <feColorMatrix values="0 0 0 0 .32  0 0 0 0 .22  0 0 0 0 .12  1.4 0 0 0 -.62"/>
+  </filter>
+</defs>
+<rect width="400" height="656" rx="16" fill="#FBF4E4"/>
+<g clip-path="url(#panel25)"><rect x="24" y="24" width="352" height="520" fill="#F4C9A0"/>
+  <path d="M0,506 L400,506 L400,560 L0,560 Z" fill="#E0A878"/>
+  <g fill="#FBF4E4" stroke="#C98B5E" stroke-width="2" filter="url(#cut)"><circle cx="112" cy="146" r="15"/><circle cx="88" cy="112" r="10"/><circle cx="74" cy="84" r="6"/></g>
+  <g transform="translate(-34 0) rotate(7 200 524)">
+  <g transform="translate(200 524) scale(1.18) translate(-200 -524)">
+    <g filter="url(#cut)" fill="#3A4A5A"><path d="M170,400 L197,400 L193,516 L170,516 Z"/><path d="M203,400 L230,400 L230,516 L207,516 Z"/></g>
+    <ellipse cx="178" cy="522" rx="20" ry="7" fill="#2B221C"/><ellipse cx="224" cy="522" rx="20" ry="7" fill="#2B221C"/>
+    <path d="M156,292 C136,316 118,336 100,344" stroke="#EFE6D2" stroke-width="20" stroke-linecap="round" fill="none"/>
+    <circle cx="96" cy="346" r="11" fill="#C98B5E"/>
+    <path d="M158,282 C152,330 154,370 160,408 L240,408 C246,370 248,330 242,282 C224,270 176,270 158,282 Z" fill="#EFE6D2" filter="url(#cut)"/>
+    <path d="M160,396 L200,408 L160,410 Z" fill="#E3D6BC"/>
+    <g stroke="#B7332F" stroke-width="7"><path d="M176,280 L176,404"/><path d="M224,280 L224,404"/></g>
+    <path d="M242,292 C262,276 272,250 274,222" stroke="#EFE6D2" stroke-width="20" stroke-linecap="round" fill="none"/>
+    <g filter="url(#cut)" transform="rotate(24 280 190)">
+      <path d="M270,210 L270,162 C270,152 276,148 276,140 L276,118 L286,118 L286,140 C286,148 292,152 292,162 L292,210 Z" fill="#2F6B45"/>
+    </g>
+    <circle cx="276" cy="216" r="12" fill="#C98B5E"/>
+    <rect x="192" y="246" width="16" height="22" fill="#A86B42"/>
+    <ellipse cx="200" cy="228" rx="25" ry="29" fill="#C98B5E"/>
+    <g stroke="#2B221C" stroke-width="3" stroke-linecap="round" fill="none"><path d="M184,224 q6,4 12,0"/><path d="M204,224 q6,4 12,0"/><path d="M190,246 Q202,252 212,242"/></g>
+    <circle cx="200" cy="236" r="6" fill="#E2554F"/>
+    <circle cx="184" cy="238" r="6" fill="#E2554F" opacity=".35"/><circle cx="216" cy="238" r="6" fill="#E2554F" opacity=".35"/>
+    <path d="M178,242 C184,256 196,260 204,256" stroke="#3A2A22" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <g transform="rotate(-22 200 200)" filter="url(#cut)">
+      <ellipse cx="200" cy="206" rx="58" ry="12" fill="#D9B46A"/>
+      <path d="M172,206 C172,174 184,160 200,160 C216,160 228,174 228,206 Z" fill="#D9B46A"/>
+      <rect x="172" y="194" width="56" height="8" fill="#B7332F"/>
+    </g>
+  </g>
+  </g>
+</g>
+<rect x="24" y="24" width="352" height="520" rx="6" fill="none" stroke="#2B221C" stroke-width="3.5"/>
+<g filter="url(#cut)"><rect x="36" y="36" width="56" height="46" rx="7" fill="#FBF4E4"/></g>
+<text x="64" y="71" font-family="Bree Serif" font-size="32" text-anchor="middle" fill="#2B221C">25</text>
+<path d="M44,600 l9,-9 l9,9 l-9,9 Z M338,600 l9,-9 l9,9 l-9,9 Z" fill="#B7332F"/>
+<text x="200" y="613" font-family="Bree Serif" font-size="37" text-anchor="middle" fill="#2B221C" letter-spacing="1.5">EL BORRACHO</text>
+<rect x="9" y="9" width="382" height="638" rx="12" fill="none" stroke="#2B221C" stroke-width="2"/>
+<rect width="400" height="656" rx="16" filter="url(#grain25)" opacity=".22"/>
+</svg>

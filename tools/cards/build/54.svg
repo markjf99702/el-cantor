@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 656" width="400" height="656">
+<defs>
+  <clipPath id="panel54"><rect x="24" y="24" width="352" height="520" rx="6"/></clipPath>
+  <filter id="cut" filterUnits="userSpaceOnUse" x="-60" y="-60" width="520" height="780"><feDropShadow dx="1.6" dy="2.6" stdDeviation="1.8" flood-color="#3b2410" flood-opacity=".38"/></filter>
+  <filter id="grain54" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="3" seed="54"/>
+    <feColorMatrix values="0 0 0 0 .32  0 0 0 0 .22  0 0 0 0 .12  1.4 0 0 0 -.62"/>
+  </filter>
+</defs>
+<rect width="400" height="656" rx="16" fill="#FBF4E4"/>
+<g clip-path="url(#panel54)"><rect x="24" y="24" width="352" height="520" fill="#E8B24A"/>
+  <path d="M0,420 C100,412 300,424 400,416 L400,560 L0,560 Z" fill="#3E9591"/>
+  <path d="M40,470 C40,430 110,410 200,410 C290,410 360,430 360,470 C360,500 290,520 200,520 C150,520 110,514 80,500 L200,470 Z" fill="#3E7D4A" filter="url(#cut)"/>
+  <g filter="url(#cut)" fill="#5B9D67">
+    <path d="M110,440 C70,430 70,380 110,360 C130,380 140,410 130,440 Z"/><path d="M290,440 C330,430 330,380 290,360 C270,380 260,410 270,440 Z"/>
+    <ellipse cx="200" cy="370" rx="104" ry="80"/>
+    <circle cx="150" cy="292" r="36"/><circle cx="250" cy="292" r="36"/>
+  </g>
+  <ellipse cx="200" cy="396" rx="62" ry="46" fill="#CFE08E"/>
+  <circle cx="150" cy="290" r="22" fill="#FBF4E4"/><circle cx="250" cy="290" r="22" fill="#FBF4E4"/>
+  <circle cx="154" cy="294" r="11" fill="#2B221C"/><circle cx="246" cy="294" r="11" fill="#2B221C"/>
+  <path d="M136,346 Q200,384 264,346" stroke="#2E5E38" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <g fill="#5B9D67" filter="url(#cut)"><ellipse cx="160" cy="448" rx="24" ry="10"/><ellipse cx="240" cy="448" rx="24" ry="10"/></g>
+</g>
+<rect x="24" y="24" width="352" height="520" rx="6" fill="none" stroke="#2B221C" stroke-width="3.5"/>
+<g filter="url(#cut)"><rect x="36" y="36" width="56" height="46" rx="7" fill="#FBF4E4"/></g>
+<text x="64" y="71" font-family="Bree Serif" font-size="32" text-anchor="middle" fill="#2B221C">54</text>
+<path d="M44,600 l9,-9 l9,9 l-9,9 Z M338,600 l9,-9 l9,9 l-9,9 Z" fill="#B7332F"/>
+<text x="200" y="616" font-family="Bree Serif" font-size="44" text-anchor="middle" fill="#2B221C" letter-spacing="1.5">LA RANA</text>
+<rect x="9" y="9" width="382" height="638" rx="12" fill="none" stroke="#2B221C" stroke-width="2"/>
+<rect width="400" height="656" rx="16" filter="url(#grain54)" opacity=".22"/>
+</svg>

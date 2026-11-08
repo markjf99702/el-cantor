@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 656" width="400" height="656">
+<defs>
+  <clipPath id="panel12"><rect x="24" y="24" width="352" height="520" rx="6"/></clipPath>
+  <filter id="cut" filterUnits="userSpaceOnUse" x="-60" y="-60" width="520" height="780"><feDropShadow dx="1.6" dy="2.6" stdDeviation="1.8" flood-color="#3b2410" flood-opacity=".38"/></filter>
+  <filter id="grain12" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="3" seed="12"/>
+    <feColorMatrix values="0 0 0 0 .32  0 0 0 0 .22  0 0 0 0 .12  1.4 0 0 0 -.62"/>
+  </filter>
+</defs>
+<rect width="400" height="656" rx="16" fill="#FBF4E4"/>
+<g clip-path="url(#panel12)"><rect x="24" y="24" width="352" height="520" fill="#F3D3CB"/>
+  <clipPath id="srp12"><path d="M150,276 C176,270 198,282 198,300 L188,462 L110,452 C114,380 128,310 150,276 Z"/></clipPath>
+  <path d="M0,506 L400,506 L400,560 L0,560 Z" fill="#E4B3A6"/>
+  <g transform="translate(200 524) scale(1.2) translate(-200 -524)">
+  <g filter="url(#cut)" fill="#EFE6D2">
+    <path d="M170,400 L197,400 L195,516 L172,516 Z"/><path d="M203,400 L230,400 L228,516 L205,516 Z"/>
+  </g>
+  <ellipse cx="182" cy="522" rx="19" ry="7" fill="#7A4A28"/><ellipse cx="218" cy="522" rx="19" ry="7" fill="#7A4A28"/>
+  <path d="M158,282 C152,330 154,370 160,404 L240,404 C246,370 248,330 242,282 C224,270 176,270 158,282 Z" fill="#EFE6D2" filter="url(#cut)"/>
+  <rect x="158" y="390" width="84" height="16" fill="#B7332F"/>
+  <path d="M240,292 C262,272 276,248 282,220" stroke="#EFE6D2" stroke-width="22" stroke-linecap="round" fill="none"/>
+  <g filter="url(#cut)">
+    <path d="M276,204 L300,122 C308,146 306,182 292,208 Z" fill="#DCDCD4"/>
+    <rect x="274" y="198" width="22" height="30" rx="4" fill="#2B221C" transform="rotate(14 285 213)"/>
+  </g>
+  <circle cx="285" cy="214" r="12" fill="#C98B5E"/>
+  <g filter="url(#cut)"><path d="M150,276 C176,270 198,282 198,300 L188,462 L110,452 C114,380 128,310 150,276 Z" fill="#B7332F"/></g>
+  <g clip-path="url(#srp12)">
+    <rect x="100" y="300" width="110" height="10" fill="#E8B24A"/><rect x="100" y="316" width="110" height="6" fill="#1F6F6D"/><rect x="100" y="350" width="110" height="14" fill="#FBF4E4"/><rect x="100" y="370" width="110" height="6" fill="#1F6F6D"/><rect x="100" y="400" width="110" height="10" fill="#E8B24A"/><rect x="100" y="420" width="110" height="6" fill="#2B221C"/>
+  </g>
+  <g stroke="#B7332F" stroke-width="3"><path d="M114,452 L113,466"/><path d="M121,453 L120,467"/><path d="M128,454 L127,468"/><path d="M135,455 L134,469"/><path d="M142,455 L141,469"/><path d="M149,456 L148,470"/><path d="M156,457 L155,471"/><path d="M163,458 L162,472"/><path d="M170,459 L169,473"/><path d="M177,460 L176,474"/><path d="M184,460 L183,474"/></g>
+  <rect x="192" y="246" width="16" height="22" fill="#A86B42"/>
+  <ellipse cx="200" cy="228" rx="25" ry="29" fill="#C98B5E"/>
+  <path d="M175,226 C172,196 198,188 216,194 C232,200 230,218 226,228 C216,210 196,208 180,230 Z" fill="#2B221C"/>
+  <path d="M184,246 C192,240 208,240 216,246 C222,256 212,256 200,251 C188,256 178,256 184,246 Z" fill="#2B221C"/>
+  <g stroke="#2B221C" stroke-width="3.5" stroke-linecap="round"><path d="M181,214 L195,220"/><path d="M219,214 L205,220"/></g>
+  <circle cx="190" cy="226" r="2.8" fill="#2B221C"/><circle cx="210" cy="226" r="2.8" fill="#2B221C"/>
+  </g>
+</g>
+<rect x="24" y="24" width="352" height="520" rx="6" fill="none" stroke="#2B221C" stroke-width="3.5"/>
+<g filter="url(#cut)"><rect x="36" y="36" width="56" height="46" rx="7" fill="#FBF4E4"/></g>
+<text x="64" y="71" font-family="Bree Serif" font-size="32" text-anchor="middle" fill="#2B221C">12</text>
+<path d="M44,600 l9,-9 l9,9 l-9,9 Z M338,600 l9,-9 l9,9 l-9,9 Z" fill="#B7332F"/>
+<text x="200" y="613" font-family="Bree Serif" font-size="37" text-anchor="middle" fill="#2B221C" letter-spacing="1.5">EL VALIENTE</text>
+<rect x="9" y="9" width="382" height="638" rx="12" fill="none" stroke="#2B221C" stroke-width="2"/>
+<rect width="400" height="656" rx="16" filter="url(#grain12)" opacity=".22"/>
+</svg>

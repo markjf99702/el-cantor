@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 656" width="400" height="656">
+<defs>
+  <clipPath id="panel30"><rect x="24" y="24" width="352" height="520" rx="6"/></clipPath>
+  <filter id="cut" filterUnits="userSpaceOnUse" x="-60" y="-60" width="520" height="780"><feDropShadow dx="1.6" dy="2.6" stdDeviation="1.8" flood-color="#3b2410" flood-opacity=".38"/></filter>
+  <filter id="grain30" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="3" seed="30"/>
+    <feColorMatrix values="0 0 0 0 .32  0 0 0 0 .22  0 0 0 0 .12  1.4 0 0 0 -.62"/>
+  </filter>
+</defs>
+<rect width="400" height="656" rx="16" fill="#FBF4E4"/>
+<g clip-path="url(#panel30)"><rect x="24" y="24" width="352" height="520" fill="#22304F"/>
+  <g stroke="#E8663F" stroke-width="3" fill="none" stroke-linecap="round">
+    <path d="M207,192 C200,90 110,70 50,120"/><path d="M213,198 C230,80 170,40 90,58"/>
+  </g>
+  <g stroke="#E8663F" stroke-width="5" stroke-linecap="round"><path d="M176,378 L181,347"/><path d="M146,357 L166,333"/><path d="M131,324 L160,313"/><path d="M134,288 L165,293"/><path d="M155,258 L179,278"/></g>
+  <g filter="url(#cut)">
+    <path d="M250,399 l34,26 l-10,14 Z M250,399 l40,-4 l0,16 Z M250,399 l20,36 l-16,6 Z" fill="#E8663F"/>
+    <ellipse cx="234.2" cy="406.0" rx="28" ry="22" transform="rotate(-200 234.2 406.0)" fill="#F07C5A"/><path d="M251.5,409.0 Q232.7,401.8 222.9,419.5" stroke="#F8B08E" stroke-width="4" fill="none"/><ellipse cx="186.1" cy="411.0" rx="32" ry="26" transform="rotate(-172 186.1 411.0)" fill="#F07C5A"/><path d="M202.5,423.8 Q186.8,405.9 166.8,418.8" stroke="#F8B08E" stroke-width="4" fill="none"/><ellipse cx="141.2" cy="392.9" rx="36" ry="30" transform="rotate(-144 141.2 392.9)" fill="#F07C5A"/><path d="M151.0,414.8 Q144.7,388.0 117.4,390.4" stroke="#F8B08E" stroke-width="4" fill="none"/><ellipse cx="110.1" cy="355.8" rx="40" ry="34" transform="rotate(-116 110.1 355.8)" fill="#F07C5A"/><path d="M108.2,383.0 Q116.2,352.9 87.6,340.6" stroke="#F8B08E" stroke-width="4" fill="none"/><ellipse cx="100.1" cy="308.5" rx="44" ry="38" transform="rotate(-88 100.1 308.5)" fill="#F07C5A"/><path d="M84.0,334.3 Q107.7,308.8 85.8,281.7" stroke="#F8B08E" stroke-width="4" fill="none"/><ellipse cx="113.4" cy="262.0" rx="46" ry="40" transform="rotate(-60 113.4 262.0)" fill="#F07C5A"/><path d="M85.7,278.0 Q120.3,266.0 113.4,230.0" stroke="#F8B08E" stroke-width="4" fill="none"/><ellipse cx="147.0" cy="227.2" rx="48" ry="42" transform="rotate(-32 147.0 227.2)" fill="#F07C5A"/><path d="M113.4,228.4 Q151.5,234.3 162.8,197.5" stroke="#F8B08E" stroke-width="4" fill="none"/>
+    <ellipse cx="196.5" cy="212.1" rx="52" ry="40" transform="rotate(-10 196.5 212.1)" fill="#F07C5A"/>
+    <path d="M241,204 L281,192 L243,218 Z" fill="#E8663F"/>
+  </g>
+  <circle cx="217" cy="198" r="9" fill="#2B221C"/><circle cx="220" cy="195" r="3" fill="#FBF4E4"/>
+</g>
+<rect x="24" y="24" width="352" height="520" rx="6" fill="none" stroke="#2B221C" stroke-width="3.5"/>
+<g filter="url(#cut)"><rect x="36" y="36" width="56" height="46" rx="7" fill="#FBF4E4"/></g>
+<text x="64" y="71" font-family="Bree Serif" font-size="32" text-anchor="middle" fill="#2B221C">30</text>
+<path d="M44,600 l9,-9 l9,9 l-9,9 Z M338,600 l9,-9 l9,9 l-9,9 Z" fill="#B7332F"/>
+<text x="200" y="614" font-family="Bree Serif" font-size="40" text-anchor="middle" fill="#2B221C" letter-spacing="1.5">EL CAMARÓN</text>
+<rect x="9" y="9" width="382" height="638" rx="12" fill="none" stroke="#2B221C" stroke-width="2"/>
+<rect width="400" height="656" rx="16" filter="url(#grain30)" opacity=".22"/>
+</svg>

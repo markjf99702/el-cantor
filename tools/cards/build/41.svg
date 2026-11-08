@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 656" width="400" height="656">
+<defs>
+  <clipPath id="panel41"><rect x="24" y="24" width="352" height="520" rx="6"/></clipPath>
+  <filter id="cut" filterUnits="userSpaceOnUse" x="-60" y="-60" width="520" height="780"><feDropShadow dx="1.6" dy="2.6" stdDeviation="1.8" flood-color="#3b2410" flood-opacity=".38"/></filter>
+  <filter id="grain41" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="3" seed="41"/>
+    <feColorMatrix values="0 0 0 0 .32  0 0 0 0 .22  0 0 0 0 .12  1.4 0 0 0 -.62"/>
+  </filter>
+</defs>
+<rect width="400" height="656" rx="16" fill="#FBF4E4"/>
+<g clip-path="url(#panel41)"><rect x="24" y="24" width="352" height="520" fill="#CFE3C5"/>
+  <path d="M200,292 C196,360 206,430 196,524" stroke="#3E7D4A" stroke-width="11" fill="none" stroke-linecap="round" filter="url(#cut)"/>
+  <g fill="#3E7D4A" filter="url(#cut)">
+    <path d="M198,400 C160,370 118,378 100,404 C132,420 170,420 198,400 Z"/><path d="M202,356 C236,322 280,326 298,352 C266,370 230,372 202,356 Z"/>
+  </g>
+  <g stroke="#5B9D67" stroke-width="3" fill="none"><path d="M196,400 C166,396 138,398 112,404"/><path d="M204,356 C232,350 258,348 286,352"/></g>
+  <g fill="#3E7D4A"><path d="M196,450 L184,444 L196,440 Z"/><path d="M200,480 L212,474 L200,470 Z"/></g>
+  <g filter="url(#cut)" fill="#B7332F">
+    <ellipse cx="200" cy="162" rx="50" ry="40" transform="rotate(0 200 162)"/><ellipse cx="249" cy="198" rx="50" ry="40" transform="rotate(72 249 198)"/><ellipse cx="231" cy="256" rx="50" ry="40" transform="rotate(144 231 256)"/><ellipse cx="169" cy="256" rx="50" ry="40" transform="rotate(216 169 256)"/><ellipse cx="151" cy="198" rx="50" ry="40" transform="rotate(288 151 198)"/>
+    <circle cx="200" cy="214" r="62"/>
+  </g>
+  <path d="M200,214 m-12,0 a12,12 0 1,1 24,0 a24,24 0 1,1 -44,4 a38,38 0 1,1 68,-8 a54,54 0 1,1 -96,20" stroke="#8E2A26" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M152,176 C164,154 188,146 206,150" stroke="#E2554F" stroke-width="8" fill="none" stroke-linecap="round" opacity=".8"/>
+</g>
+<rect x="24" y="24" width="352" height="520" rx="6" fill="none" stroke="#2B221C" stroke-width="3.5"/>
+<g filter="url(#cut)"><rect x="36" y="36" width="56" height="46" rx="7" fill="#FBF4E4"/></g>
+<text x="64" y="71" font-family="Bree Serif" font-size="32" text-anchor="middle" fill="#2B221C">41</text>
+<path d="M44,600 l9,-9 l9,9 l-9,9 Z M338,600 l9,-9 l9,9 l-9,9 Z" fill="#B7332F"/>
+<text x="200" y="616" font-family="Bree Serif" font-size="44" text-anchor="middle" fill="#2B221C" letter-spacing="1.5">LA ROSA</text>
+<rect x="9" y="9" width="382" height="638" rx="12" fill="none" stroke="#2B221C" stroke-width="2"/>
+<rect width="400" height="656" rx="16" filter="url(#grain41)" opacity=".22"/>
+</svg>

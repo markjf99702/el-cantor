@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 656" width="400" height="656">
+<defs>
+  <clipPath id="panel48"><rect x="24" y="24" width="352" height="520" rx="6"/></clipPath>
+  <filter id="cut" filterUnits="userSpaceOnUse" x="-60" y="-60" width="520" height="780"><feDropShadow dx="1.6" dy="2.6" stdDeviation="1.8" flood-color="#3b2410" flood-opacity=".38"/></filter>
+  <filter id="grain48" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="3" seed="48"/>
+    <feColorMatrix values="0 0 0 0 .32  0 0 0 0 .22  0 0 0 0 .12  1.4 0 0 0 -.62"/>
+  </filter>
+</defs>
+<rect width="400" height="656" rx="16" fill="#FBF4E4"/>
+<g clip-path="url(#panel48)"><rect x="24" y="24" width="352" height="520" fill="#F4C9A0"/>
+  <g transform="translate(200 440) scale(1.12) translate(-200 -430)">
+  <path d="M0,416 C100,408 300,420 400,410 L400,560 L0,560 Z" fill="#3E9591"/>
+  <g stroke="#FBF4E4" stroke-width="3.5" fill="none" opacity=".7" stroke-linecap="round"><path d="M40,480 q16,-7 32,0 q16,7 32,0"/><path d="M250,500 q16,-7 32,0 q16,7 32,0"/><path d="M140,522 q14,-6 28,0"/></g>
+  <path d="M330,120 L150,532" stroke="#7A5230" stroke-width="8" stroke-linecap="round" filter="url(#cut)"/>
+  <path d="M252,340 C262,330 268,318 272,306" stroke="#C98B5E" stroke-width="13" stroke-linecap="round" fill="none"/>
+  <path d="M212,340 C224,350 238,356 250,356" stroke="#C98B5E" stroke-width="13" stroke-linecap="round" fill="none"/>
+  <g filter="url(#cut)">
+    <path d="M212,352 C176,366 164,394 156,414 L290,414 C284,392 270,366 240,352 Z" fill="#1F6F6D"/>
+    <path d="M208,290 C200,316 200,340 206,360 L246,360 C252,340 252,316 244,290 C234,282 218,282 208,290 Z" fill="#FBF4E4"/>
+  </g>
+  <path d="M210,306 L242,306" stroke="#B7332F" stroke-width="5"/><g fill="#C2477A"><circle cx="218" cy="318" r="3"/><circle cx="226" cy="322" r="3"/><circle cx="234" cy="318" r="3"/></g>
+  <circle cx="274" cy="302" r="9" fill="#C98B5E"/><circle cx="252" cy="358" r="9" fill="#C98B5E"/>
+  <path d="M206,236 C200,270 204,300 200,320 L210,322 C214,300 212,270 214,244 Z M246,236 C252,270 248,300 252,320 L242,322 C238,300 240,270 238,244 Z" fill="#3A2A22"/>
+  <circle cx="200" cy="322" r="4" fill="#B7332F"/><circle cx="252" cy="322" r="4" fill="#B7332F"/>
+  <rect x="218" y="262" width="16" height="26" fill="#A86B42"/>
+  <ellipse cx="226" cy="246" rx="23" ry="27" fill="#C98B5E"/>
+  <path d="M202,246 C200,218 218,208 234,212 C250,216 252,232 250,242 C240,230 222,228 208,252 Z" fill="#3A2A22"/>
+  <circle cx="246" cy="222" r="9" fill="#B7332F"/>
+  <circle cx="218" cy="248" r="2.6" fill="#2B221C"/><circle cx="236" cy="248" r="2.6" fill="#2B221C"/>
+  <path d="M220,260 Q227,265 234,260" stroke="#2B221C" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  <g filter="url(#cut)">
+    <path d="M44,408 L356,408 L330,454 L70,454 Z" fill="#8A5A33"/>
+    <rect x="58" y="414" width="286" height="12" fill="#B7332F"/>
+  </g>
+  <g fill="#E8B24A"><circle cx="90" cy="438" r="4"/><circle cx="116" cy="438" r="4"/><circle cx="142" cy="438" r="4"/><circle cx="168" cy="438" r="4"/><circle cx="194" cy="438" r="4"/><circle cx="220" cy="438" r="4"/><circle cx="246" cy="438" r="4"/><circle cx="272" cy="438" r="4"/><circle cx="298" cy="438" r="4"/></g>
+  <g filter="url(#cut)"><ellipse cx="96.4" cy="390.0" rx="10.0" ry="6.4" transform="rotate(0.0 96.4 390.0)" fill="#C2477A"/><ellipse cx="87.8" cy="401.8" rx="10.0" ry="6.4" transform="rotate(72.0 87.8 401.8)" fill="#C2477A"/><ellipse cx="74.0" cy="397.3" rx="10.0" ry="6.4" transform="rotate(144.0 74.0 397.3)" fill="#C2477A"/><ellipse cx="74.0" cy="382.7" rx="10.0" ry="6.4" transform="rotate(216.0 74.0 382.7)" fill="#C2477A"/><ellipse cx="87.8" cy="378.2" rx="10.0" ry="6.4" transform="rotate(288.0 87.8 378.2)" fill="#C2477A"/><circle cx="84" cy="390" r="5.6" fill="#E8B24A"/></g><g filter="url(#cut)"><ellipse cx="125.9" cy="380.0" rx="8.0" ry="5.1" transform="rotate(0.0 125.9 380.0)" fill="#E8B24A"/><ellipse cx="119.1" cy="389.4" rx="8.0" ry="5.1" transform="rotate(72.0 119.1 389.4)" fill="#E8B24A"/><ellipse cx="108.0" cy="385.8" rx="8.0" ry="5.1" transform="rotate(144.0 108.0 385.8)" fill="#E8B24A"/><ellipse cx="108.0" cy="374.2" rx="8.0" ry="5.1" transform="rotate(216.0 108.0 374.2)" fill="#E8B24A"/><ellipse cx="119.1" cy="370.6" rx="8.0" ry="5.1" transform="rotate(288.0 119.1 370.6)" fill="#E8B24A"/><circle cx="116" cy="380" r="4.5" fill="#B7332F"/></g><g filter="url(#cut)"><ellipse cx="157.2" cy="392.0" rx="9.0" ry="5.8" transform="rotate(0.0 157.2 392.0)" fill="#E2554F"/><ellipse cx="149.4" cy="402.6" rx="9.0" ry="5.8" transform="rotate(72.0 149.4 402.6)" fill="#E2554F"/><ellipse cx="137.0" cy="398.6" rx="9.0" ry="5.8" transform="rotate(144.0 137.0 398.6)" fill="#E2554F"/><ellipse cx="137.0" cy="385.4" rx="9.0" ry="5.8" transform="rotate(216.0 137.0 385.4)" fill="#E2554F"/><ellipse cx="149.4" cy="381.4" rx="9.0" ry="5.8" transform="rotate(288.0 149.4 381.4)" fill="#E2554F"/><circle cx="146" cy="392" r="5.0" fill="#E8B24A"/></g><g filter="url(#cut)"><ellipse cx="327.9" cy="392.0" rx="8.0" ry="5.1" transform="rotate(0.0 327.9 392.0)" fill="#E8B24A"/><ellipse cx="321.1" cy="401.4" rx="8.0" ry="5.1" transform="rotate(72.0 321.1 401.4)" fill="#E8B24A"/><ellipse cx="310.0" cy="397.8" rx="8.0" ry="5.1" transform="rotate(144.0 310.0 397.8)" fill="#E8B24A"/><ellipse cx="310.0" cy="386.2" rx="8.0" ry="5.1" transform="rotate(216.0 310.0 386.2)" fill="#E8B24A"/><ellipse cx="321.1" cy="382.6" rx="8.0" ry="5.1" transform="rotate(288.0 321.1 382.6)" fill="#E8B24A"/><circle cx="318" cy="392" r="4.5" fill="#B7332F"/></g>
+  </g>
+</g>
+<rect x="24" y="24" width="352" height="520" rx="6" fill="none" stroke="#2B221C" stroke-width="3.5"/>
+<g filter="url(#cut)"><rect x="36" y="36" width="56" height="46" rx="7" fill="#FBF4E4"/></g>
+<text x="64" y="71" font-family="Bree Serif" font-size="32" text-anchor="middle" fill="#2B221C">48</text>
+<path d="M44,600 l9,-9 l9,9 l-9,9 Z M338,600 l9,-9 l9,9 l-9,9 Z" fill="#B7332F"/>
+<text x="200" y="614" font-family="Bree Serif" font-size="40" text-anchor="middle" fill="#2B221C" letter-spacing="1.5">LA CHALUPA</text>
+<rect x="9" y="9" width="382" height="638" rx="12" fill="none" stroke="#2B221C" stroke-width="2"/>
+<rect width="400" height="656" rx="16" filter="url(#grain48)" opacity=".22"/>
+</svg>

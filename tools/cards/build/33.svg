@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 656" width="400" height="656">
+<defs>
+  <clipPath id="panel33"><rect x="24" y="24" width="352" height="520" rx="6"/></clipPath>
+  <filter id="cut" filterUnits="userSpaceOnUse" x="-60" y="-60" width="520" height="780"><feDropShadow dx="1.6" dy="2.6" stdDeviation="1.8" flood-color="#3b2410" flood-opacity=".38"/></filter>
+  <filter id="grain33" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="3" seed="33"/>
+    <feColorMatrix values="0 0 0 0 .32  0 0 0 0 .22  0 0 0 0 .12  1.4 0 0 0 -.62"/>
+  </filter>
+</defs>
+<rect width="400" height="656" rx="16" fill="#FBF4E4"/>
+<g clip-path="url(#panel33)"><rect x="24" y="24" width="352" height="520" fill="#D9CFE8"/>
+  <g stroke="#8D7E9C" stroke-width="2.5" fill="none"><path d="M200,260 L496,382"/><path d="M200,260 L322,556"/><path d="M200,260 L78,556"/><path d="M200,260 L-96,382"/><path d="M200,260 L-96,138"/><path d="M200,260 L78,-36"/><path d="M200,260 L322,-36"/><path d="M200,260 L496,138"/><path d="M246,279 L219,306 L181,306 L154,279 L154,241 L181,214 L219,214 L246,241 L246,279"/><path d="M283,294 L234,343 L166,343 L117,294 L117,226 L166,177 L234,177 L283,226 L283,294"/><path d="M320,310 L250,380 L150,380 L80,310 L80,210 L150,140 L250,140 L320,210 L320,310"/><path d="M357,325 L265,417 L135,417 L43,325 L43,195 L135,103 L265,103 L357,195 L357,325"/><path d="M394,340 L280,454 L120,454 L6,340 L6,180 L120,66 L280,66 L394,180 L394,340"/></g>
+  <path d="M200,24 L200,220" stroke="#8D7E9C" stroke-width="2.5"/>
+  <g stroke="#2B221C" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#cut)"><path d="M180,236 L138,212 L96,180"/><path d="M180,256 L130,242 L80,238"/><path d="M180,276 L130,272 L80,310"/><path d="M180,296 L138,302 L96,370"/><path d="M220,236 L262,212 L304,180"/><path d="M220,256 L270,242 L320,238"/><path d="M220,276 L270,272 L320,310"/><path d="M220,296 L262,302 L304,370"/></g>
+  <g filter="url(#cut)"><ellipse cx="200" cy="312" rx="44" ry="52" fill="#2B221C"/><circle cx="200" cy="244" r="28" fill="#2B221C"/></g>
+  <path d="M190,300 L210,300 L200,316 Z M190,332 L210,332 L200,316 Z" fill="#B7332F"/>
+  <circle cx="190" cy="240" r="6" fill="#FBF4E4"/><circle cx="210" cy="240" r="6" fill="#FBF4E4"/>
+  <circle cx="191" cy="241" r="2.5" fill="#2B221C"/><circle cx="211" cy="241" r="2.5" fill="#2B221C"/>
+</g>
+<rect x="24" y="24" width="352" height="520" rx="6" fill="none" stroke="#2B221C" stroke-width="3.5"/>
+<g filter="url(#cut)"><rect x="36" y="36" width="56" height="46" rx="7" fill="#FBF4E4"/></g>
+<text x="64" y="71" font-family="Bree Serif" font-size="32" text-anchor="middle" fill="#2B221C">33</text>
+<path d="M44,600 l9,-9 l9,9 l-9,9 Z M338,600 l9,-9 l9,9 l-9,9 Z" fill="#B7332F"/>
+<text x="200" y="616" font-family="Bree Serif" font-size="44" text-anchor="middle" fill="#2B221C" letter-spacing="1.5">LA ARAÑA</text>
+<rect x="9" y="9" width="382" height="638" rx="12" fill="none" stroke="#2B221C" stroke-width="2"/>
+<rect width="400" height="656" rx="16" filter="url(#grain33)" opacity=".22"/>
+</svg>

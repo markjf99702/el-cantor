@@ -139,11 +139,8 @@ To put it online with GitHub Pages: **Settings → Pages → Build and deploymen
 - `sync.js` — saving to Google Drive: signing in, the Drive file, merging changes from every device, and the calls El Cantor uses for its recorded voices' sound files. Also the Safari line, and keeping the screen on, which El Cantor and My tablas share.
 - `deck.js` — the cards, their verses, the winning shapes, Mark's four tablas, the paper a device's printing starts on, the cut paper both ¡Lotería! boxes throw, and the juego generator. Every page loads it.
   - The generator is frozen: changing it would change every tabla already printed.
-- `cards/` — the 54 card images, drawn for El Cantor.
+- `cards/` — the 54 card images.
 - `fonts/` — Bree Serif and Nunito Sans (SIL Open Font License), served from here so nothing loads from elsewhere.
-- `tools/cards/` — draws the cards.
-  - Each card is an SVG in a cut-paper style, written in Python: `card.py` is the template and shared pieces, and `art1.py` to `art5.py` hold the pictures.
-  - `python3 tools/cards/build.py` writes the SVGs, then `node tools/cards/render.mjs` (with [Playwright](https://playwright.dev)) turns them into `cards/*.jpg`. Rerun both after changing a card; `build.py 8,37` draws just those numbers. The names are written in the Bree Serif in `fonts/`, so nothing is fetched, and the tool stops if the font didn't load rather than draw them in another one.
 - `audio/` — the recorded voices.
   - One clip per card: the verse, a breath, the name. Plus the opening line and ¡Lotería!
   - `voices.json` lists the voices and where each verse ends, so Adivinanza can stop before the name.
@@ -154,4 +151,4 @@ To put it online with GitHub Pages: **Settings → Pages → Build and deploymen
 
 ## License
 
-The code, the card art and the recorded voices are MIT — see [LICENSE](LICENSE).
+The code and the recorded voices are MIT — see [LICENSE](LICENSE). The card images in `cards/` are not covered by it.
