@@ -2,6 +2,8 @@
 
 **Play it: [el-cantor.junkdrawer.works](https://el-cantor.junkdrawer.works/)**
 
+**New to Lotería?** [Watch the 86-second guide](https://el-cantor.junkdrawer.works/docs/loteria-guide.mp4) (`docs/loteria-guide.mp4`): where the game comes from, how to play, and how El Cantor calls it.
+
 **Lotería for the family table, in one package.** Everything stays on the device, unless you turn on saving to Google Drive so your tablas, and the voices you record, follow you to your other devices.
 
 <p align="center">
